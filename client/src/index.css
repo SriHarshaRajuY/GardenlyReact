@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-body{
-    background-color: rgb(241,245,241);
+/* Default light background */
+body {
+  background-color: rgb(241, 245, 241);
+  transition: background-color 0.3s ease, color 0.3s ease;
+    @apply bg-gray-50 text-gray-800 font-sans;
+}
+
+/* Dark mode background */
+body.dark {
+  background-color: rgb(17, 24, 39); /* Tailwind gray-900 */
+  color: white;
+}
+
+a {
+  @apply text-green-700 hover:text-green-800 transition-colors;
 }
