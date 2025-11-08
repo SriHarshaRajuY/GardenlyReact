@@ -2,19 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Default light background */
+/* 🌿 Light Mode (default) */
 body {
-  background-color: rgb(241, 245, 241);
-  transition: background-color 0.3s ease, color 0.3s ease;
-    @apply bg-gray-50 text-gray-800 font-sans;
+  @apply bg-[#f7f9f7] text-gray-800 font-sans transition-colors duration-300;
 }
 
-/* Dark mode background */
+/* 🌑 Dark Mode */
 body.dark {
-  background-color: rgb(17, 24, 39); /* Tailwind gray-900 */
-  color: white;
+  @apply bg-[#121512] text-white;
 }
 
+/* Links */
 a {
   @apply text-green-700 hover:text-green-800 transition-colors;
+}
+
+/* Smooth background transitions for sections & cards */
+section, .product-card, .category-circle {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

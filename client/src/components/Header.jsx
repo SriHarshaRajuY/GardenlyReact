@@ -15,7 +15,7 @@ export default function Header() {
   }, [darkMode]);
 
   return (
-    <header className="bg-green-50 dark:bg-gray-900 text-gray-800 dark:text-white shadow-md fixed w-full z-50">
+    <header className="bg-[#f7f9f7] dark:bg-[#121512] text-gray-800 dark:text-white shadow-md fixed w-full z-50">
       <div className="flex justify-between items-center max-w-7xl mx-auto px-4 py-3">
         {/* 🌿 Logo */}
         <Link
@@ -27,7 +27,7 @@ export default function Header() {
         </Link>
 
         {/* 🔍 Search Bar */}
-        <div className="hidden md:flex items-center bg-white dark:bg-gray-800 border rounded-lg px-3 py-1">
+        <div className="hidden md:flex items-center bg-white dark:bg-[#1a1c19] border rounded-lg px-3 py-1">
           <input
             type="text"
             placeholder="Search products..."
@@ -73,7 +73,7 @@ export default function Header() {
 
       {/* 📱 Mobile Menu */}
       {menuOpen && (
-        <nav className="md:hidden bg-green-100 dark:bg-gray-800 text-center py-3 flex flex-col gap-3 shadow-inner">
+        <nav className="md:hidden bg-[#f7f9f7] dark:bg-[#1a1c19] text-center py-3 flex flex-col gap-3 shadow-inner">
           <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
           <Link to="/beforeseller" onClick={() => setMenuOpen(false)}>Sell Us</Link>
           <Link to="/expert_support" onClick={() => setMenuOpen(false)}>Expert Support</Link>
