@@ -37,12 +37,20 @@ app.use(
 );
 
 // ==============================================
-// 🌿 Connect MongoDB
+// 🌿 Connect MongoDB Atlas
 // ==============================================
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000, // wait 10s before timeout
+  })
   .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:");
+    console.error("Message:", err.message);
+    console.error("Hint: Check IP whitelist and connection string in Atlas.");
+  });
 
 // ==============================================
 // 🌿 Routes
@@ -65,7 +73,7 @@ app.use((err, req, res, next) => {
 });
 
 // ==============================================
-// 🌿 Server Start
+// 🌿 Start Server
 // ==============================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
