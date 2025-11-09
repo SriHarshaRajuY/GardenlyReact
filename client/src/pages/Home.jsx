@@ -12,7 +12,7 @@ export default function Home() {
   const [detailProduct, setDetailProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Use proxy in dev → clean URLs
+  // Use proxy in dev → clean URLs url
   const API_URL = import.meta.env.DEV ? "" : "http://localhost:3000";
 
   useEffect(() => {
