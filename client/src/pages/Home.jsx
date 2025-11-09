@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ProductCard from "../components/ProductCard";
 import ProductDetail from "../components/ProductDetail";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
@@ -11,7 +12,8 @@ export default function Home() {
   const [detailProduct, setDetailProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = "http://localhost:3000"; // backend base URL
+  // Use proxy in dev → clean URLs
+  const API_URL = import.meta.env.DEV ? "" : "http://localhost:3000";
 
   useEffect(() => {
     fetchProducts();
@@ -21,26 +23,29 @@ export default function Home() {
     try {
       const res = await fetch(`${API_URL}/api/products/recent?limit=12`);
       const data = await res.json();
-      if (res.ok && data.success) setProducts(data.products);
-      else throw new Error("Failed to fetch products");
+      if (res.ok && data.success) {
+        setProducts(data.products);
+      } else {
+        throw new Error("Failed to fetch");
+      }
     } catch (err) {
-      console.error("⚠️ Using fallback demo products:", err.message);
+      console.error("Using fallback products:", err.message);
       setProducts([
         {
-          _id: 1,
+          id: 1,
           name: "Money Plant Golden",
           category: "Plants",
           price: 199,
-          quantity: 20,
-          image: `${API_URL}/images/new-products/p6.jpg`,
+          available: 20,
+          image: "/images/new-products/p6.jpg",
         },
         {
-          _id: 2,
+          id: 2,
           name: "Rosemary - Plant",
           category: "Plants",
           price: 299,
-          quantity: 12,
-          image: `${API_URL}/images/plantspics/p5.png`,
+          available: 12,
+          image: "/images/plantspics/p5.png",
         },
       ]);
     } finally {
@@ -51,14 +56,12 @@ export default function Home() {
   const openDetail = (p) => setDetailProduct(p);
   const closeDetail = () => setDetailProduct(null);
 
-  // 🌿 Hero banner slider
   const slides = [
     `${API_URL}/images/homeslider/h1.png`,
     `${API_URL}/images/homeslider/h2.png`,
     `${API_URL}/images/homeslider/h3.png`,
   ];
 
-  // 🌸 Categories
   const categories = [
     {
       name: "PLANTS",
@@ -79,7 +82,7 @@ export default function Home() {
 
   return (
     <div className="pt-20 bg-[#f8faf7] min-h-screen text-gray-800">
-      {/* 🌿 Hero Section */}
+      {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 mb-16">
         <Swiper
           modules={[Navigation, Pagination, Autoplay]}
@@ -98,11 +101,11 @@ export default function Home() {
                 <div className="absolute inset-0 bg-black/30"></div>
                 <div className="relative z-10 text-center text-white px-4">
                   <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
-                    Bring Nature <br />{" "}
+                    Bring Nature <br />
                     <span className="text-green-400">Closer to Home</span>
                   </h1>
                   <p className="text-lg mb-6 font-light drop-shadow-md">
-                    Fresh plants, stylish pots, and seeds for your green space 🌱
+                    Fresh plants, stylish pots, and seeds for your green space
                   </p>
                   <a
                     href="#shop"
@@ -117,7 +120,7 @@ export default function Home() {
         </Swiper>
       </section>
 
-      {/* 🌸 Category Circles */}
+      {/* Category Circles */}
       <section className="max-w-6xl mx-auto px-4 mb-16">
         <h3 className="text-2xl md:text-3xl font-semibold text-center mb-10 text-green-700">
           Shop by Category
@@ -137,15 +140,13 @@ export default function Home() {
                   onError={(e) => (e.target.style.opacity = 0.2)}
                 />
               </div>
-              <p className="text-base font-semibold text-gray-700">
-                {cat.name}
-              </p>
+              <p className="text-base font-semibold text-gray-700">{cat.name}</p>
             </a>
           ))}
         </div>
       </section>
 
-      {/* 🛒 New Products */}
+      {/* NEW PRODUCTS */}
       <section
         id="shop"
         className="max-w-7xl mx-auto px-4 py-10 bg-white rounded-2xl shadow-lg mb-20"
@@ -161,48 +162,17 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {products.map((p) => (
-              <div
-                key={p._id}
-                onClick={() => openDetail(p)}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform hover:-translate-y-1 duration-300 product-card"
-              >
-                <div className="h-56 bg-gray-50 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={
-                      p.image?.startsWith("./public")
-                        ? `${API_URL}${p.image.slice(1)}`
-                        : `${API_URL}${p.image || "/images/placeholder.png"}`
-                    }
-                    alt={p.name}
-                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-300"
-                    onError={(e) =>
-                      (e.target.src = `${API_URL}/images/placeholder.png`)
-                    }
-                  />
-                </div>
-                <div className="p-4 text-center">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                    {p.name}
-                  </h3>
-                  <p className="text-sm text-gray-500">{p.category}</p>
-                  <div className="flex justify-center items-center gap-2 mt-2">
-                    <span className="text-green-700 text-lg font-bold">
-                      ₹{p.price}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Available: {p.quantity > 0 ? p.quantity : "Out of Stock"}
-                  </p>
-                  <button className="mt-4 bg-green-700 text-white text-sm px-4 py-2 rounded-md hover:bg-green-800 transition-all w-full">
-                    Add To Cart
-                  </button>
-                </div>
-              </div>
+              <ProductCard
+                key={p.id}
+                product={p}
+                onOpenDetail={openDetail}
+              />
             ))}
           </div>
         )}
       </section>
 
+      {/* Product Detail Modal */}
       {detailProduct && (
         <ProductDetail product={detailProduct} onClose={closeDetail} />
       )}
