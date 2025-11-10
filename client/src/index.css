@@ -21,3 +21,23 @@ a {
 section, .product-card, .category-circle {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(30deg); }
+  50% { transform: translateX(100%) rotate(30deg); }
+  100% { transform: translateX(-100%) rotate(30deg); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-shine { animation: shine 3s infinite; }
+.animate-slideDown { animation: slideDown 0.3s ease; }
+.animate-fadeIn { animation: fadeIn 0.3s ease; }
