@@ -1,4 +1,5 @@
 // server/index.js
+import ticketRoute from "./routes/ticket.route.js";
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -12,17 +13,22 @@ import authRouter from "./routes/auth.route.js";
 import productRouter from "./routes/product.route.js";
 import upload from "./upload.js";
 
-dotenv.config();
+// --- Load .env from parent folder ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, "../.env") });
+// ------------------------------------
 
 const app = express();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Serve images
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 app.use(express.json());
+app.use("/api/tickets", ticketRoute);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -30,6 +36,7 @@ app.use(
   })
 );
 
+// DB connection
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -41,17 +48,22 @@ mongoose
     process.exit(1);
   });
 
+// Routes
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
 
+// Error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   res.status(statusCode).json({ success: false, status: statusCode, message });
 });
 
+// Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`Server running on http://localhost:${PORT}`)
+);
 
 export { upload };

@@ -1,4 +1,4 @@
-// server/middleware/verifyToken.js
+// api/middleware/verifyToken.js
 import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 
@@ -16,8 +16,11 @@ export const verifyToken = (req, res, next) => {
 };
 
 export const requireSeller = (req, res, next) => {
-  if (req.user.role !== "seller") {
-    return next(errorHandler(403, "Seller access required"));
-  }
+  if (req.user.role !== "seller") return next(errorHandler(403, "Seller required"));
+  next();
+};
+
+export const requireExpert = (req, res, next) => {
+  if (req.user.role !== "expert") return next(errorHandler(403, "Expert required"));
   next();
 };
