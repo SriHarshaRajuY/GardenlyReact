@@ -3,84 +3,72 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 
+// SIGNUP
 export const signup = async (req, res, next) => {
   const { username, email, password, role, mobile } = req.body;
 
   try {
-    // Client-side fields check (but server validates fully)
     if (!username || !email || !password || !role || !mobile) {
       return next(errorHandler(400, "All fields are required"));
     }
 
-    // Regex validations matching old project
     const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
     const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const mobileRegex = /^\d{10}$/;
 
-    if (!usernameRegex.test(username)) {
-      return next(errorHandler(400, "Username must be 3-20 characters (letters, numbers, _, - only)"));
-    }
-    if (!passwordRegex.test(password)) {
-      return next(errorHandler(400, "Password must be 8+ characters with at least 1 uppercase, 1 number, and 1 symbol"));
-    }
-    if (!emailRegex.test(email)) {
-      return next(errorHandler(400, "Invalid email format"));
-    }
-    if (!mobileRegex.test(mobile)) {
-      return next(errorHandler(400, "Mobile number must be exactly 10 digits"));
-    }
-    if (!["Buyer", "Seller", "Admin", "Expert"].includes(role)) {
-      return next(errorHandler(400, "Invalid role selected"));
-    }
+    if (!usernameRegex.test(username)) return next(errorHandler(400, "Invalid username"));
+    if (!passwordRegex.test(password)) return next(errorHandler(400, "Invalid password"));
+    if (!emailRegex.test(email)) return next(errorHandler(400, "Invalid email"));
+    if (!mobileRegex.test(mobile)) return next(errorHandler(400, "Invalid mobile"));
+    if (!["Buyer", "Seller", "Admin", "Expert"].includes(role)) return next(errorHandler(400, "Invalid role"));
 
-    // Check existing
-    const existingUser = await User.findOne({
-      $or: [{ username }, { email }, { mobile }],
-    });
-    if (existingUser) {
-      return next(errorHandler(400, "Username, email, or mobile already exists"));
-    }
+    const existing = await User.findOne({ $or: [{ username }, { email }, { mobile }] });
+    if (existing) return next(errorHandler(400, "User already exists"));
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const newUser = new User({ username, email, password: hashedPassword, role, mobile });
+    const hashed = bcrypt.hashSync(password, 10);
+    const user = new User({ username, email, password: hashed, role, mobile });
+    await user.save();
 
-    await newUser.save();
-    res.status(201).json({ message: "✅ User registered successfully!" });
+    res.status(201).json({ message: "User created" });
   } catch (err) {
     next(err);
   }
 };
 
+// SIGNIN
 export const signin = async (req, res, next) => {
   const { username, password, role } = req.body;
 
   try {
     if (!username || !password || !role) {
-      return next(errorHandler(400, "All fields are required"));
+      return next(errorHandler(400, "All fields required"));
     }
 
-    const validUser = await User.findOne({ username });
-    if (!validUser) return next(errorHandler(404, "User not found"));
+    const user = await User.findOne({ username });
+    if (!user) return next(errorHandler(404, "User not found"));
 
-    const validPassword = bcrypt.compareSync(password, validUser.password);
-    if (!validPassword) return next(errorHandler(400, "Invalid credentials"));
+    const valid = bcrypt.compareSync(password, user.password);
+    if (!valid) return next(errorHandler(400, "Wrong credentials"));
 
-    if (validUser.role.toLowerCase() !== role.toLowerCase()) {
-      return next(errorHandler(400, "Role mismatch"));
-    }
+    if (user.role !== role) return next(errorHandler(400, "Role mismatch"));
 
-    const token = jwt.sign({ id: validUser._id, role: validUser.role }, process.env.JWT_SECRET);
+    const token = jwt.sign(
+      { id: user._id, role: user.role, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    const { password: pass, ...rest } = validUser._doc;
+    const { password: _, ...rest } = user._doc;
 
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      sameSite: "strict",
-    }).status(200).json({
-      message: "✅ Login successful",
-      user: rest,
-    });
+    res
+      .cookie("access_token", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .json({ user: rest });
   } catch (err) {
     next(err);
   }

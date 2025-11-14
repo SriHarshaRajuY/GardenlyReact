@@ -1,30 +1,25 @@
-// api/routes/product.route.js
 import express from "express";
 import {
-  getRecentProducts,
-  getProductsByCategory,
   addProduct,
-  editProduct,
-  deleteProduct,
   getSellerProducts,
-  getTopSales,
-  getRecentSales,
+  getRecentProducts,
+  getProductsByCategory, // ← ADD THIS
 } from "../controllers/product.controller.js";
-import upload from "../upload.js"; // ← Import from upload.js
-import { isAuthenticated, isSeller } from "../middlewares.js";
+import upload from "../upload.js";
+import { verifyToken, requireSeller } from "../middleware/verifyToken.js";
 
 const router = express.Router();
 
-// Public routes
-router.get("/recent", getRecentProducts);
+// PUBLIC: Homepage recent products
+router.get("/", getRecentProducts);
+
+// PUBLIC: Get by category → /api/products/category/Plants
 router.get("/category/:category", getProductsByCategory);
 
-// Seller routes
-router.post("/", isAuthenticated, isSeller, upload.single("image"), addProduct);
-router.get("/seller", isAuthenticated, isSeller, getSellerProducts);
-router.put("/:id", isAuthenticated, isSeller, editProduct);
-router.delete("/:id", isAuthenticated, isSeller, deleteProduct);
-router.get("/top-sales", isAuthenticated, isSeller, getTopSales);
-router.get("/recent-sales", isAuthenticated, isSeller, getRecentSales);
+// SELLER: Add product
+router.post("/", verifyToken, requireSeller, upload.single("image"), addProduct);
+
+// SELLER: Get own products
+router.get("/seller", verifyToken, requireSeller, getSellerProducts);
 
 export default router;

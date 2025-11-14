@@ -12,39 +12,38 @@ export default function Home() {
   const [detailProduct, setDetailProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Use proxy in dev → clean URLs url
-  const API_URL = import.meta.env.DEV ? "" : "http://localhost:3000";
-
   useEffect(() => {
     fetchProducts();
   }, []);
 
   async function fetchProducts() {
     try {
-      const res = await fetch(`${API_URL}/api/products/recent?limit=12`);
+      // USE PROXY → /api/products = backend /api/products
+      const res = await fetch("/api/products?limit=12", { credentials: "include" });
       const data = await res.json();
-      if (res.ok && data.success) {
-        setProducts(data.products);
+
+      if (res.ok && Array.isArray(data)) {
+        setProducts(data);
       } else {
-        throw new Error("Failed to fetch");
+        throw new Error("Failed");
       }
     } catch (err) {
-      console.error("Using fallback products:", err.message);
+      console.error("Fetch failed, using fallback:", err);
       setProducts([
         {
-          id: 1,
+          _id: 1,
           name: "Money Plant Golden",
           category: "Plants",
           price: 199,
-          available: 20,
+          quantity: 20,
           image: "/images/new-products/p6.jpg",
         },
         {
-          id: 2,
+          _id: 2,
           name: "Rosemary - Plant",
           category: "Plants",
           price: 299,
-          available: 12,
+          quantity: 12,
           image: "/images/plantspics/p5.png",
         },
       ]);
@@ -57,27 +56,15 @@ export default function Home() {
   const closeDetail = () => setDetailProduct(null);
 
   const slides = [
-    `${API_URL}/images/homeslider/h1.png`,
-    `${API_URL}/images/homeslider/h2.png`,
-    `${API_URL}/images/homeslider/h3.png`,
+    "/images/homeslider/h1.png",
+    "/images/homeslider/h2.png",
+    "/images/homeslider/h3.png",
   ];
 
   const categories = [
-    {
-      name: "PLANTS",
-      img: `${API_URL}/images/category-badges/plants-badge.png`,
-      link: "/plants",
-    },
-    {
-      name: "SEEDS",
-      img: `${API_URL}/images/category-badges/seeds-badge.png`,
-      link: "/seeds",
-    },
-    {
-      name: "POTS",
-      img: `${API_URL}/images/category-badges/pots-badge.png`,
-      link: "/pots",
-    },
+    { name: "PLANTS", img: "/images/category-badges/plants-badge.png", link: "/plants" },
+    { name: "SEEDS", img: "/images/category-badges/seeds-badge.png", link: "/seeds" },
+    { name: "POTS", img: "/images/category-badges/pots-badge.png", link: "/pots" },
   ];
 
   return (
@@ -137,7 +124,7 @@ export default function Home() {
                   src={cat.img}
                   alt={cat.name}
                   className="w-24 h-24 object-contain"
-                  onError={(e) => (e.target.style.opacity = 0.2)}
+                  onError={(e) => (e.target.src = "/images/fallback.png")}
                 />
               </div>
               <p className="text-base font-semibold text-gray-700">{cat.name}</p>
@@ -147,10 +134,7 @@ export default function Home() {
       </section>
 
       {/* NEW PRODUCTS */}
-      <section
-        id="shop"
-        className="max-w-7xl mx-auto px-4 py-10 bg-white rounded-2xl shadow-lg mb-20"
-      >
+      <section id="shop" className="max-w-7xl mx-auto px-4 py-10 bg-white rounded-2xl shadow-lg mb-20">
         <h2 className="text-3xl font-bold text-center text-green-700 mb-10">
           NEW PRODUCTS
         </h2>
@@ -162,20 +146,14 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {products.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onOpenDetail={openDetail}
-              />
+              <ProductCard key={p._id} product={p} onOpenDetail={openDetail} />
             ))}
           </div>
         )}
       </section>
 
       {/* Product Detail Modal */}
-      {detailProduct && (
-        <ProductDetail product={detailProduct} onClose={closeDetail} />
-      )}
+      {detailProduct && <ProductDetail product={detailProduct} onClose={closeDetail} />}
     </div>
   );
 }

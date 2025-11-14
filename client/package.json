@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-     "dev": "set BROWSER=msedge && vite",
-  "build": "vite build",
-  "preview": "vite preview",  
+    "dev": "set BROWSER=msedge && vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "eslint ."
   },
   "dependencies": {
+    "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
@@ -36,4 +37,3 @@
   "author": "",
   "license": "ISC"
 }
-

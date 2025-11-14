@@ -4,15 +4,11 @@ const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   price: { type: Number, required: true },
-  originalPrice: { type: Number }, // Optional
-  category: { type: String, default: "General" },
-  image: { type: String }, // Path like /images/... from backend
-  seller_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  quantity: { type: Number, default: 0 },
+  category: { type: String, required: true },
+  image: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  seller_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   sold: { type: Number, default: 0 },
-  created_at: { type: Date, default: Date.now },
-  sold_at: { type: Date },
-});
+}, { timestamps: true });
 
-const Product = mongoose.model("Product", productSchema);
-export default Product;
+export default mongoose.model("Product", productSchema);
