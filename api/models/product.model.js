@@ -4,11 +4,13 @@ const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   price: { type: Number, required: true },
-  category: { type: String, required: true },
-  image: { type: String, required: true },
-  quantity: { type: Number, required: true },
-  seller_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  category: { type: String, default: "General" },
+  image: { type: String },
+  seller_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  quantity: { type: Number, default: 0 },
   sold: { type: Number, default: 0 },
-}, { timestamps: true });
+  createdAt: { type: Date, default: Date.now },
+  soldAt: { type: Date },
+});
 
 export default mongoose.model("Product", productSchema);

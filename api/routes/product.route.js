@@ -3,23 +3,27 @@ import {
   addProduct,
   getSellerProducts,
   getRecentProducts,
-  getProductsByCategory, // ← ADD THIS
+  getTopSales,
+  getRecentSales,
+  updateProduct,
+  deleteProduct,
+  getProductsByCategory,
 } from "../controllers/product.controller.js";
-import upload from "../upload.js";
 import { verifyToken, requireSeller } from "../middleware/verifyToken.js";
+import upload from "../upload.js";
 
 const router = express.Router();
 
-// PUBLIC: Homepage recent products
+// public
 router.get("/", getRecentProducts);
-
-// PUBLIC: Get by category → /api/products/category/Plants
 router.get("/category/:category", getProductsByCategory);
 
-// SELLER: Add product
+// seller only
 router.post("/", verifyToken, requireSeller, upload.single("image"), addProduct);
-
-// SELLER: Get own products
 router.get("/seller", verifyToken, requireSeller, getSellerProducts);
+router.get("/top-sales", verifyToken, requireSeller, getTopSales);
+router.get("/recent-sales", verifyToken, requireSeller, getRecentSales);
+router.put("/:id", verifyToken, requireSeller, updateProduct);
+router.delete("/:id", verifyToken, requireSeller, deleteProduct);
 
 export default router;

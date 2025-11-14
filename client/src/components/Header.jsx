@@ -26,7 +26,7 @@ export default function Header() {
           Gardenly
         </Link>
 
-        {/* Search Bar */}
+        {/* Search */}
         <div className="hidden md:flex items-center bg-white dark:bg-[#1a1c19] border rounded-lg px-3 py-1">
           <input
             type="text"
@@ -36,7 +36,7 @@ export default function Header() {
           <FaSearch className="text-green-600 dark:text-green-400 ml-2" />
         </div>
 
-        {/* Dark Mode + Mobile Toggle */}
+        {/* Dark-mode + mobile toggle */}
         <div className="flex items-center gap-4">
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -52,7 +52,7 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Desktop Navbar */}
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 font-medium">
           <Link to="/" className="hover:text-green-600">Home</Link>
           <Link to="/seller" className="hover:text-green-600">Sell Us</Link>

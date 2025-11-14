@@ -1,9 +1,11 @@
+// src/pages/SignIn.jsx (Fixed: Use context login after fetch)
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaUserTag, FaHome } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext"; // ADD THIS
 
 const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
- <div
+  <div
     className={`relative grid grid-cols-[7%_93%] my-6 px-0 py-1 border-b-2 border-[#d9d9d9]
       before:content-[''] before:absolute before:bottom-[-2px] before:w-0 before:h-[2px] before:bg-[#38d39f] before:transition-all before:duration-400 before:right-[50%]
       after:content-[''] after:absolute after:bottom-[-2px] after:w-0 after:h-[2px] after:bg-[#38d39f] after:transition-all after:duration-400 after:left-[50%]
@@ -30,6 +32,7 @@ const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
 );
 
 export default function SignIn() {
+  const { login } = useAuth(); // ADD THIS
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -72,6 +75,9 @@ export default function SignIn() {
         return;
       }
 
+      // ADD THIS: Update context with token
+      login(data.token); // Assuming backend returns { token, user }
+
       switch (data.user.role) {
         case "Expert":
           navigate("/expert-dashboard");
@@ -100,12 +106,10 @@ export default function SignIn() {
         className="fixed bottom-0 left-0 h-full -z-10"
         alt="wave"
       />
-
       <div className="w-full h-screen grid grid-cols-1 md:grid-cols-2 gap-[7rem] px-8 relative">
         <div className="hidden md:flex justify-end items-center">
           <img src="/images/login-register/bg.png" className="w-[500px]" alt="bg" />
         </div>
-
         <div className="flex justify-start items-center text-center">
           <form onSubmit={handleSubmit} className="w-[360px] relative max-w-full">
             <Link
@@ -114,17 +118,13 @@ export default function SignIn() {
             >
               <FaHome className="mr-1" /> Home
             </Link>
-
             <img
               src="/images/login-register/avatar.png"
               className="h-[100px] mx-auto"
               alt="avatar"
             />
             <h2 className="my-[15px] text-[#333] uppercase text-[2.9rem]">Welcome</h2>
-
             {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            {/* Role Select */}
             <InputDiv
               icon={<FaUserTag />}
               label="Role"
@@ -152,8 +152,6 @@ export default function SignIn() {
                 <option value="Expert">Expert</option>
               </select>
             </InputDiv>
-
-            {/* Username */}
             <InputDiv
               icon={<FaUser />}
               label="Username"
@@ -170,8 +168,6 @@ export default function SignIn() {
                 className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
               />
             </InputDiv>
-
-            {/* Password */}
             <InputDiv
               icon={<FaLock />}
               label="Password"
@@ -188,14 +184,12 @@ export default function SignIn() {
                 className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
               />
             </InputDiv>
-
             <button
               type="submit"
               className="block w-full h-[50px] rounded-[25px] outline-none border-none bg-gradient-to-r from-[#32be8f] via-[#38d39f] to-[#32be8f] bg-[length:200%] text-[1.2rem] text-white font-poppins uppercase my-4 cursor-pointer transition-all duration-500 hover:bg-right"
             >
               Login
             </button>
-
             <Link
               to="/signup"
               className="block text-right text-[#999] text-[0.9rem] transition-colors duration-300 hover:text-[#38d39f]"
