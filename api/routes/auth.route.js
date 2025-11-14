@@ -1,3 +1,4 @@
+// server/routes/auth.route.js
 import express from "express";
 import { signup, signin } from "../controllers/auth.controller.js";
 import jwt from "jsonwebtoken";

@@ -1,3 +1,4 @@
+// server/controllers/product.controller.js
 import Product from "../models/product.model.js";
 
 // ---- PUBLIC ----

@@ -1,3 +1,4 @@
+// server/index.js
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -28,9 +29,6 @@ app.use(
     credentials: true,
   })
 );
-
-// REMOVE THIS ENTIRE BLOCK (session)
-// app.use(session({ ... }));
 
 mongoose
   .connect(process.env.MONGO_URI, {

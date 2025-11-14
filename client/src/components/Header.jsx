@@ -1,3 +1,4 @@
+// src/components/Header.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaLeaf, FaBars, FaTimes, FaSearch, FaShoppingCart } from "react-icons/fa";

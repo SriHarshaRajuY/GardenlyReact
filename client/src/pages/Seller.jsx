@@ -1,4 +1,4 @@
-// src/pages/Seller.jsx (Fixed: Refresh fetchAll on user change)
+// src/pages/Seller.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -25,7 +25,7 @@ export default function Seller() {
   // Fetch when component mounts or user changes
   useEffect(() => {
     fetchAll();
-  }, [user]); // ADD user dependency
+  }, [user]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -36,11 +36,19 @@ export default function Seller() {
         fetch("/api/products/recent-sales", { credentials: "include" }),
       ]);
 
-      const [all = [], top = [], recent = []] = await Promise.all([
-        allRes.ok ? allRes.json() : [],
-        topRes.ok ? topRes.json() : [],
-        recentRes.ok ? recentRes.json() : [],
-      ]);
+      let all = [];
+      let top = [];
+      let recent = [];
+
+      if (allRes.ok) {
+        all = await allRes.json();
+      }
+      if (topRes.ok) {
+        top = await topRes.json();
+      }
+      if (recentRes.ok) {
+        recent = await recentRes.json();
+      }
 
       setProducts(all);
       setTopSales(top);
@@ -76,7 +84,7 @@ export default function Seller() {
     e.preventDefault();
     if (submitting) return;
 
-    if (!user || user.role !== "Seller") {
+    if (!user || user.role !== "seller") {
       alert("You must login as a Seller to add a product");
       navigate("/signin");
       return;
@@ -238,7 +246,7 @@ export default function Seller() {
             {/* Products by Category */}
             <section className="mb-12">
               <h2 className="text-3xl font-bold mb-6">
-                {user?.role === "Seller" ? "Your Products" : "All Products"}
+                {user?.role === "seller" ? "Your Products" : "All Products"}
               </h2>
               {Object.keys(byCategory).length === 0 ? (
                 <p className="text-center text-gray-500 dark:text-gray-400">

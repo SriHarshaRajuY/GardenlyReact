@@ -1,8 +1,8 @@
-// src/pages/SignIn.jsx (Fixed: Use context login after fetch)
+// src/pages/SignIn.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaUserTag, FaHome } from "react-icons/fa";
-import { useAuth } from "../context/AuthContext"; // ADD THIS
+import { useAuth } from "../context/AuthContext";
 
 const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
   <div
@@ -32,7 +32,7 @@ const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
 );
 
 export default function SignIn() {
-  const { login } = useAuth(); // ADD THIS
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -75,8 +75,8 @@ export default function SignIn() {
         return;
       }
 
-      // ADD THIS: Update context with token
-      login(data.token); // Assuming backend returns { token, user }
+      // Update context with token
+      login(data.token);
 
       switch (data.user.role) {
         case "Expert":

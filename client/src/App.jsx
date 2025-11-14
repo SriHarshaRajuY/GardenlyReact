@@ -1,4 +1,6 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+// Removed duplicate AuthProvider import and wrapper - now only in main.jsx
 import Header from "./components/Header";
 import Home from "./pages/Home";
 import Plants from "./pages/Plants";

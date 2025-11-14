@@ -1,4 +1,4 @@
-// src/pages/Home.jsx (Corrected: Dark mode classes, error handling, Swiper fixes)
+// src/pages/Home.jsx
 import React, { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import ProductDetail from "../components/ProductDetail";
