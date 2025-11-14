@@ -17,7 +17,7 @@ export default function Header() {
   return (
     <header className="bg-[#f7f9f7] dark:bg-[#121512] text-gray-800 dark:text-white shadow-md fixed w-full z-50">
       <div className="flex justify-between items-center max-w-7xl mx-auto px-4 py-3">
-        {/* 🌿 Logo */}
+        {/* Logo */}
         <Link
           to="/"
           className="flex items-center text-green-700 dark:text-green-400 text-2xl font-bold"
@@ -26,7 +26,7 @@ export default function Header() {
           Gardenly
         </Link>
 
-        {/* 🔍 Search Bar */}
+        {/* Search Bar */}
         <div className="hidden md:flex items-center bg-white dark:bg-[#1a1c19] border rounded-lg px-3 py-1">
           <input
             type="text"
@@ -36,7 +36,7 @@ export default function Header() {
           <FaSearch className="text-green-600 dark:text-green-400 ml-2" />
         </div>
 
-        {/* 🌗 Dark Mode + Menu */}
+        {/* Dark Mode + Mobile Toggle */}
         <div className="flex items-center gap-4">
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -52,10 +52,10 @@ export default function Header() {
           </button>
         </div>
 
-        {/* 🖥 Desktop Navbar */}
+        {/* Desktop Navbar */}
         <nav className="hidden md:flex items-center gap-6 font-medium">
           <Link to="/" className="hover:text-green-600">Home</Link>
-          <Link to="/beforeseller" className="hover:text-green-600">Sell Us</Link>
+          <Link to="/seller" className="hover:text-green-600">Sell Us</Link>
           <Link to="/expert_support" className="hover:text-green-600">Expert Support</Link>
           <Link to="/blog" className="hover:text-green-600">Blogs</Link>
           <Link to="/cart" className="flex items-center gap-1 hover:text-green-600">
@@ -71,11 +71,11 @@ export default function Header() {
         </nav>
       </div>
 
-      {/* 📱 Mobile Menu */}
+      {/* Mobile Menu */}
       {menuOpen && (
         <nav className="md:hidden bg-[#f7f9f7] dark:bg-[#1a1c19] text-center py-3 flex flex-col gap-3 shadow-inner">
           <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link to="/beforeseller" onClick={() => setMenuOpen(false)}>Sell Us</Link>
+          <Link to="/seller" onClick={() => setMenuOpen(false)}>Sell Us</Link>
           <Link to="/expert_support" onClick={() => setMenuOpen(false)}>Expert Support</Link>
           <Link to="/blog" onClick={() => setMenuOpen(false)}>Blogs</Link>
           <Link to="/cart" onClick={() => setMenuOpen(false)}>Cart</Link>

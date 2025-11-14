@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import session from "express-session";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -11,71 +12,79 @@ import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import productRouter from "./routes/product.route.js";
 
+// Multer config
+import upload from "./upload.js"; // ← Import here
+
 dotenv.config();
 
 const app = express();
 
 // ==============================================
-// 🌿 Directory Setup for Static Files
+// Directory Setup
 // ==============================================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Serve static images from /public/images
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 // ==============================================
-// 🌿 Middlewares
+// Middlewares
 // ==============================================
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173", // React frontend
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
 
+// Session
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_secret_key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, httpOnly: true },
+  })
+);
+
 // ==============================================
-// 🌿 Connect MongoDB Atlas
+// MongoDB Connection
 // ==============================================
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 10000, // wait 10s before timeout
+    serverSelectionTimeoutMS: 10000,
   })
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .then(() => console.log("Connected to MongoDB Atlas"))
   .catch((err) => {
-    console.error("❌ MongoDB connection error:");
-    console.error("Message:", err.message);
-    console.error("Hint: Check IP whitelist and connection string in Atlas.");
+    console.error("MongoDB connection error:", err.message);
+    process.exit(1);
   });
 
 // ==============================================
-// 🌿 Routes
+// Routes
 // ==============================================
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
 
 // ==============================================
-// 🌿 Error Handler
+// Error Handler
 // ==============================================
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
-  res.status(statusCode).json({
-    success: false,
-    status: statusCode,
-    message,
-  });
+  res.status(statusCode).json({ success: false, status: statusCode, message });
 });
 
 // ==============================================
-// 🌿 Start Server
+// Start Server
 // ==============================================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+// Export upload if needed elsewhere (optional)
+export { upload };
