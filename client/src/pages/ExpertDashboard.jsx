@@ -34,13 +34,13 @@ export default function ExpertDashboard() {
       if (res.ok) setSelectedTicket(await res.json());
       setActiveSection("ticketDetails");
     } catch (err) {
-      console.error(err);
+      console.error(err); // updated
     }
   };
 
   const handleResolve = async (e) => {
     e.preventDefault();
-    const resolution = e.target.resolution.value;
+    const resolution = e.target.resolution.value;  // ...
     try {
       const res = await fetch(`/api/tickets/${selectedTicket._id}/resolve`, {
         method: "POST",
@@ -53,7 +53,7 @@ export default function ExpertDashboard() {
       if (res.ok) {
         alert("Resolved");
         fetchTickets();
-        setActiveSection("tickets");
+        setActiveSection("tickets"); // ticket
       }
     } catch (err) {
       console.error(err);
@@ -116,9 +116,9 @@ export default function ExpertDashboard() {
           </div>
         )}
 
-        {/* All Tickets */}
+        {/* All Tickets */}   
         {activeSection === "tickets" && (
-          <div>
+          <div>  
             <h1 className="text-3xl font-bold mb-4 dark:text-white">All Tickets</h1>
             <table className="w-full bg-white dark:bg-gray-800 rounded shadow">
               <thead>
@@ -137,7 +137,7 @@ export default function ExpertDashboard() {
                     <td className="p-2">{ticket._id}</td>
                     <td className="p-2">{ticket.requester}</td>
                     <td className="p-2">{ticket.subject}</td>
-                    <td className="p-2">{ticket.type}</td>
+                    <td className="p-2">{ticket.type}</td> 
                     <td className="p-2">{ticket.status}</td>
                     <td className="p-2"><button onClick={() => viewTicket(ticket._id)} className="text-green-600">View</button></td>
                   </tr>
