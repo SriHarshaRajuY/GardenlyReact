@@ -214,6 +214,8 @@ export default function Seller() {
   };
 
   // ---------- GROUP BY CATEGORY ----------
+  //handle the category 
+  
   const byCategory = products.reduce((acc, p) => {
     const cat = p.category || "Uncategorized";
     if (!acc[cat]) acc[cat] = [];
