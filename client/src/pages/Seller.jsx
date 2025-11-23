@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ProductCard from "../components/ProductCard";
 import ProductDetail from "../components/ProductDetail";
-//Seller function 
+
 
 export default function Seller() {
   const { user } = useAuth();
