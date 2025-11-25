@@ -63,7 +63,7 @@ export default function Seller() {
       setLoading(false);
     }
   };
-
+  //handled image compress 
   // ---------- IMAGE COMPRESS ----------
   const compressImage = (file) =>
     new Promise((res) => {
