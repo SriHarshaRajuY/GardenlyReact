@@ -154,6 +154,8 @@ export default function Seller() {
   };
 
   // ---------- EDIT ----------
+  //handled edit property
+  
   const handleEdit = async (prod) => {
     const n = prompt("New name:", prod.name);
     const d = prompt("New description:", prod.description);
@@ -215,7 +217,7 @@ export default function Seller() {
 
   // ---------- GROUP BY CATEGORY ----------
   //handle the category 
-  
+
   const byCategory = products.reduce((acc, p) => {
     const cat = p.category || "Uncategorized";
     if (!acc[cat]) acc[cat] = [];
