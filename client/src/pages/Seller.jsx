@@ -130,7 +130,7 @@ export default function Seller() {
     fd.append("category", category.trim());
     fd.append("price", p);
     fd.append("quantity", q);
-
+    //handling posting products
     try {
       const res = await fetch("/api/products", {
         method: "POST",
