@@ -80,6 +80,8 @@ export default function Seller() {
       r.readAsDataURL(file);
     });
 
+    //handle sumit 
+    
   // ---------- SUBMIT ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -155,7 +157,7 @@ export default function Seller() {
 
   // ---------- EDIT ----------
   //handled edit property
-  
+
   const handleEdit = async (prod) => {
     const n = prompt("New name:", prod.name);
     const d = prompt("New description:", prod.description);
