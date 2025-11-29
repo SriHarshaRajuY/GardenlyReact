@@ -13,6 +13,7 @@ export default function Seller() {
   const [products, setProducts] = useState([]);
   //top sales
   const [topSales, setTopSales] = useState([]);
+  //recent sales
   const [recentSales, setRecentSales] = useState([]);
   const [modalProduct, setModalProduct] = useState(null);
   const [name, setName] = useState("");
