@@ -1,5 +1,4 @@
 // api/index.js
-import ticketRoute from "./routes/ticket.route.js";
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -8,23 +7,24 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import ticketRoute from "./routes/ticket.route.js";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import productRouter from "./routes/product.route.js";
 import cartRouter from "./routes/cart.route.js";
-import orderRouter from "./routes/order.route.js"; // ✅ orders (billing + OTP)
+import orderRouter from "./routes/order.route.js";
+import adminRouter from "./routes/admin.route.js"; // ✅ NEW
 import upload from "./upload.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load .env from parent folder
+// Load .env from project root
 dotenv.config({ path: path.join(__dirname, "../.env") });
-
 
 const app = express();
 
-// Serve images (product, uploads, etc.)
+// Static images
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 app.use(cookieParser());
@@ -38,29 +38,32 @@ app.use(
   })
 );
 
-// ---------- ROUTES ----------
+// Routes
 app.use("/api/tickets", ticketRoute);
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);
-app.use("/api/orders", orderRouter); // ✅ ORDER ROUTES
+app.use("/api/orders", orderRouter);
+app.use("/api/admin", adminRouter); // ✅ ADMIN
 
-// ---------- DB CONNECTION ----------
+// DB
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is not defined in .env");
+  process.exit(1);
+}
+
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => {
     console.error("❌ MongoDB error:", err.message);
     process.exit(1);
   });
 
-// ---------- GLOBAL ERROR HANDLER ----------
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error("Error middleware:", err); // helpful for debugging
+  console.error("Error middleware:", err);
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   res.status(statusCode).json({ success: false, status: statusCode, message });
