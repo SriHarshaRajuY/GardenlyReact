@@ -27,7 +27,7 @@ export default function Seller() {
   useEffect(() => {
     fetchAll();
   }, [user]);
-
+  //fetching products
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -81,7 +81,7 @@ export default function Seller() {
     });
 
     //handle sumit 
-    
+
   // ---------- SUBMIT ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
