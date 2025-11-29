@@ -11,6 +11,7 @@ export default function Seller() {
   const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
+  //top sales
   const [topSales, setTopSales] = useState([]);
   const [recentSales, setRecentSales] = useState([]);
   const [modalProduct, setModalProduct] = useState(null);
