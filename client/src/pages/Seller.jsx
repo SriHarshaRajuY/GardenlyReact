@@ -9,7 +9,7 @@ import ProductDetail from "../components/ProductDetail";
 export default function Seller() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
+  //products
   const [products, setProducts] = useState([]);
   //top sales
   const [topSales, setTopSales] = useState([]);
