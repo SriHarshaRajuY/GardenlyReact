@@ -1,4 +1,4 @@
-// server/index.js
+// server/index.js (MODIFIED - COMPLETE CODE)
 import ticketRoute from "./routes/ticket.route.js";
 import express from "express";
 import mongoose from "mongoose";
@@ -11,12 +11,14 @@ import { fileURLToPath } from "url";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import productRouter from "./routes/product.route.js";
+import cartRouter from "./routes/cart.route.js"; // NEW IMPORT
 import upload from "./upload.js";
 
 // --- Load .env from parent folder ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, "../.env") });
+dotenv.config();
+
 // ------------------------------------
 
 const app = express();
@@ -52,6 +54,7 @@ mongoose
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
+app.use("/api/cart", cartRouter); // NEW
 
 // Error handler
 app.use((err, req, res, next) => {

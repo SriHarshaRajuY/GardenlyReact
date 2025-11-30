@@ -1,14 +1,17 @@
-// src/main.jsx
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
-import AuthProvider from "./context/AuthProvider"; // Fixed: Import from correct file
-import "./index.css";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './index.css';
+import AuthProvider from './context/AuthProvider.jsx';
+import CartProvider from './context/CartProvider.jsx'; // NEW
+
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
+      <CartProvider>
+        <App />
+      </CartProvider>
     </AuthProvider>
   </React.StrictMode>
 );

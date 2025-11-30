@@ -1,10 +1,12 @@
-// src/components/ProductDetail.jsx
+
 import React from "react";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // NEW IMPORT
 import { FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 
 export default function ProductDetail({ product, onClose }) {
   const { user } = useAuth();
+  const { addToCart } = useCart(); // NEW
   const isSeller = user?.role === "seller";
 
   if (!product) return null;
@@ -96,7 +98,10 @@ export default function ProductDetail({ product, onClose }) {
               ₹{product.price.toFixed(2)}
             </div>
 
-            <button className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-all w-full mb-4">
+            <button 
+              onClick={() => addToCart(product._id)} // MODIFIED
+              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-all w-full mb-4"
+            >
               Add to Cart
             </button>
 

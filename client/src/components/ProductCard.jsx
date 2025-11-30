@@ -1,10 +1,12 @@
-// src/components/ProductCard.jsx
+
 import React from "react";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // NEW IMPORT
 import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function ProductCard({ product, onOpenDetail, onEdit, onDelete }) {
   const { user } = useAuth();
+  const { addToCart } = useCart(); // NEW
   const isSeller = user?.role === "seller";
 
   // ---- FINAL IMAGE URL LOGIC ----
@@ -97,7 +99,7 @@ export default function ProductCard({ product, onOpenDetail, onEdit, onDelete })
         )}
 
         <button 
-          onClick={handleView}
+          onClick={() => addToCart(product._id)} // MODIFIED
           className="mt-4 bg-green-700 text-white text-sm px-4 py-2 rounded-md hover:bg-green-800 transition-all w-full"
         >
           Add To Cart
