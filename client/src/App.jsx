@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx (MODIFIED - COMPLETE CODE)
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Home from "./pages/Home";
@@ -12,6 +12,7 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ExpertSupport from "./pages/ExpertSupport"; // NEW
 import ExpertDashboard from "./pages/ExpertDashboard"; // NEW
+import Cart from "./pages/Cart"; // NEW IMPORT
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/expert-support" element={<ExpertSupport />} />
         <Route path="/expert-dashboard" element={<ExpertDashboard />} />
+        <Route path="/cart" element={<Cart />} /> {/* NEW */}
       </Routes>
     </BrowserRouter>
   );

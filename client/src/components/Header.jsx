@@ -1,13 +1,15 @@
-// src/components/Header.jsx
+// src/components/Header.jsx (MODIFIED - COMPLETE CODE)
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaLeaf, FaBars, FaTimes, FaSearch, FaShoppingCart } from "react-icons/fa";
 import { RiMoonLine, RiSunLine } from "react-icons/ri";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // NEW IMPORT
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { cart } = useCart(); // NEW
   const navigate = useNavigate();
 
   const [darkMode, setDarkMode] = useState(
@@ -65,7 +67,7 @@ export default function Header() {
           {user?.role === "expert" && <Link to="/expert-dashboard" className="hover:text-green-600">Expert Dashboard</Link>}
           <Link to="/blog" className="hover:text-green-600">Blogs</Link>
           <Link to="/cart" className="flex items-center gap-1 hover:text-green-600">
-            <FaShoppingCart /> Cart
+            <FaShoppingCart /> Cart {cart?.items?.length > 0 && `(${cart.items.length})`} {/* MODIFIED */}
           </Link>
           {user ? (
             <>
@@ -91,7 +93,9 @@ export default function Header() {
           {user?.role === "buyer" && <Link to="/expert-support" onClick={() => setMenuOpen(false)}>Expert Support</Link>}
           {user?.role === "expert" && <Link to="/expert-dashboard" onClick={() => setMenuOpen(false)}>Expert Dashboard</Link>}
           <Link to="/blog" onClick={() => setMenuOpen(false)}>Blogs</Link>
-          <Link to="/cart" onClick={() => setMenuOpen(false)}>Cart</Link>
+          <Link to="/cart" onClick={() => setMenuOpen(false)}>
+            Cart {cart?.items?.length > 0 && `(${cart.items.length})`} {/* MODIFIED */}
+          </Link>
           {user ? (
             <>
               <Link to="/profile" onClick={() => setMenuOpen(false)}>{user.username}</Link>
