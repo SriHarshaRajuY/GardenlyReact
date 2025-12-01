@@ -13,6 +13,7 @@ import SignUp from "./pages/SignUp";
 import ExpertSupport from "./pages/ExpertSupport"; // NEW
 import ExpertDashboard from "./pages/ExpertDashboard"; // NEW
 import Cart from "./pages/Cart"; // NEW IMPORT
+import Blog from "./pages/Blog"; // NEW IMPORT
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/expert-support" element={<ExpertSupport />} />
         <Route path="/expert-dashboard" element={<ExpertDashboard />} />
         <Route path="/cart" element={<Cart />} /> {/* NEW */}
+        <Route path="/blog" element={<Blog />} /> {/* NEW */}
       </Routes>
     </BrowserRouter>
   );
