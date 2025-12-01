@@ -43,14 +43,6 @@ const blogs = [
     slug: "seasonal-seeds-winter-planting",
   },
   {
-    id: 6,
-    title: "Plant Care Myths Debunked",
-    excerpt: "From overwatering to 'talking to plants'—we separate fact from fiction with science-backed advice for healthier greenery.",
-    date: "2025-01-03",
-    image: "/images/blogs/basic1.webp",
-    slug: "plant-care-myths-debunked",
-  },
-  {
     id: 7,
     title: "Balcony Gardening for Urban Dwellers",
     excerpt: "Transform your small space into a lush oasis. Compact plants, vertical ideas, and sunlight hacks for city living.",
