@@ -45,7 +45,7 @@ const blogs = [
   {
     id: 6,
     title: "Plant Care Myths Debunked",
-    excerpt: "From overwatering to 'talking to plants'—we separate fact from fiction with science-backed advice for healthier greenery.",
+    excerpt: "From overwatering to 'talking to plants'—we separate fact from fiction with advice for healthier greenery.",
     date: "2025-01-03",
     image: "/images/blogs/basic1.webp",
     slug: "plant-care-myths-debunked",
