@@ -8,12 +8,18 @@ const router = express.Router();
 router.post("/signup", signup);
 router.post("/signin", signin);
 
+// Simple auth check used by frontend
 router.get("/check", (req, res) => {
-  const token = req.cookies.access_token;
+  const token = req.cookies?.access_token;
   if (!token) return res.json({ isAuthenticated: false });
+
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    res.json({ isAuthenticated: true, role: payload.role, username: payload.username });
+    res.json({
+      isAuthenticated: true,
+      role: payload.role,
+      username: payload.username,
+    });
   } catch {
     res.json({ isAuthenticated: false });
   }

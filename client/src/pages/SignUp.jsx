@@ -1,13 +1,20 @@
 // src/pages/SignUp.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUser, FaLock, FaUserTag, FaEnvelope, FaPhone, FaHome } from "react-icons/fa";
+import {
+  FaUser,
+  FaLock,
+  FaUserTag,
+  FaEnvelope,
+  FaPhone,
+  FaHome,
+} from "react-icons/fa";
 
-const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
+const InputDiv = ({ icon, label, children, isFocused }) => (
   <div
     className={`relative grid grid-cols-[7%_93%] my-6 px-0 py-1 border-b-2 border-[#d9d9d9]
       before:content-[''] before:absolute before:bottom-[-2px] before:w-0 before:h-[2px] before:bg-[#38d39f] before:transition-all before:duration-400 before:right-[50%]
-      after:content-[''] after:absolute after:bottom-[-2px] after:w-0 after:h-[2px] after:bg-[#38d39f] after:transition-all after:duration-400 after:left-[50%]
+      after:content-[''] after:absolute after:bottom-[-2px] after:w-0 before:h-[2px] after:bg-[#38d39f] after:transition-all after:duration-400 after:left-[50%]
       ${isFocused ? "before:w-[50%] after:w-[50%]" : ""}`}
   >
     <div
@@ -32,11 +39,14 @@ const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
 
 export default function SignUp() {
   const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [role, setRole] = useState("");
+  const [expertise, setExpertise] = useState(""); // NEW
+
   const [error, setError] = useState("");
   const [focused, setFocused] = useState({
     username: false,
@@ -44,6 +54,7 @@ export default function SignUp() {
     email: false,
     mobile: false,
     role: false,
+    expertise: false,
   });
 
   const validateUsername = (v) => /^[a-zA-Z0-9_-]{3,20}$/.test(v);
@@ -57,16 +68,21 @@ export default function SignUp() {
     if (value) {
       switch (field) {
         case "username":
-          if (!validateUsername(value)) msg = "Username: 3-20 chars (letters, numbers, _, - only)";
+          if (!validateUsername(value))
+            msg =
+              "Username: 3-20 chars (letters, numbers, _, - only)";
           break;
         case "password":
-          if (!validatePassword(value)) msg = "Password: 8+ chars, 1 upper, 1 number, 1 symbol";
+          if (!validatePassword(value))
+            msg =
+              "Password: 8+ chars, 1 upper, 1 number, 1 symbol";
           break;
         case "email":
           if (!validateEmail(value)) msg = "Invalid email format";
           break;
         case "mobile":
-          if (!validateMobile(value)) msg = "Mobile must be exactly 10 digits";
+          if (!validateMobile(value))
+            msg = "Mobile must be exactly 10 digits";
           break;
       }
     }
@@ -79,7 +95,9 @@ export default function SignUp() {
   };
 
   const handleBlur = (field, value) => {
-    if (value === "") setFocused((prev) => ({ ...prev, [field]: false }));
+    if (value === "") {
+      setFocused((prev) => ({ ...prev, [field]: false }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -88,8 +106,11 @@ export default function SignUp() {
     if (!validateUsername(username)) msg = "Invalid username format";
     else if (!validatePassword(password)) msg = "Invalid password format";
     else if (!validateEmail(email)) msg = "Invalid email format";
-    else if (!validateMobile(mobile)) msg = "Mobile number must be exactly 10 digits";
+    else if (!validateMobile(mobile))
+      msg = "Mobile number must be exactly 10 digits";
     else if (!role) msg = "Please select a role";
+    else if (role === "Expert" && !expertise)
+      msg = "Please select expertise for Expert";
 
     if (msg) {
       setError(msg);
@@ -97,17 +118,31 @@ export default function SignUp() {
     }
 
     try {
+      const payload = {
+        username,
+        password,
+        role,
+        email,
+        mobile,
+      };
+
+      if (role === "Expert") {
+        payload.expertise = expertise; // send to backend
+      }
+
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role, email, mobile }),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
 
       if (!res.ok) {
         setError(data.message || "Registration failed");
         return;
       }
+
       navigate("/signin");
     } catch {
       setError("Server error during registration");
@@ -124,11 +159,18 @@ export default function SignUp() {
 
       <div className="w-full h-screen grid grid-cols-1 md:grid-cols-2 gap-[7rem] px-8 relative">
         <div className="hidden md:flex justify-end items-center">
-          <img src="/images/login-register/bg.png" className="w-[500px]" alt="bg" />
+          <img
+            src="/images/login-register/bg.png"
+            className="w-[500px]"
+            alt="bg"
+          />
         </div>
 
         <div className="flex justify-start items-center text-center">
-          <form onSubmit={handleSubmit} className="w-[360px] relative max-w-full">
+          <form
+            onSubmit={handleSubmit}
+            className="w-[360px] relative max-w-full"
+          >
             <Link
               to="/"
               className="fixed top-5 right-5 text-gray-500 text-base px-4 py-2 rounded-[20px] transition-all flex items-center hover:text-[#38d39f] hover:bg-[rgba(56,211,159,0.1)] z-10"
@@ -141,7 +183,9 @@ export default function SignUp() {
               className="h-[100px] mx-auto"
               alt="avatar"
             />
-            <h2 className="my-[15px] text-[#333] uppercase text-[2.9rem]">Register</h2>
+            <h2 className="my-[15px] text-[#333] uppercase text-[2.9rem]">
+              Register
+            </h2>
 
             {error && (
               <span className="block text-[#e74c3c] text-[0.8rem] text-left -mt-5 mb-[10px] ml-[40px] font-poppins">
@@ -154,20 +198,25 @@ export default function SignUp() {
               icon={<FaUserTag />}
               label="Role"
               isFocused={focused.role}
-              onFocus={() => handleFocus("role")}
-              onBlur={() => handleBlur("role", role)}
             >
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => {
+                  setRole(e.target.value);
+                  // reset expertise when role changes
+                  setExpertise("");
+                  handleFocus("role");
+                }}
                 onFocus={() => handleFocus("role")}
                 onBlur={() => handleBlur("role", role)}
                 className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins appearance-none cursor-pointer pr-8"
                 style={{
-                  backgroundImage: `linear-gradient(45deg, transparent 50%, #999 50%), linear-gradient(135deg, #999 50%, transparent 50%)`,
-                  backgroundPosition: `calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)`,
-                  backgroundSize: `5px 5px, 5px 5px`,
-                  backgroundRepeat: `no-repeat`,
+                  backgroundImage:
+                    "linear-gradient(45deg, transparent 50%, #999 50%), linear-gradient(135deg, #999 50%, transparent 50%)",
+                  backgroundPosition:
+                    "calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)",
+                  backgroundSize: "5px 5px, 5px 5px",
+                  backgroundRepeat: "no-repeat",
                 }}
               >
                 <option value="">Select Role</option>
@@ -178,13 +227,41 @@ export default function SignUp() {
               </select>
             </InputDiv>
 
+            {/* Expertise (only for Expert role) */}
+            {role === "Expert" && (
+              <InputDiv
+                icon={<FaUserTag />}
+                label="Expertise"
+                isFocused={focused.expertise || !!expertise}
+              >
+                <select
+                  value={expertise}
+                  onChange={(e) => setExpertise(e.target.value)}
+                  onFocus={() => handleFocus("expertise")}
+                  onBlur={() => handleBlur("expertise", expertise)}
+                  className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.1rem] text-[#555] font-poppins appearance-none cursor-pointer pr-8"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(45deg, transparent 50%, #999 50%), linear-gradient(135deg, #999 50%, transparent 50%)",
+                    backgroundPosition:
+                      "calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)",
+                    backgroundSize: "5px 5px, 5px 5px",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                >
+                  <option value="">Select Expertise</option>
+                  <option value="General">General Gardening</option>
+                  <option value="Technical">Plant Disease / Pest</option>
+                  <option value="Billing">Order & Payment Issue</option>
+                </select>
+              </InputDiv>
+            )}
+
             {/* Username */}
             <InputDiv
               icon={<FaUser />}
               label="Username"
               isFocused={focused.username}
-              onFocus={() => handleFocus("username")}
-              onBlur={() => handleBlur("username", username)}
             >
               <input
                 type="text"
@@ -204,8 +281,6 @@ export default function SignUp() {
               icon={<FaEnvelope />}
               label="Email"
               isFocused={focused.email}
-              onFocus={() => handleFocus("email")}
-              onBlur={() => handleBlur("email", email)}
             >
               <input
                 type="email"
@@ -225,8 +300,6 @@ export default function SignUp() {
               icon={<FaPhone />}
               label="Mobile Number"
               isFocused={focused.mobile}
-              onFocus={() => handleFocus("mobile")}
-              onBlur={() => handleBlur("mobile", mobile)}
             >
               <input
                 type="tel"
@@ -246,8 +319,6 @@ export default function SignUp() {
               icon={<FaLock />}
               label="Password"
               isFocused={focused.password}
-              onFocus={() => handleFocus("password")}
-              onBlur={() => handleBlur("password", password)}
             >
               <input
                 type="password"
