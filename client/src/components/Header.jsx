@@ -15,6 +15,7 @@ export default function Header() {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("selected-theme") === "dark"
   );
+  const [searchTerm, setSearchTerm] = useState("");   // ✅ NEW
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -28,6 +29,18 @@ export default function Header() {
   };
 
   const cartCount = cart?.items?.length || 0;
+
+  const handleSearch = () => {
+    const q = searchTerm.trim();
+    if (!q) return;
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
+
+  const handleSearchKey = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   const NavLinks = ({ isMobile = false }) => (
     <>
@@ -134,6 +147,7 @@ export default function Header() {
   return (
     <header className="bg-[#f7f9f7] dark:bg-[#121512] text-gray-800 dark:text-white shadow-md fixed w-full z-50">
       <div className="flex justify-between items-center max-w-7xl mx-auto px-4 py-3">
+        {/* Logo */}
         <Link
           to="/"
           className="flex items-center text-green-700 dark:text-green-400 text-2xl font-bold"
@@ -142,17 +156,22 @@ export default function Header() {
           Gardenly
         </Link>
 
-        {/* Search */}
+        {/* 🔍 Search */}
         <div className="hidden md:flex items-center bg-white dark:bg-[#1a1c19] border rounded-lg px-3 py-1">
           <input
             type="text"
             placeholder="Search products..."
             className="bg-transparent outline-none text-sm w-40 md:w-64 dark:text-white"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleSearchKey}
           />
-          <FaSearch className="text-green-600 dark:text-green-400 ml-2" />
+          <button onClick={handleSearch}>
+            <FaSearch className="text-green-600 dark:text-green-400 ml-2 cursor-pointer" />
+          </button>
         </div>
 
-        {/* Right controls */}
+        {/* Dark-mode + mobile toggle */}
         <div className="flex items-center gap-4">
           <button
             onClick={toggleDarkMode}
@@ -168,15 +187,40 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Desktop nav */}
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 font-medium">
           <NavLinks />
         </nav>
       </div>
 
-      {/* Mobile nav */}
+      {/* Mobile Menu */}
       {menuOpen && (
         <nav className="md:hidden bg-[#f7f9f7] dark:bg-[#1a1c19] text-center py-3 flex flex-col gap-3 shadow-inner">
+          {/* Simple search bar on mobile */}
+          <div className="px-4 mb-2 flex items-center bg-white dark:bg-[#1a1c19] border rounded-lg">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="flex-1 bg-transparent outline-none text-sm dark:text-white py-1"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                  setMenuOpen(false);
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                handleSearch();
+                setMenuOpen(false);
+              }}
+            >
+              <FaSearch className="text-green-600 dark:text-green-400 ml-2" />
+            </button>
+          </div>
+
           <NavLinks isMobile />
         </nav>
       )}

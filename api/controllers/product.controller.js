@@ -1,4 +1,4 @@
-// server/controllers/product.controller.js
+// api/controllers/product.controller.js
 import Product from "../models/product.model.js";
 
 // ---- PUBLIC ROUTES ----
@@ -17,9 +17,41 @@ export const getRecentProducts = async (req, res, next) => {
 export const getProductsByCategory = async (req, res, next) => {
   try {
     const { category } = req.params;
-    const products = await Product.find({ category })
-      .sort({ createdAt: -1 });
+    const products = await Product.find({ category }).sort({ createdAt: -1 });
     res.status(200).json(products);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 🔍 SEARCH PRODUCTS (NEW)
+export const searchProducts = async (req, res, next) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query (q) is required",
+      });
+    }
+
+    const regex = new RegExp(q, "i"); // case-insensitive match
+
+    const products = await Product.find({
+      $or: [
+        { name: regex },
+        { description: regex },
+        { category: regex },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .limit(30);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
   } catch (err) {
     next(err);
   }
@@ -30,7 +62,6 @@ export const addProduct = async (req, res, next) => {
   try {
     const { name, description, category, price, quantity } = req.body;
 
-    // Required fields check
     if (!name || !category || !price || !quantity) {
       return res.status(400).json({
         success: false,
@@ -38,7 +69,6 @@ export const addProduct = async (req, res, next) => {
       });
     }
 
-    // Check if image was actually uploaded
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -46,7 +76,6 @@ export const addProduct = async (req, res, next) => {
       });
     }
 
-    // This is the CORRECT way → /images/your-file-name.jpg
     const imageUrl = `/images/${req.file.filename}`;
 
     const newProduct = new Product({
@@ -55,7 +84,7 @@ export const addProduct = async (req, res, next) => {
       category: category.trim(),
       price: parseFloat(price),
       quantity: parseInt(quantity),
-      image: imageUrl,                    // Perfect clean URL
+      image: imageUrl,
       seller_id: req.user.id,
     });
 
@@ -74,8 +103,9 @@ export const addProduct = async (req, res, next) => {
 
 export const getSellerProducts = async (req, res, next) => {
   try {
-    const products = await Product.find({ seller_id: req.user.id })
-      .sort({ createdAt: -1 });
+    const products = await Product.find({ seller_id: req.user.id }).sort({
+      createdAt: -1,
+    });
     res.status(200).json(products);
   } catch (err) {
     next(err);
@@ -121,7 +151,9 @@ export const updateProduct = async (req, res, next) => {
     );
 
     if (!updatedProduct) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
     res.status(200).json({
@@ -142,7 +174,9 @@ export const deleteProduct = async (req, res, next) => {
     });
 
     if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
     res.status(200).json({

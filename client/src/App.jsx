@@ -15,6 +15,7 @@ import ExpertDashboard from "./pages/ExpertDashboard";
 import Cart from "./pages/Cart";
 import Blog from "./pages/Blog";
 import AdminDashboard from "./pages/AdminDashboard";
+import SearchResults from "./pages/SearchResults"; // ✅ NEW
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/search" element={<SearchResults />} /> {/* ✅ NEW */}
         </Routes>
       </div>
     </BrowserRouter>

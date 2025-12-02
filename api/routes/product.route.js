@@ -1,4 +1,4 @@
-// server/routes/product.route.js
+// api/routes/product.route.js
 import express from "express";
 import {
   addProduct,
@@ -9,6 +9,7 @@ import {
   updateProduct,
   deleteProduct,
   getProductsByCategory,
+  searchProducts,          // ✅ NEW
 } from "../controllers/product.controller.js";
 import { verifyToken, requireSeller } from "../middleware/verifyToken.js";
 import upload from "../upload.js";
@@ -18,6 +19,7 @@ const router = express.Router();
 // public
 router.get("/", getRecentProducts);
 router.get("/category/:category", getProductsByCategory);
+router.get("/search", searchProducts);        // ✅ /api/products/search?q=rose
 
 // seller only
 router.post("/", verifyToken, requireSeller, upload.single("image"), addProduct);
