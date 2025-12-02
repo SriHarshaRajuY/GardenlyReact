@@ -114,7 +114,7 @@ export default function SignUp() {
                   onBlur={() => handleBlur("expertise")}
                   className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
                 >
-                  <option value="">Select Expertise</option>
+                  <option value=""></option>
                   <option value="General">General Gardening</option>
                   <option value="Technical">Plant Disease / Pest</option>
                   <option value="Billing">Order & Payment Issue</option>
