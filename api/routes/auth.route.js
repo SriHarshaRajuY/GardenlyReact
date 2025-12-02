@@ -1,14 +1,14 @@
-// server/routes/auth.route.js
 import express from "express";
-import { signup, signin } from "../controllers/auth.controller.js";
+import { signup, signin, forgotPassword, resetPassword } from "../controllers/auth.controller.js";
 import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
 router.post("/signup", signup);
 router.post("/signin", signin);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
-// Simple auth check used by frontend
 router.get("/check", (req, res) => {
   const token = req.cookies?.access_token;
   if (!token) return res.json({ isAuthenticated: false });

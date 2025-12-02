@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 
 export const verifyToken = (req, res, next) => {
-  // ✅ use optional chaining so it won't crash if req.cookies is undefined
+  // use optional chaining so it won't crash if req.cookies is undefined
   const token = req.cookies?.access_token;
 
   if (!token) return next(errorHandler(401, "Unauthorized"));
