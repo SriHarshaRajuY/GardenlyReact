@@ -2,7 +2,6 @@
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
 
-// Get current user's cart
 export const getCart = async (req, res, next) => {
   try {
     let cart = await Cart.findOne({ user_id: req.user.id }).populate(
