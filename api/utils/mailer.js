@@ -1,43 +1,49 @@
 // api/utils/mailer.js
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { errorHandler } from "./error.js";
 
-// Load .env from project root (where you run `node api/index.js`)
-dotenv.config();
+// Ensure we load the project's .env at import time so modules that are
+// imported earlier still get the env values (fixes import-order issues).
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Load repo-root .env (two levels up from utils): api/utils -> api -> <repo root>
+dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.warn(
-    "⚠️ EMAIL_USER or EMAIL_PASS missing in environment. Mailer will fail."
-  );
+const hasEmailCreds = !!process.env.EMAIL_USER && !!process.env.EMAIL_PASS;
+console.log('[mailer debug] EMAIL_USER present:', !!process.env.EMAIL_USER);
+console.log('[mailer debug] EMAIL_PASS present:', !!process.env.EMAIL_PASS);
+
+let transporter = null;
+if (!hasEmailCreds) {
+  console.warn("⚠️ EMAIL_USER or EMAIL_PASS missing in environment. Mailer will not initialize transporter.");
+} else {
+  // ✅ Use Gmail service directly
+  transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  // Optional debug: verify on server start
+  transporter.verify((err, success) => {
+    if (err) {
+      console.error("❌ Mailer verify failed:", err && err.message ? err.message : err);
+    } else {
+      console.log("✅ Mailer ready to send emails");
+    }
+  });
 }
-
-// ✅ Use Gmail service directly
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// Optional debug: verify on server start
-transporter.verify((err, success) => {
-  if (err) {
-    console.error("❌ Mailer verify failed:", err.message || err);
-  } else {
-    console.log("✅ Mailer ready to send emails");
-  }
-});
 
 export const sendOtpMail = async (to, otp) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error("Missing EMAIL_USER or EMAIL_PASS env variables");
-      throw errorHandler(
-        500,
-        "Email configuration error. Please contact support."
-      );
+    if (!hasEmailCreds || !transporter) {
+      console.error("Missing EMAIL_USER or EMAIL_PASS env variables or transporter not initialized");
+      throw errorHandler(500, "Email configuration error. Please contact support.");
     }
 
     const from =

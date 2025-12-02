@@ -100,6 +100,7 @@ export default function SignUp() {
                 <option value=""></option>
                 <option value="Buyer">Buyer</option>
                 <option value="Seller">Seller</option>
+                <option value="Agent">Agent</option>
                 <option value="Admin">Admin</option>
                 <option value="Expert">Expert</option>
               </select>

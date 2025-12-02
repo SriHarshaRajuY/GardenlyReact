@@ -34,9 +34,31 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending_otp", "confirmed", "cancelled"],
+      enum: ["pending_otp", "confirmed", "assigned", "picked_up", "delivered", "cancelled"],
       default: "pending_otp",
     },
+    // Assigned delivery agent (User with role Agent)
+    assignedAgent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    // Manager who assigned the agent
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    // History of assignments and status changes
+    assignmentHistory: [
+      {
+        agent: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        manager: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        status: { type: String },
+        at: { type: Date, default: Date.now },
+        note: { type: String },
+      },
+    ],
+    pickedUpAt: { type: Date },
+    deliveredAt: { type: Date },
     otp: { type: String }, // store as string
     otpExpiresAt: { type: Date },
   },
