@@ -12,6 +12,8 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ExpertSupport from "./pages/ExpertSupport"; // NEW
 import ExpertDashboard from "./pages/ExpertDashboard"; // NEW
+import Manager from "./pages/Manager";
+import Agent from "./pages/Agent";
 import Cart from "./pages/Cart"; // NEW IMPORT
 import Blog from "./pages/Blog"; // NEW IMPORT
 
@@ -32,7 +34,9 @@ export default function App() {
         <Route path="/expert-support" element={<ExpertSupport />} />
         <Route path="/expert-dashboard" element={<ExpertDashboard />} />
         <Route path="/cart" element={<Cart />} /> {/* NEW */}
-        <Route path="/blog" element={<Blog />} /> {/* NEW */}z
+        <Route path="/blog" element={<Blog />} /> {/* NEW */}
+        <Route path="/manager" element={<Manager />} />
+        <Route path="/agent" element={<Agent />} />
       </Routes>
     </BrowserRouter>
   );

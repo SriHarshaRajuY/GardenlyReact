@@ -29,6 +29,9 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const [focused, setFocused] = useState({ username: false, password: false, role: false });
 
+  const handleFocus = (field) => setFocused((p) => ({ ...p, [field]: true }));
+  const handleBlur = (field) => setFocused((p) => ({ ...p, [field]: false }));
+
   // Forgot Password Modal
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -58,6 +61,8 @@ export default function SignIn() {
         case "Seller": navigate("/seller"); break;
         case "Buyer": navigate("/"); break;
         case "Admin": navigate("/admindashboard"); break;
+        case "Manager": navigate("/manager"); break;
+        case "Agent": navigate("/agent"); break;
         default: navigate("/");
       }
     } catch {
@@ -132,6 +137,8 @@ export default function SignIn() {
                   <option value=""></option>
                   <option value="Buyer">Buyer</option>
                   <option value="Seller">Seller</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Agent">Agent</option>
                   <option value="Admin">Admin</option>
                   <option value="Expert">Expert</option>
                 </select>

@@ -1,5 +1,6 @@
 // src/pages/Cart.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { FaPlus, FaMinus, FaTrashAlt } from "react-icons/fa";
@@ -9,11 +10,14 @@ export default function Cart() {
   const { user } = useAuth();
 
   const [showBilling, setShowBilling] = useState(false);
-  const [step, setStep] = useState("form"); // "form" | "otp"
+  const [step, setStep] = useState("form"); // "form" | "otp" | "payment" | "placed"
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [otp, setOtp] = useState("");
+  // payment UI state
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [card, setCard] = useState({ name: "", number: "", expiry: "", cvv: "" });
   const billingRef = useRef(null);
 
   const [billing, setBilling] = useState({
@@ -146,17 +150,44 @@ export default function Cart() {
         return;
       }
 
-      alert("Order placed successfully!");
-      setStep("form");
-      setShowBilling(false);
-      setOrderId(null);
-      setOtp("");
-      await fetchCart(); // cart will be empty now
+      // Move to payment step next (collect payment after OTP)
+      setStep("payment");
+      // keep orderId for reference
+      // do NOT clear cart here — payment will finalize UI flow
     } catch (err) {
       console.error("verify-otp error:", err);
       alert("Network error, please try again.");
     } finally {
       setVerifying(false);
+    }
+  };
+
+  // -------- PAYMENT SUBMIT (mock) ----------
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    // basic validation
+    if (!card.name || !card.number || !card.expiry || !card.cvv) {
+      alert("Please fill all card details");
+      return;
+    }
+
+    setPaymentProcessing(true);
+    try {
+      // Simulate payment processing delay. In a real app, call your payments API here.
+      await new Promise((r) => setTimeout(r, 1200));
+
+      setStep("placed");
+      setShowBilling(false);
+      setOrderId(null);
+      setOtp("");
+      setCard({ name: "", number: "", expiry: "", cvv: "" });
+      // refresh cart to reflect placed order
+      await fetchCart();
+    } catch (err) {
+      console.error("payment error", err);
+      alert("Payment failed. Try again.");
+    } finally {
+      setPaymentProcessing(false);
     }
   };
 
@@ -262,6 +293,17 @@ export default function Cart() {
             </>
           )}
         </div>
+
+        {/* ORDER PLACED VIEW */}
+        {step === "placed" && (
+          <div className="bg-white rounded-3xl shadow-xl p-8">
+            <h2 className="text-3xl font-bold mb-4 text-center text-green-700">Order Placed</h2>
+            <p className="text-center text-gray-600 mb-6">Thank you! Your order has been placed successfully.</p>
+            <div className="flex justify-center">
+              <Link to="/" className="px-6 py-2 rounded-full bg-green-600 text-white">Back to Home</Link>
+            </div>
+          </div>
+        )}
 
         {/* BILLING + OTP */}
         {showBilling && (
@@ -415,6 +457,40 @@ export default function Cart() {
                     {verifying ? "Verifying..." : "Confirm Order"}
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* PAYMENT FORM */}
+            {step === "payment" && (
+              <div className="mt-8 border-t pt-6">
+                <h3 className="text-lg font-semibold mb-3">Payment Details</h3>
+                <form onSubmit={handlePaymentSubmit} className="space-y-4 max-w-md">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Name on Card</label>
+                    <input value={card.name} onChange={(e) => setCard((p) => ({ ...p, name: e.target.value }))} className="w-full border rounded-lg px-3 py-2" placeholder="Full name" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Card Number</label>
+                    <input value={card.number} onChange={(e) => setCard((p) => ({ ...p, number: e.target.value.replace(/\s/g, "") }))} className="w-full border rounded-lg px-3 py-2" placeholder="1234 5678 9012 3456" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Expiry (MM/YY)</label>
+                      <input value={card.expiry} onChange={(e) => setCard((p) => ({ ...p, expiry: e.target.value }))} className="w-full border rounded-lg px-3 py-2" placeholder="MM/YY" />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">CVV</label>
+                      <input value={card.cvv} onChange={(e) => setCard((p) => ({ ...p, cvv: e.target.value }))} className="w-full border rounded-lg px-3 py-2" placeholder="123" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 mt-4">
+                    <button type="button" onClick={() => setStep("otp")} className="px-4 py-2 rounded-full border">Back</button>
+                    <button type="submit" disabled={paymentProcessing} className="px-6 py-2 rounded-full bg-green-600 text-white font-semibold disabled:opacity-70">
+                      {paymentProcessing ? "Processing..." : "Pay Now"}
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>
