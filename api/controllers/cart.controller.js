@@ -117,7 +117,7 @@ export const removeFromCart = async (req, res, next) => {
   }
 };
 
-// Checkout
+// Checkout (not used in OTP flow, but fine to keep)
 export const checkout = async (req, res, next) => {
   try {
     const cart = await Cart.findOne({ user_id: req.user.id }).populate(
