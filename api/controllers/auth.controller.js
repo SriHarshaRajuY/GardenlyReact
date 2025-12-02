@@ -31,8 +31,16 @@ export const signup = async (req, res, next) => {
     if (!mobileRegex.test(mobile)) {
       return next(errorHandler(400, "Mobile must be 10 digits"));
     }
-    if (!["Buyer", "Seller", "Admin", "Expert"].includes(role)) {
+    if (!["Buyer", "Seller", "Admin", "Expert", "Manager", "Agent"].includes(role)) {
       return next(errorHandler(400, "Invalid role"));
+    }
+
+    // Enforce single default Manager: do not allow creating additional Manager accounts
+    if (role === "Manager") {
+      const existingManager = await User.findOne({ role: { $regex: /^Manager$/i } });
+      if (existingManager) {
+        return next(errorHandler(403, "A Manager account already exists. Cannot create another Manager."));
+      }
     }
 
     let finalExpertise = "General";

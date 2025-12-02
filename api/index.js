@@ -14,12 +14,38 @@ import productRouter from "./routes/product.route.js";
 import cartRouter from "./routes/cart.route.js";
 import orderRouter from "./routes/order.route.js"; // ✅ orders (billing + OTP)
 import upload from "./upload.js";
+import debugRouter from "./routes/debug.route.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load .env from parent folder
-dotenv.config({ path: path.join(__dirname, "../.env") });
+// Load .env: try the expected location, but fall back to other likely places
+import fs from "fs";
+
+const tryLoadEnv = (candidates) => {
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        dotenv.config({ path: p });
+        console.log(`[dotenv] loaded ${p}`);
+        return p;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  // final attempt without path (defaults to process.cwd())
+  dotenv.config();
+  return null;
+};
+
+const envCandidates = [
+  path.join(__dirname, "..", ".env"), // api/../.env
+  path.join(__dirname, "..", "..", ".env"), // api/../../.env (repo root)
+  path.join(process.cwd(), ".env"),
+];
+const loadedEnvPath = tryLoadEnv(envCandidates);
+if (!loadedEnvPath) console.warn("[dotenv] no .env file found in candidates, falling back to default env");
 
 
 const app = express();
@@ -45,6 +71,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter); // ✅ ORDER ROUTES
+app.use("/api/debug", debugRouter);
 
 // ---------- DB CONNECTION ----------
 mongoose
@@ -57,6 +84,10 @@ mongoose
     console.error("❌ MongoDB error:", err.message);
     process.exit(1);
   });
+
+// Debug: log whether important envs are loaded (do not print secrets)
+console.log("[debug] MONGO_URI present:", typeof process.env.MONGO_URI === 'string' && process.env.MONGO_URI.length > 0);
+console.log("[debug] EMAIL_USER present:", !!process.env.EMAIL_USER);
 
 // ---------- GLOBAL ERROR HANDLER ----------
 app.use((err, req, res, next) => {

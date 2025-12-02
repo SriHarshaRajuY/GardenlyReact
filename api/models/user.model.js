@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["Buyer", "Seller", "Admin", "Expert"],
+      enum: ["Buyer", "Seller", "Admin", "Expert", "Manager", "Agent"],
     },
     mobile: { type: String, required: true, unique: true },
     expertise: {
@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema(
       default: "General",
     },
 
+    // For delivery agents
+    isAvailable: { type: Boolean, default: false },
     // === FOR PASSWORD RESET OTP ===
     resetOtp: { type: String },
     resetOtpExpiresAt: { type: Date },

@@ -36,3 +36,13 @@ export const requireBuyer = (req, res, next) => {
   }
   next();
 };
+
+export const requireManager = (req, res, next) => {
+  if (req.user.role !== "manager") return next(errorHandler(403, "Manager required"));
+  next();
+};
+
+export const requireAgent = (req, res, next) => {
+  if (req.user.role !== "agent") return next(errorHandler(403, "Agent required"));
+  next();
+};

@@ -153,3 +153,114 @@ export const verifyOrderOtp = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * POST /api/orders/assign
+ * Body: { orderId, agentId }
+ * Manager assigns an available agent to an order
+ */
+export const assignAgent = async (req, res, next) => {
+  const { orderId, agentId } = req.body;
+
+  try {
+    if (!orderId || !agentId) return next(errorHandler(400, "orderId and agentId required"));
+
+    const order = await Order.findById(orderId);
+    if (!order) return next(errorHandler(404, "Order not found"));
+
+    if (order.status === "cancelled" || order.status === "delivered") {
+      return next(errorHandler(400, "Cannot assign agent to cancelled or delivered order"));
+    }
+
+    const agent = await User.findById(agentId);
+    if (!agent) return next(errorHandler(404, "Agent not found"));
+    if (agent.role !== "Agent") return next(errorHandler(400, "User is not an agent"));
+
+    // assign
+    order.assignedAgent = agent._id;
+    order.assignedBy = req.user.id;
+    order.status = "assigned";
+    order.assignmentHistory = order.assignmentHistory || [];
+    order.assignmentHistory.push({ agent: agent._id, manager: req.user.id, status: "assigned", at: new Date() });
+
+    await order.save();
+
+    res.status(200).json({ success: true, message: "Agent assigned", orderId: order._id });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/orders/agent
+ * Agent fetches their assigned orders
+ */
+export const getAgentOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find({ assignedAgent: req.user.id }).populate("items.product").populate("assignedAgent assignedBy");
+    res.status(200).json({ success: true, orders });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/orders/manager/orders
+ * Manager fetches confirmed orders that are not yet assigned
+ */
+export const getUnassignedOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find({ status: "confirmed", assignedAgent: { $exists: false } }).populate("items.product").populate("userId");
+    res.status(200).json({ success: true, orders });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PATCH /api/orders/:id/status
+ * Agent updates status of assigned order. Body: { status }
+ */
+export const agentUpdateStatus = async (req, res, next) => {
+  const orderId = req.params.id;
+  const { status } = req.body;
+
+  try {
+    if (!status) return next(errorHandler(400, "status required"));
+
+    const order = await Order.findById(orderId);
+    if (!order) return next(errorHandler(404, "Order not found"));
+
+    if (!order.assignedAgent || order.assignedAgent.toString() !== req.user.id) {
+      return next(errorHandler(403, "Not assigned to you"));
+    }
+
+    const allowed = ["picked_up", "delivered", "cancelled"];
+    if (!allowed.includes(status)) return next(errorHandler(400, "Invalid status update"));
+
+    // basic transition checks
+    if (status === "picked_up" && order.status !== "assigned") {
+      return next(errorHandler(400, "Order must be assigned before picking up"));
+    }
+    if (status === "delivered" && order.status !== "picked_up") {
+      return next(errorHandler(400, "Order must be picked up before delivery"));
+    }
+
+    order.status = status;
+    order.assignmentHistory = order.assignmentHistory || [];
+    order.assignmentHistory.push({ agent: req.user.id, manager: order.assignedBy, status, at: new Date() });
+
+    if (status === "delivered") {
+      order.deliveredAt = new Date();
+    }
+    if (status === "picked_up") {
+      order.pickedUpAt = new Date();
+    }
+
+    await order.save();
+
+    res.status(200).json({ success: true, message: "Order status updated", orderId: order._id });
+  } catch (err) {
+    next(err);
+  }
+};
