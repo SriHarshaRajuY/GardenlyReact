@@ -11,6 +11,7 @@ import {
   Wrench,
   Send,
   Download,
+  Flower2,
 } from "lucide-react";
 
 export default function ExpertSupport() {
@@ -19,7 +20,6 @@ export default function ExpertSupport() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch user's tickets
   const fetchTickets = async () => {
     setLoading(true);
     try {
@@ -39,13 +39,10 @@ export default function ExpertSupport() {
     if (view === "tickets") fetchTickets();
   }, [view]);
 
-  // Submit ticket
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     const formData = new FormData(e.target);
-
     try {
       const res = await fetch("/api/tickets/submit", {
         method: "POST",
@@ -54,7 +51,6 @@ export default function ExpertSupport() {
       });
 
       const result = await res.json();
-
       if (res.ok) {
         alert(result.message || "Ticket submitted! Our expert will reply soon");
         e.target.reset();
@@ -70,250 +66,190 @@ export default function ExpertSupport() {
     }
   };
 
-  // Icon for ticket type
   const getIcon = (type) => {
     switch (type) {
-      case "general":
-        return <Leaf className="w-6 h-6 text-green-600" />;
-      case "technical":
-        return <Bug className="w-6 h-6 text-red-600" />;
-      case "billing":
-        return <Wrench className="w-6 h-6 text-blue-600" />;
-      default:
-        return <Leaf className="w-6 h-6" />;
+      case "general": return <Leaf className="w-8 h-8 text-green-600" />;
+      case "technical": return <Bug className="w-8 h-8 text-red-600" />;
+      case "billing": return <Wrench className="w-8 h-8 text-blue-600" />;
+      default: return <Leaf className="w-8 h-8 text-green-600" />;
     }
   };
 
   const downloadResolution = () => {
     if (!selectedTicket?.resolution) return;
-    const blob = new Blob([selectedTicket.resolution], {
-      type: "text/plain;charset=utf-8",
-    });
+    const blob = new Blob([selectedTicket.resolution], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ticket-resolution-${selectedTicket._id}.txt`;
-    document.body.appendChild(a);
+    a.download = `plant-care-advice-${selectedTicket._id}.txt`;
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 pt-20">
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-800 mb-4">
+    <div className="min-h-screen bg-white pt-20">
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        {/* Hero */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-green-600 rounded-full mb-8">
+            <Flower2 className="w-14 h-14 text-white" />
+          </div>
+          <h1 className="text-5xl md:text-6xl font-bold text-green-800">
             Expert Gardening Support
           </h1>
-          <p className="text-xl text-gray-600">
-            Get personalized help from our certified plant experts
+          <p className="mt-4 text-2xl text-green-700">
+            Get personalized help from certified plant experts
           </p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex justify-center gap-6 mb-12 flex-wrap">
-          <button
-            onClick={() => setView("home")}
-            className={`px-8 py-4 rounded-full font-bold text-lg transition-all ${
-              view === "home"
-                ? "bg-green-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-green-50"
-            }`}
-          >
-            Home
-          </button>
-          <button
-            onClick={() => setView("submit")}
-            className={`px-8 py-4 rounded-full font-bold text-lg transition-all ${
-              view === "submit"
-                ? "bg-green-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-green-50"
-            }`}
-          >
-            New Ticket
-          </button>
-          <button
-            onClick={() => setView("tickets")}
-            className={`px-8 py-4 rounded-full font-bold text-lg transition-all ${
-              view === "tickets" || view === "detail"
-                ? "bg-green-600 text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-green-50"
-            }`}
-          >
-            My Tickets
-          </button>
+        {/* Navigation */}
+        <div className="flex flex-wrap justify-center gap-6 mb-16">
+          {["home", "submit", "tickets"].map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-10 py-4 rounded-full font-bold text-lg transition-all ${
+                (view === v || (v === "tickets" && view === "detail"))
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {v === "home" ? "Home" : v === "submit" ? "New Ticket" : "My Tickets"}
+            </button>
+          ))}
         </div>
 
-        {/* HOME VIEW */}
+        {/* Home View */}
         {view === "home" && (
-          <div className="text-center py-20">
-            <h2 className="text-4xl font-bold mb-8">
-              How can we help you today?
+          <div className="text-center py-32 bg-green-50 rounded-3xl border-2 border-green-200">
+            <h2 className="text-5xl font-bold text-green-800 mb-10">
+              How can we help your plants today?
             </h2>
             <button
               onClick={() => setView("submit")}
-              className="bg-green-600 text-white px-12 py-6 rounded-full text-2xl font-bold hover:bg-green-700 shadow-xl transition"
+              className="inline-flex items-center gap-4 px-20 py-10 bg-green-600 text-white text-3xl font-bold rounded-full hover:bg-green-700 transition"
             >
+              <Leaf className="w-12 h-12" />
               Submit a New Ticket
             </button>
           </div>
         )}
 
-        {/* SUBMIT TICKET */}
+        {/* Submit Ticket */}
         {view === "submit" && (
-          <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-10">
-            <h2 className="text-4xl font-bold text-center mb-10 text-gray-800">
-              Tell Us Your Problem
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div>
-                <label className="block text-lg font-semibold mb-3">
-                  Subject *
-                </label>
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-3xl border-2 border-green-200 p-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-center text-green-800 mb-12">
+                Tell Us About Your Plant
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-10">
                 <input
                   name="subject"
                   required
-                  className="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:border-green-500 outline-none transition"
-                  placeholder="e.g. Rose leaves turning yellow"
+                  className="w-full px-8 py-6 text-xl rounded-2xl border-2 border-green-300 focus:border-green-600 outline-none"
+                  placeholder="e.g. Monstera leaves turning yellow"
                 />
-              </div>
 
-              <div>
-                <label className="block text-lg font-semibold mb-3">
-                  Issue Type *
-                </label>
                 <select
                   name="type"
                   required
-                  className="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:border-green-500 outline-none"
+                  className="w-full px-8 py-6 text-xl rounded-2xl border-2 border-green-300 focus:border-green-600 outline-none"
                 >
-                  <option value="general">General Gardening</option>
-                  <option value="technical">Plant Disease / Pest</option>
-                  <option value="billing">Order &amp; Payment Issue</option>
+                  <option value="general">General Gardening Question</option>
+                  <option value="technical">Plant Disease / Pests</option>
+                  <option value="billing">Order & Payment Issue</option>
                 </select>
-              </div>
 
-              <div>
-                <label className="block text-lg font-semibold mb-3">
-                  Description *
-                </label>
                 <textarea
                   name="description"
                   required
-                  rows={7}
-                  className="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:border-green-500 outline-none resize-none"
-                  placeholder="Explain everything in detail..."
+                  rows={10}
+                  className="w-full px-8 py-8 text-xl rounded-2xl border-2 border-green-300 focus:border-green-600 outline-none resize-none font-medium"
+                  placeholder="Describe the issue in detail: plant type, symptoms, light, water, soil, when it started..."
                 />
-              </div>
 
-              <div>
-                <label className="block text-lg font-semibold mb-3">
-                  Attach Photo (Optional but Helpful)
+                <label className="block">
+                  <div className="border-4 border-dashed border-green-300 rounded-3xl p-20 text-center hover:border-green-500 transition cursor-pointer">
+                    <Upload className="w-24 h-24 mx-auto text-green-600 mb-6" />
+                    <p className="text-2xl font-bold text-green-700">Upload Photo (Highly Recommended)</p>
+                    <p className="text-green-600 mt-3">Click or drag image here • JPG/PNG up to 5MB</p>
+                    <input type="file" name="attachment" accept="image/*" className="hidden" />
+                  </div>
                 </label>
-                <label className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-green-500 transition cursor-pointer block">
-                  <Upload className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    JPG, PNG up to 5MB
-                  </p>
-                  <input
-                    type="file"
-                    name="attachment"
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </label>
-              </div>
 
-              <div className="flex gap-6 pt-8">
-                <button
-                  type="button"
-                  onClick={() => setView("home")}
-                  className="flex-1 py-5 border-2 border-gray-300 rounded-xl font-bold hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 py-5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold disabled:opacity-70 flex items-center justify-center gap-3 transition"
-                >
-                  {loading ? (
-                    "Submitting..."
-                  ) : (
-                    <>
-                      Submit Ticket <Send className="w-6 h-6" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+                <div className="flex gap-8 pt-10">
+                  <button
+                    type="button"
+                    onClick={() => setView("home")}
+                    className="flex-1 py-6 border-2 border-green-300 rounded-2xl font-bold text-green-800 hover:bg-green-50 transition text-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 py-6 bg-green-600 text-white rounded-2xl font-bold text-2xl disabled:opacity-70 flex items-center justify-center gap-5 hover:bg-green-700 transition"
+                  >
+                    {loading ? "Submitting..." : (
+                      <>
+                        Submit Ticket <Send className="w-9 h-9" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
-        {/* MY TICKETS LIST */}
+        {/* My Tickets */}
         {view === "tickets" && (
           <div>
-            <h2 className="text-4xl font-bold text-center mb-12 text-gray-800">
-              My Support Tickets
-            </h2>
+            <h2 className="text-5xl font-bold text-center text-green-800 mb-16">My Support Tickets</h2>
             {loading ? (
-              <p className="text-center text-xl text-gray-600">Loading...</p>
+              <p className="text-center text-2xl text-green-700 py-20">Loading your tickets...</p>
             ) : tickets.length === 0 ? (
-              <div className="text-center py-20">
-                <p className="text-2xl text-gray-600 mb-8">
-                  No tickets submitted yet
-                </p>
+              <div className="text-center py-32 bg-green-50 rounded-3xl border-2 border-green-200">
+                <Leaf className="w-32 h-32 text-green-500 mx-auto mb-8" />
+                <p className="text-3xl font-medium text-green-700 mb-10">No tickets submitted yet</p>
                 <button
                   onClick={() => setView("submit")}
-                  className="bg-green-600 text-white px-10 py-5 rounded-full text-xl font-bold hover:bg-green-700"
+                  className="px-16 py-8 bg-green-600 text-white rounded-full text-2xl font-bold hover:bg-green-700"
                 >
                   Create Your First Ticket
                 </button>
               </div>
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {tickets.map((ticket) => (
                   <div
                     key={ticket._id}
-                    onClick={() => {
-                      setSelectedTicket(ticket);
-                      setView("detail");
-                    }}
-                    className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition cursor-pointer border-l-8 border-green-500"
+                    onClick={() => { setSelectedTicket(ticket); setView("detail"); }}
+                    className="bg-white rounded-3xl border-2 border-green-300 p-10 hover:shadow-lg transition cursor-pointer"
                   >
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="text-2xl font-bold text-gray-800">
+                        <h3 className="text-3xl font-bold text-green-800">
                           {ticket.subject}
                         </h3>
-                        <div className="flex items-center gap-6 mt-4 text-gray-600">
-                          <span className="flex items-center gap-2">
-                            {getIcon(ticket.type)}
-                            <span className="capitalize">
-                              {ticket.type}
-                            </span>
+                        <div className="flex items-center gap-10 mt-6 text-xl text-green-700">
+                          {getIcon(ticket.type)}
+                          <span className="font-medium capitalize">
+                            {ticket.type === "technical" ? "Pest/Disease" : ticket.type}
                           </span>
-                          <span>
-                            {format(
-                              new Date(ticket.createdAt),
-                              "dd MMM yyyy • hh:mm a"
-                            )}
+                          <span className="text-gray-600">
+                            {format(new Date(ticket.createdAt), "dd MMM yyyy • hh:mm a")}
                           </span>
                         </div>
                       </div>
                       {ticket.status === "Resolved" ? (
-                        <span className="flex items-center gap-2 text-green-600 font-bold text-xl">
-                          <CheckCircle className="w-7 h-7" /> Resolved
-                        </span>
+                        <div className="text-green-600 font-bold text-3xl flex items-center gap-4">
+                          <CheckCircle className="w-12 h-12" /> Resolved
+                        </div>
                       ) : (
-                        <span className="flex items-center gap-2 text-yellow-600 font-bold text-xl">
-                          <Clock className="w-7 h-7" /> Open
-                        </span>
+                        <div className="text-amber-600 font-bold text-3xl flex items-center gap-4">
+                          <Clock className="w-12 h-12" /> Open
+                        </div>
                       )}
                     </div>
                   </div>
@@ -323,78 +259,64 @@ export default function ExpertSupport() {
           </div>
         )}
 
-        {/* TICKET DETAIL */}
+        {/* Ticket Detail */}
         {view === "detail" && selectedTicket && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <button
               onClick={() => setView("tickets")}
-              className="flex items-center gap-3 text-green-600 hover:text-green-700 mb-8 font-bold text-lg"
+              className="flex items-center gap-4 text-green-700 hover:text-green-800 font-bold text-xl mb-10"
             >
-              <ArrowLeft className="w-6 h-6" /> Back to Tickets
+              <ArrowLeft className="w-8 h-8" /> Back to Tickets
             </button>
 
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-10">
-                <h2 className="text-4xl font-bold">
-                  {selectedTicket.subject}
-                </h2>
-                <p className="text-green-100 mt-4">
-                  Submitted on{" "}
-                  {format(
-                    new Date(selectedTicket.createdAt),
-                    "dd MMMM yyyy, hh:mm a"
-                  )}
+            <div className="bg-white rounded-3xl border-2 border-green-300 overflow-hidden">
+              <div className="bg-green-600 text-white p-12">
+                <h2 className="text-4xl md:text-5xl font-bold">{selectedTicket.subject}</h2>
+                <p className="mt-6 text-green-100 text-xl">
+                  Submitted on {format(new Date(selectedTicket.createdAt), "dd MMMM yyyy, hh:mm a")}
                 </p>
               </div>
 
-              <div className="p-10 space-y-10">
+              <div className="p-12 space-y-12">
                 <div>
-                  <h3 className="text-2xl font-bold mb-6">Your Message</h3>
-                  <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {selectedTicket.description}
-                  </p>
-                  {selectedTicket.attachment && (
-                    <img
-                      src={selectedTicket.attachment}
-                      alt="Your photo"
-                      className="mt-8 max-w-full rounded-2xl shadow-lg"
-                    />
-                  )}
+                  <h3 className="text-3xl font-bold text-green-800 mb-8">Your Message</h3>
+                  <div className="bg-green-50 rounded-3xl p-10 border-2 border-green-200">
+                    <p className="text-xl text-gray-800 leading-relaxed whitespace-pre-wrap">
+                      {selectedTicket.description}
+                    </p>
+                    {selectedTicket.attachment && (
+                      <img
+                        src={selectedTicket.attachment}
+                        alt="Your plant"
+                        className="mt-10 w-full rounded-2xl border-4 border-white shadow-lg"
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {selectedTicket.resolution ? (
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-4 border-green-300 rounded-3xl p-10">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-3xl font-bold text-green-800">
-                        Expert Reply
-                      </h3>
+                  <div className="bg-green-50 rounded-3xl p-12 border-4 border-green-300">
+                    <div className="flex justify-between items-start mb-10">
+                      <h3 className="text-4xl font-bold text-green-800">Expert Reply</h3>
                       <button
                         onClick={downloadResolution}
-                        className="flex items-center gap-2 px-5 py-2 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700"
+                        className="flex items-center gap-4 px-10 py-5 bg-green-600 text-white rounded-full font-bold hover:bg-green-700 text-lg"
                       >
-                        <Download className="w-5 h-5" /> Download
+                        <Download className="w-7 h-7" /> Download Advice
                       </button>
                     </div>
                     <p className="text-xl text-gray-800 leading-relaxed whitespace-pre-wrap">
                       {selectedTicket.resolution}
                     </p>
-                    <p className="text-green-700 font-semibold mt-8">
-                      Resolved on{" "}
-                      {format(
-                        new Date(selectedTicket.resolved_at),
-                        "dd MMMM yyyy, hh:mm a"
-                      )}
+                    <p className="text-green-700 font-bold text-lg mt-10">
+                      Resolved on {format(new Date(selectedTicket.resolved_at), "dd MMMM yyyy, hh:mm a")}
                     </p>
                   </div>
                 ) : (
-                  <div className="text-center py-16">
-                    <Clock className="w-20 h-20 text-yellow-500 mx-auto mb-6" />
-                    <p className="text-2xl text-gray-600">
-                      Our expert is working on your case...
-                    </p>
-                    <p className="text-gray-500 mt-4">
-                      You’ll get a reply within 24 hours
-                    </p>
+                  <div className="text-center py-24 bg-amber-50 rounded-3xl border-4 border-amber-300">
+                    <Clock className="w-32 h-32 text-amber-600 mx-auto mb-8" />
+                    <p className="text-4xl font-bold text-amber-800">Our expert is reviewing your case</p>
+                    <p className="text-2xl text-amber-700 mt-6">You’ll get a detailed reply within 24 hours</p>
                   </div>
                 )}
               </div>
