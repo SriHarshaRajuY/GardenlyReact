@@ -1,225 +1,103 @@
+
+
 // src/pages/SignUp.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  FaUser,
-  FaLock,
-  FaUserTag,
-  FaEnvelope,
-  FaPhone,
-  FaHome,
-} from "react-icons/fa";
+import { FaUser, FaLock, FaUserTag, FaEnvelope, FaPhone, FaHome } from "react-icons/fa";
 
-const InputDiv = ({ icon, label, children, isFocused }) => (
-  <div
-    className={`relative grid grid-cols-[7%_93%] my-6 px-0 py-1 border-b-2 border-[#d9d9d9]
-      before:content-[''] before:absolute before:bottom-[-2px] before:w-0 before:h-[2px] before:bg-[#38d39f] before:transition-all before:duration-400 before:right-[50%]
-      after:content-[''] after:absolute after:bottom-[-2px] after:w-0 before:h-[2px] after:bg-[#38d39f] after:transition-all after:duration-400 after:left-[50%]
-      ${isFocused ? "before:w-[50%] after:w-[50%]" : ""}`}
-  >
-    <div
-      className={`text-[#d9d9d9] flex justify-center items-center transition-colors duration-300 ${
-        isFocused ? "text-[#38d39f]" : ""
-      }`}
-    >
+const InputDiv = ({ icon, label, children, isFocused, hasValue }) => (
+  <div className="relative grid grid-cols-[7%_93%] my-6 border-b-2 border-[#d9d9d9]">
+    <div className={`flex items-center justify-center text-[#d9d9d9] transition-colors duration-300 ${isFocused || hasValue ? "text-[#38d39f]" : ""}`}>
       {icon}
     </div>
-    <div className="relative h-[45px]">
-      <h5
-        className={`absolute left-[10px] top-[50%] translate-y-[-50%] text-[#999] text-[18px] transition-all duration-300 pointer-events-none ${
-          isFocused ? "top-[-5px] text-[15px]" : ""
-        }`}
+    <div className="relative">
+      <label
+        className={`absolute left-3 origin-left transition-all duration-300 pointer-events-none
+          ${isFocused || hasValue 
+            ? "-top-2 text-xs text-[#38d39f] bg-white px-1" 
+            : "top-3 text-base text-[#999]"
+          }`}
       >
         {label}
-      </h5>
+      </label>
       {children}
+      <span className={`absolute bottom-0 left-0 w-full h-[2px] bg-[#38d39f] scale-x-0 transition-transform duration-400 origin-center ${isFocused || hasValue ? "scale-x-100" : ""}`} />
     </div>
   </div>
 );
 
 export default function SignUp() {
   const navigate = useNavigate();
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [role, setRole] = useState("");
-  const [expertise, setExpertise] = useState(""); // NEW
-
-  const [error, setError] = useState("");
-  const [focused, setFocused] = useState({
-    username: false,
-    password: false,
-    email: false,
-    mobile: false,
-    role: false,
-    expertise: false,
+  const [form, setForm] = useState({
+    username: "", password: "", email: "", mobile: "", role: "", expertise: ""
   });
+  const [error, setError] = useState("");
+  const [focused, setFocused] = useState({});
 
-  const validateUsername = (v) => /^[a-zA-Z0-9_-]{3,20}$/.test(v);
-  const validatePassword = (v) =>
-    /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/.test(v);
-  const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  const validateMobile = (v) => /^\d{10}$/.test(v);
+  const handleFocus = (field) => setFocused(prev => ({ ...prev, [field]: true }));
+  const handleBlur = (field) => setFocused(prev => ({ ...prev, [field]: false }));
 
-  const handleInput = (field, value) => {
-    let msg = "";
-    if (value) {
-      switch (field) {
-        case "username":
-          if (!validateUsername(value))
-            msg =
-              "Username: 3-20 chars (letters, numbers, _, - only)";
-          break;
-        case "password":
-          if (!validatePassword(value))
-            msg =
-              "Password: 8+ chars, 1 upper, 1 number, 1 symbol";
-          break;
-        case "email":
-          if (!validateEmail(value)) msg = "Invalid email format";
-          break;
-        case "mobile":
-          if (!validateMobile(value))
-            msg = "Mobile must be exactly 10 digits";
-          break;
-      }
-    }
-    setError(msg);
-  };
-
-  const handleFocus = (field) => {
-    setFocused((prev) => ({ ...prev, [field]: true }));
-    setError("");
-  };
-
-  const handleBlur = (field, value) => {
-    if (value === "") {
-      setFocused((prev) => ({ ...prev, [field]: false }));
-    }
+  const validate = () => {
+    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(form.username)) return "Invalid username";
+    if (!/^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/.test(form.password)) return "Weak password";
+    if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) return "Invalid email";
+    if (!/^\d{10}$/.test(form.mobile)) return "Mobile must be 10 digits";
+    if (!form.role) return "Select role";
+    if (form.role === "Expert" && !form.expertise) return "Select expertise";
+    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let msg = "";
-    if (!validateUsername(username)) msg = "Invalid username format";
-    else if (!validatePassword(password)) msg = "Invalid password format";
-    else if (!validateEmail(email)) msg = "Invalid email format";
-    else if (!validateMobile(mobile))
-      msg = "Mobile number must be exactly 10 digits";
-    else if (!role) msg = "Please select a role";
-    else if (role === "Expert" && !expertise)
-      msg = "Please select expertise for Expert";
-
-    if (msg) {
-      setError(msg);
-      return;
-    }
+    const err = validate();
+    if (err) return setError(err);
 
     try {
-      const payload = {
-        username,
-        password,
-        role,
-        email,
-        mobile,
-      };
-
-      if (role === "Expert") {
-        payload.expertise = expertise; // send to backend
-      }
+      const payload = { ...form };
+      if (form.role !== "Expert") delete payload.expertise;
 
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Registration failed");
-        return;
-      }
+      if (!res.ok) return setError(data.message || "Registration failed");
 
       navigate("/signin");
     } catch {
-      setError("Server error during registration");
+      setError("Server error");
     }
   };
 
   return (
-    <div className="font-poppins overflow-hidden min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white relative">
-      <img
-        src="/images/login-register/wave.png"
-        className="fixed bottom-0 left-0 h-full -z-10"
-        alt="wave"
-      />
+    <div className="font-poppins min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white relative overflow-hidden">
+      <img src="/images/login-register/wave.png" className="fixed bottom-0 left-0 h-full -z-10" alt="" />
 
-      <div className="w-full h-screen grid grid-cols-1 md:grid-cols-2 gap-[7rem] px-8 relative">
+      <div className="h-screen grid grid-cols-1 md:grid-cols-2 px-8">
         <div className="hidden md:flex justify-end items-center">
-          <img
-            src="/images/login-register/bg.png"
-            className="w-[500px]"
-            alt="bg"
-          />
+          <img src="/images/login-register/bg.png" className="w-[500px]" alt="" />
         </div>
 
-        <div className="flex justify-start items-center text-center">
-          <form
-            onSubmit={handleSubmit}
-            className="w-[360px] relative max-w-full"
-          >
-            <Link
-              to="/"
-              className="fixed top-5 right-5 text-gray-500 text-base px-4 py-2 rounded-[20px] transition-all flex items-center hover:text-[#38d39f] hover:bg-[rgba(56,211,159,0.1)] z-10"
-            >
-              <FaHome className="mr-1" /> Home
+        <div className="flex items-center justify-start">
+          <form onSubmit={handleSubmit} className="w-[360px] max-w-full">
+            <Link to="/" className="fixed top-5 right-5 flex items-center gap-2 px-4 py-2 rounded-3xl hover:bg-[#38d39f11] hover:text-[#38d39f] transition">
+              <FaHome /> Home
             </Link>
 
-            <img
-              src="/images/login-register/avatar.png"
-              className="h-[100px] mx-auto"
-              alt="avatar"
-            />
-            <h2 className="my-[15px] text-[#333] uppercase text-[2.9rem]">
-              Register
-            </h2>
+            <img src="/images/login-register/avatar.png" className="h-24 mx-auto mb-4" alt="" />
+            <h2 className="text-5xl uppercase text-[#333] mb-6">Register</h2>
+            {error && <p className="text-red-500 text-sm mb-4 text-left ml-10">{error}</p>}
 
-            {error && (
-              <span className="block text-[#e74c3c] text-[0.8rem] text-left -mt-5 mb-[10px] ml-[40px] font-poppins">
-                {error}
-              </span>
-            )}
-
-            {/* Role */}
-            <InputDiv
-              icon={<FaUserTag />}
-              label="Role"
-              isFocused={focused.role}
-            >
+            <InputDiv icon={<FaUserTag />} label="Role" isFocused={focused.role} hasValue={!!form.role}>
               <select
-                value={role}
-                onChange={(e) => {
-                  setRole(e.target.value);
-                  // reset expertise when role changes
-                  setExpertise("");
-                  handleFocus("role");
-                }}
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value, expertise: "" })}
                 onFocus={() => handleFocus("role")}
-                onBlur={() => handleBlur("role", role)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins appearance-none cursor-pointer pr-8"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(45deg, transparent 50%, #999 50%), linear-gradient(135deg, #999 50%, transparent 50%)",
-                  backgroundPosition:
-                    "calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)",
-                  backgroundSize: "5px 5px, 5px 5px",
-                  backgroundRepeat: "no-repeat",
-                }}
+                onBlur={() => handleBlur("role")}
+                className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
               >
-                <option value="">Select Role</option>
+                <option value=""></option>
                 <option value="Buyer">Buyer</option>
                 <option value="Seller">Seller</option>
                 <option value="Admin">Admin</option>
@@ -227,27 +105,14 @@ export default function SignUp() {
               </select>
             </InputDiv>
 
-            {/* Expertise (only for Expert role) */}
-            {role === "Expert" && (
-              <InputDiv
-                icon={<FaUserTag />}
-                label="Expertise"
-                isFocused={focused.expertise || !!expertise}
-              >
+            {form.role === "Expert" && (
+              <InputDiv icon={<FaUserTag />} label="Expertise" isFocused={focused.expertise} hasValue={!!form.expertise}>
                 <select
-                  value={expertise}
-                  onChange={(e) => setExpertise(e.target.value)}
+                  value={form.expertise}
+                  onChange={(e) => setForm({ ...form, expertise: e.target.value })}
                   onFocus={() => handleFocus("expertise")}
-                  onBlur={() => handleBlur("expertise", expertise)}
-                  className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.1rem] text-[#555] font-poppins appearance-none cursor-pointer pr-8"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(45deg, transparent 50%, #999 50%), linear-gradient(135deg, #999 50%, transparent 50%)",
-                    backgroundPosition:
-                      "calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)",
-                    backgroundSize: "5px 5px, 5px 5px",
-                    backgroundRepeat: "no-repeat",
-                  }}
+                  onBlur={() => handleBlur("expertise")}
+                  className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
                 >
                   <option value="">Select Expertise</option>
                   <option value="General">General Gardening</option>
@@ -257,93 +122,27 @@ export default function SignUp() {
               </InputDiv>
             )}
 
-            {/* Username */}
-            <InputDiv
-              icon={<FaUser />}
-              label="Username"
-              isFocused={focused.username}
-            >
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value.trim());
-                  handleInput("username", e.target.value.trim());
-                }}
-                onFocus={() => handleFocus("username")}
-                onBlur={() => handleBlur("username", username)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
-              />
+            <InputDiv icon={<FaUser />} label="Username" isFocused={focused.username} hasValue={!!form.username}>
+              <input type="text" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.trim() })} onFocus={() => handleFocus("username")} onBlur={() => handleBlur("username")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
             </InputDiv>
 
-            {/* Email */}
-            <InputDiv
-              icon={<FaEnvelope />}
-              label="Email"
-              isFocused={focused.email}
-            >
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value.trim());
-                  handleInput("email", e.target.value.trim());
-                }}
-                onFocus={() => handleFocus("email")}
-                onBlur={() => handleBlur("email", email)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
-              />
+            <InputDiv icon={<FaEnvelope />} label="Email" isFocused={focused.email} hasValue={!!form.email}>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value.trim() })} onFocus={() => handleFocus("email")} onBlur={() => handleBlur("email")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
             </InputDiv>
 
-            {/* Mobile */}
-            <InputDiv
-              icon={<FaPhone />}
-              label="Mobile Number"
-              isFocused={focused.mobile}
-            >
-              <input
-                type="tel"
-                value={mobile}
-                onChange={(e) => {
-                  setMobile(e.target.value.trim());
-                  handleInput("mobile", e.target.value.trim());
-                }}
-                onFocus={() => handleFocus("mobile")}
-                onBlur={() => handleBlur("mobile", mobile)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
-              />
+            <InputDiv icon={<FaPhone />} label="Mobile Number" isFocused={focused.mobile} hasValue={!!form.mobile}>
+              <input type="tel" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "").slice(0,10) })} onFocus={() => handleFocus("mobile")} onBlur={() => handleBlur("mobile")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
             </InputDiv>
 
-            {/* Password */}
-            <InputDiv
-              icon={<FaLock />}
-              label="Password"
-              isFocused={focused.password}
-            >
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value.trim());
-                  handleInput("password", e.target.value.trim());
-                }}
-                onFocus={() => handleFocus("password")}
-                onBlur={() => handleBlur("password", password)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
-              />
+            <InputDiv icon={<FaLock />} label="Password" isFocused={focused.password} hasValue={!!form.password}>
+              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} onFocus={() => handleFocus("password")} onBlur={() => handleBlur("password")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
             </InputDiv>
 
-            <Link
-              to="/signin"
-              className="block text-right text-[#999] text-[0.9rem] transition-colors duration-300 hover:text-[#38d39f]"
-            >
+            <Link to="/signin" className="block text-right mt-4 text-[#999] hover:text-[#38d39f] text-sm">
               Already have an account? Login
             </Link>
 
-            <button
-              type="submit"
-              className="block w-full h-[50px] rounded-[25px] outline-none border-none bg-gradient-to-r from-[#32be8f] via-[#38d39f] to-[#32be8f] bg-[length:200%] text-[1.2rem] text-white font-poppins uppercase my-4 cursor-pointer transition-all duration-500 hover:bg-right"
-            >
+            <button className="w-full h-12 mt-6 rounded-3xl bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white text-lg uppercase font-medium hover:opacity-90 transition">
               Register
             </button>
           </form>
