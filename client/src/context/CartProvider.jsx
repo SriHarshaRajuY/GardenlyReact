@@ -1,17 +1,17 @@
-// src/context/CartProvider.jsx (NEW FILE)
+// src/context/CartProvider.jsx
 import { useState, useEffect } from "react";
 import { CartContext } from "./CartContext";
 import { useAuth } from "./AuthContext";
 
 export default function CartProvider({ children }) {
   const { user } = useAuth();
-  const [cart, setCart] = useState(null);
+  const [cart, setCart] = useState({ items: [] });
 
   useEffect(() => {
     if (user && user.role === "buyer") {
       fetchCart();
     } else {
-      setCart(null);
+      setCart({ items: [] });
     }
   }, [user]);
 
@@ -47,7 +47,7 @@ export default function CartProvider({ children }) {
         setCart(data);
       } else {
         const err = await res.json();
-        alert(err.message);
+        alert(err.message || "Failed to add to cart");
       }
     } catch (err) {
       alert("Error adding to cart");
@@ -67,7 +67,7 @@ export default function CartProvider({ children }) {
         setCart(data);
       } else {
         const err = await res.json();
-        alert(err.message);
+        alert(err.message || "Failed to update cart");
       }
     } catch (err) {
       alert("Error updating cart");
@@ -85,7 +85,7 @@ export default function CartProvider({ children }) {
         setCart(data);
       } else {
         const err = await res.json();
-        alert(err.message);
+        alert(err.message || "Failed to remove from cart");
       }
     } catch (err) {
       alert("Error removing from cart");
@@ -99,12 +99,12 @@ export default function CartProvider({ children }) {
         credentials: "include",
       });
       if (res.ok) {
-        const data = await res.json();
+        await res.json();
         setCart({ items: [] });
         alert("Payment successful! Thank you for your purchase.");
       } else {
         const err = await res.json();
-        alert(err.message);
+        alert(err.message || "Checkout failed");
       }
     } catch (err) {
       alert("Error during checkout");
@@ -112,7 +112,16 @@ export default function CartProvider({ children }) {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateQuantity, removeFromCart, checkout, fetchCart }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        updateQuantity,
+        removeFromCart,
+        checkout,
+        fetchCart,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

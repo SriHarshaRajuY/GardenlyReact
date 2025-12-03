@@ -1,32 +1,20 @@
-// src/pages/SignIn.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUser, FaLock, FaUserTag, FaHome } from "react-icons/fa";
+import { FaUser, FaLock, FaUserTag, FaHome, FaEnvelope } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
-const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
-  <div
-    className={`relative grid grid-cols-[7%_93%] my-6 px-0 py-1 border-b-2 border-[#d9d9d9]
-      before:content-[''] before:absolute before:bottom-[-2px] before:w-0 before:h-[2px] before:bg-[#38d39f] before:transition-all before:duration-400 before:right-[50%]
-      after:content-[''] after:absolute after:bottom-[-2px] after:w-0 after:h-[2px] after:bg-[#38d39f] after:transition-all after:duration-400 after:left-[50%]
-      ${isFocused ? "before:w-[50%] after:w-[50%]" : ""}`}
-  >
-    <div
-      className={`text-[#d9d9d9] flex justify-center items-center transition-colors duration-300 ${
-        isFocused ? "text-[#38d39f]" : ""
-      }`}
-    >
+const InputDiv = ({ icon, label, children, isFocused, hasValue }) => (
+  <div className="relative grid grid-cols-[7%_93%] my-6 border-b-2 border-[#d9d9d9]">
+    <div className={`flex items-center justify-center text-[#d9d9d9] transition-colors duration-300 ${isFocused || hasValue ? "text-[#38d39f]" : ""}`}>
       {icon}
     </div>
-    <div className="relative h-[45px]">
-      <h5
-        className={`absolute left-[10px] top-[50%] translate-y-[-50%] text-[#999] text-[18px] transition-all duration-300 pointer-events-none ${
-          isFocused ? "top-[-5px] text-[15px]" : ""
-        }`}
-      >
+    <div className="relative">
+      <label className={`absolute left-3 origin-left transition-all duration-300 pointer-events-none
+        ${isFocused || hasValue ? "-top-2 text-xs text-[#38d39f] bg-white px-1" : "top-3 text-base text-[#999]"}`}>
         {label}
-      </h5>
+      </label>
       {children}
+      <span className={`absolute bottom-0 left-0 w-full h-[2px] bg-[#38d39f] scale-x-0 transition-transform duration-400 origin-center ${isFocused || hasValue ? "scale-x-100" : ""}`} />
     </div>
   </div>
 );
@@ -34,33 +22,26 @@ const InputDiv = ({ icon, label, children, isFocused, onFocus, onBlur }) => (
 export default function SignIn() {
   const { login } = useAuth();
   const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
-  const [focused, setFocused] = useState({
-    username: false,
-    password: false,
-    role: false,
-  });
+  const [focused, setFocused] = useState({ username: false, password: false, role: false });
 
-  const handleFocus = (field) => {
-    setFocused((prev) => ({ ...prev, [field]: true }));
-    setError("");
-  };
-
-  const handleBlur = (field, value) => {
-    if (value === "") {
-      setFocused((prev) => ({ ...prev, [field]: false }));
-    }
-  };
+  // Forgot Password Modal
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [step, setStep] = useState(1);
+  const [forgotError, setForgotError] = useState("");
+  const [forgotSuccess, setForgotSuccess] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username || !password || !role) {
-      setError("Please fill all fields");
-      return;
-    }
+    setError("");
+    if (!username || !password || !role) return setError("Please fill all fields");
 
     try {
       const res = await fetch("/api/auth/signin", {
@@ -69,136 +50,185 @@ export default function SignIn() {
         body: JSON.stringify({ username, password, role }),
       });
       const data = await res.json();
+      if (!res.ok) return setError(data.message || "Invalid credentials");
 
-      if (!res.ok) {
-        setError(data.message || "Invalid credentials");
-        return;
-      }
-
-      // Update context with token
       login(data.token);
-
       switch (data.user.role) {
-        case "Expert":
-          navigate("/expert-dashboard");
-          break;
-        case "Seller":
-          navigate("/seller");
-          break;
-        case "Buyer":
-          navigate("/");
-          break;
-        case "Admin":
-          navigate("/admindashboard");
-          break;
-        default:
-          navigate("/");
+        case "Expert": navigate("/expert-dashboard"); break;
+        case "Seller": navigate("/seller"); break;
+        case "Buyer": navigate("/"); break;
+        case "Admin": navigate("/admindashboard"); break;
+        default: navigate("/");
       }
     } catch {
-      setError("Server error during login");
+      setError("Server error");
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotError("");
+    setForgotSuccess("");
+
+    if (step === 1) {
+      if (!forgotEmail) return setForgotError("Email is required");
+      try {
+        const res = await fetch("/api/auth/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: forgotEmail }),
+        });
+        const data = await res.json();
+        if (!res.ok) return setForgotError(data.message || "Failed to send OTP");
+        setForgotSuccess("OTP sent! Check your email.");
+        setStep(2);
+      } catch {
+        setForgotError("Network error. Try again.");
+      }
+    } else {
+      if (!otp || !newPassword) return setForgotError("OTP and new password required");
+      try {
+        const res = await fetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: forgotEmail, otp, newPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) return setForgotError(data.message || "Failed to reset");
+        setForgotSuccess("Password changed! You can now login.");
+        setTimeout(() => {
+          setShowForgot(false);
+          setStep(1);
+          setForgotEmail(""); setOtp(""); setNewPassword("");
+        }, 2000);
+      } catch {
+        setForgotError("Network error");
+      }
     }
   };
 
   return (
-    <div className="font-poppins overflow-hidden min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white relative">
-      <img
-        src="/images/login-register/wave.png"
-        className="fixed bottom-0 left-0 h-full -z-10"
-        alt="wave"
-      />
-      <div className="w-full h-screen grid grid-cols-1 md:grid-cols-2 gap-[7rem] px-8 relative">
+    <div className="font-poppins min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white relative overflow-hidden">
+      <img src="/images/login-register/wave.png" className="fixed bottom-0 left-0 h-full -z-10" alt="" />
+
+      <div className="h-screen grid grid-cols-1 md:grid-cols-2 px-8">
         <div className="hidden md:flex justify-end items-center">
-          <img src="/images/login-register/bg.png" className="w-[500px]" alt="bg" />
+          <img src="/images/login-register/bg.png" className="w-[500px]" alt="" />
         </div>
-        <div className="flex justify-start items-center text-center">
-          <form onSubmit={handleSubmit} className="w-[360px] relative max-w-full">
-            <Link
-              to="/"
-              className="fixed top-5 right-5 text-gray-500 text-base px-4 py-2 rounded-[20px] transition-all flex items-center hover:text-[#38d39f] hover:bg-[rgba(56,211,159,0.1)] z-10"
-            >
-              <FaHome className="mr-1" /> Home
+
+        <div className="flex items-center justify-start">
+          <div className="w-[360px] max-w-full">
+            <Link to="/" className="fixed top-5 right-5 flex items-center gap-2 px-4 py-2 rounded-3xl hover:bg-[#38d39f11] hover:text-[#38d39f] transition z-50">
+              <FaHome /> Home
             </Link>
-            <img
-              src="/images/login-register/avatar.png"
-              className="h-[100px] mx-auto"
-              alt="avatar"
-            />
-            <h2 className="my-[15px] text-[#333] uppercase text-[2.9rem]">Welcome</h2>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <InputDiv
-              icon={<FaUserTag />}
-              label="Role"
-              isFocused={focused.role}
-              onFocus={() => handleFocus("role")}
-              onBlur={() => handleBlur("role", role)}
-            >
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                onFocus={() => handleFocus("role")}
-                onBlur={() => handleBlur("role", role)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins appearance-none cursor-pointer pr-8"
-                style={{
-                  backgroundImage: `linear-gradient(45deg, transparent 50%, #999 50%), linear-gradient(135deg, #999 50%, transparent 50%)`,
-                  backgroundPosition: `calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px)`,
-                  backgroundSize: `5px 5px, 5px 5px`,
-                  backgroundRepeat: `no-repeat`,
-                }}
-              >
-                <option value="">Select Role</option>
-                <option value="Buyer">Buyer</option>
-                <option value="Seller">Seller</option>
-                <option value="Admin">Admin</option>
-                <option value="Expert">Expert</option>
-              </select>
-            </InputDiv>
-            <InputDiv
-              icon={<FaUser />}
-              label="Username"
-              isFocused={focused.username}
-              onFocus={() => handleFocus("username")}
-              onBlur={() => handleBlur("username", username)}
-            >
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.trim())}
-                onFocus={() => handleFocus("username")}
-                onBlur={() => handleBlur("username", username)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
-              />
-            </InputDiv>
-            <InputDiv
-              icon={<FaLock />}
-              label="Password"
-              isFocused={focused.password}
-              onFocus={() => handleFocus("password")}
-              onBlur={() => handleBlur("password", password)}
-            >
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value.trim())}
-                onFocus={() => handleFocus("password")}
-                onBlur={() => handleBlur("password", password)}
-                className="absolute inset-0 w-full h-full border-none outline-none bg-transparent p-[0.5rem_0.7rem] text-[1.2rem] text-[#555] font-poppins"
-              />
-            </InputDiv>
-            <button
-              type="submit"
-              className="block w-full h-[50px] rounded-[25px] outline-none border-none bg-gradient-to-r from-[#32be8f] via-[#38d39f] to-[#32be8f] bg-[length:200%] text-[1.2rem] text-white font-poppins uppercase my-4 cursor-pointer transition-all duration-500 hover:bg-right"
-            >
-              Login
-            </button>
-            <Link
-              to="/signup"
-              className="block text-right text-[#999] text-[0.9rem] transition-colors duration-300 hover:text-[#38d39f]"
-            >
+
+            <img src="/images/login-register/avatar.png" className="h-24 mx-auto mb-4" alt="" />
+            <h2 className="text-5xl uppercase text-[#333] mb-6">Welcome</h2>
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+            <form onSubmit={handleSubmit}>
+              <InputDiv icon={<FaUserTag />} label="Role" isFocused={focused.role} hasValue={!!role}>
+                <select value={role} onChange={(e) => setRole(e.target.value)} onFocus={() => handleFocus("role")} onBlur={() => handleBlur("role")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700">
+                  <option value=""></option>
+                  <option value="Buyer">Buyer</option>
+                  <option value="Seller">Seller</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Expert">Expert</option>
+                </select>
+              </InputDiv>
+
+              <InputDiv icon={<FaUser />} label="Username" isFocused={focused.username} hasValue={!!username}>
+                <input type="text" value={username} onChange={(e) => setUsername(e.target.value.trim())} onFocus={() => handleFocus("username")} onBlur={() => handleBlur("username")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
+              </InputDiv>
+
+              <InputDiv icon={<FaLock />} label="Password" isFocused={focused.password} hasValue={!!password}>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => handleFocus("password")} onBlur={() => handleBlur("password")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
+              </InputDiv>
+
+              <button type="button" onClick={() => setShowForgot(true)} className="text-sm text-[#38d39f] hover:underline block text-right mb-4">
+                Forgot Password?
+              </button>
+
+              <button className="w-full h-12 rounded-3xl bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white text-lg uppercase font-medium hover:opacity-90 transition">
+                Login
+              </button>
+            </form>
+
+            <Link to="/signup" className="block text-right mt-4 text-[#999] hover:text-[#38d39f] text-sm">
               Don't have an account? Register
             </Link>
-          </form>
+          </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgot && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <h3 className="text-2xl font-bold mb-6 text-center">Reset Password</h3>
+
+            {forgotError && <p className="text-red-500 text-sm mb-4 text-center">{forgotError}</p>}
+            {forgotSuccess && <p className="text-green-500 text-sm mb-4 text-center">{forgotSuccess}</p>}
+
+            <form onSubmit={handleForgotPassword}>
+              {step === 1 ? (
+                <InputDiv icon={<FaEnvelope />} label="Email" isFocused={true} hasValue={!!forgotEmail}>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
+                    required
+                    autoFocus
+                  />
+                </InputDiv>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600 mb-4 text-center">Enter OTP sent to <strong>{forgotEmail}</strong></p>
+                  <InputDiv icon={<FaLock />} label="OTP" isFocused={true} hasValue={!!otp}>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0,6))}
+                      maxLength="6"
+                      className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-center tracking-widest font-mono"
+                      required
+                    />
+                  </InputDiv>
+                  <InputDiv icon={<FaLock />} label="New Password" isFocused={true} hasValue={!!newPassword}>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
+                      required
+                    />
+                  </InputDiv>
+                </>
+              )}
+
+              <button className="w-full h-12 mt-6 bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white rounded-3xl font-medium hover:opacity-90 transition">
+                {step === 1 ? "Send OTP" : "Reset Password"}
+              </button>
+            </form>
+
+            <button
+              onClick={() => {
+                setShowForgot(false);
+                setStep(1);
+                setForgotError("");
+                setForgotSuccess("");
+                setForgotEmail("");
+                setOtp("");
+                setNewPassword("");
+              }}
+              className="mt-4 text-sm text-gray-500 hover:text-gray-700 w-full text-center"
+            >
+              Back to Login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

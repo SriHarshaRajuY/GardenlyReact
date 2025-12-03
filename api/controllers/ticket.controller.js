@@ -10,40 +10,61 @@ export const submitTicket = async (req, res, next) => {
 
   try {
     if (!subject || !type || !description) {
-      return next(errorHandler(400, "Subject, type, and description required"));
+      return next(
+        errorHandler(400, "Subject, type, and description required")
+      );
     }
 
-    // Map type to expertise
+    // Normalize type (from frontend select)
+    const normalizedType = type.toLowerCase(); // 'general' | 'technical' | 'billing'
+
+    // Map ticket.type → expert.expertise in DB
     const expertiseMap = {
       general: "General",
       technical: "Technical",
       billing: "Billing",
     };
-    const expertise = expertiseMap[type.toLowerCase()];
+
+    const expertise = expertiseMap[normalizedType];
     if (!expertise) return next(errorHandler(400, "Invalid type"));
 
-    // Find available expert
+    // Find an expert with matching expertise
     const expert = await User.findOne({ role: "Expert", expertise });
-    if (!expert) return next(errorHandler(500, "No expert available"));
 
-    // Handle attachment (if any)
+    if (!expert) {
+      return next(
+        errorHandler(
+          500,
+          `No expert available for ${expertise}. Please create an Expert with this expertise.`
+        )
+      );
+    }
+
+    // Handle attachment (if any) → store as base64 data URL
     let attachment = null;
     if (attachmentFile) {
       const buffer = attachmentFile.buffer;
-      attachment = `data:${attachmentFile.mimetype};base64,${buffer.toString("base64")}`;
+      attachment = `data:${attachmentFile.mimetype};base64,${buffer.toString(
+        "base64"
+      )}`;
     }
 
     const ticket = new Ticket({
-      requester: req.user.username,
+      requester: req.user.username, // from JWT
       subject,
-      type,
+      type: normalizedType,
       description,
       expert_id: expert._id,
       attachment,
     });
 
     await ticket.save();
-    res.status(201).json({ success: true, message: "Ticket submitted", ticketId: ticket._id });
+
+    res.status(201).json({
+      success: true,
+      message: `Ticket submitted and assigned to ${expert.username} (${expert.expertise})`,
+      ticketId: ticket._id,
+    });
   } catch (err) {
     next(err);
   }
@@ -55,6 +76,7 @@ export const getUserTickets = async (req, res, next) => {
     const tickets = await Ticket.find({ requester: req.user.username })
       .populate("expert_id", "username expertise")
       .sort({ createdAt: -1 });
+
     res.json(tickets);
   } catch (err) {
     next(err);
@@ -67,19 +89,23 @@ export const getExpertTickets = async (req, res, next) => {
     const tickets = await Ticket.find({ expert_id: req.user.id })
       .populate("expert_id", "username expertise")
       .sort({ createdAt: -1 });
+
     res.json(tickets);
   } catch (err) {
     next(err);
   }
 };
 
-// Get single ticket (for buyers/experts/admins)
+// Get single ticket
 export const getTicket = async (req, res, next) => {
   try {
-    const ticket = await Ticket.findById(req.params.id).populate("expert_id", "username expertise");
+    const ticket = await Ticket.findById(req.params.id).populate(
+      "expert_id",
+      "username expertise"
+    );
     if (!ticket) return next(errorHandler(404, "Ticket not found"));
 
-    // Permission check
+    // Permission: admin, expert, or the buyer who requested
     if (
       req.user.role !== "admin" &&
       req.user.role !== "expert" &&
@@ -106,7 +132,12 @@ export const resolveTicket = async (req, res, next) => {
       { resolution, status: "Resolved", resolved_at: new Date() },
       { new: true }
     );
-    if (!ticket) return next(errorHandler(404, "Ticket not found or not assigned"));
+
+    if (!ticket) {
+      return next(
+        errorHandler(404, "Ticket not found or not assigned to this expert")
+      );
+    }
 
     res.json({ success: true, message: "Resolved", ticket });
   } catch (err) {

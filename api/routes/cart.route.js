@@ -1,4 +1,4 @@
-// server/routes/cart.route.js (NEW FILE)
+// api/routes/cart.route.js
 import express from "express";
 import {
   getCart,
@@ -11,6 +11,7 @@ import { verifyToken, requireBuyer } from "../middleware/verifyToken.js";
 
 const router = express.Router();
 
+// all cart routes require a logged-in buyer
 router.use(verifyToken, requireBuyer);
 
 router.get("/", getCart);

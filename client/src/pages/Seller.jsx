@@ -5,13 +5,17 @@ import { useAuth } from "../context/AuthContext";
 import ProductCard from "../components/ProductCard";
 import ProductDetail from "../components/ProductDetail";
 
+
 export default function Seller() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
+  //products
   const [products, setProducts] = useState([]);
+  //top sales
   const [topSales, setTopSales] = useState([]);
+  //recent sales
   const [recentSales, setRecentSales] = useState([]);
+  //form
   const [modalProduct, setModalProduct] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -26,7 +30,7 @@ export default function Seller() {
   useEffect(() => {
     fetchAll();
   }, [user]);
-
+  //fetching products
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -59,7 +63,7 @@ export default function Seller() {
       setLoading(false);
     }
   };
-
+  //handled image compress 
   // ---------- IMAGE COMPRESS ----------
   const compressImage = (file) =>
     new Promise((res) => {
@@ -78,6 +82,8 @@ export default function Seller() {
       };
       r.readAsDataURL(file);
     });
+
+    //handle sumit 
 
   // ---------- SUBMIT ----------
   const handleSubmit = async (e) => {
@@ -124,7 +130,7 @@ export default function Seller() {
     fd.append("category", category.trim());
     fd.append("price", p);
     fd.append("quantity", q);
-
+    //handling posting products
     try {
       const res = await fetch("/api/products", {
         method: "POST",
@@ -153,6 +159,8 @@ export default function Seller() {
   };
 
   // ---------- EDIT ----------
+  //handled edit property
+
   const handleEdit = async (prod) => {
     const n = prompt("New name:", prod.name);
     const d = prompt("New description:", prod.description);
@@ -213,6 +221,8 @@ export default function Seller() {
   };
 
   // ---------- GROUP BY CATEGORY ----------
+  //handle the category 
+
   const byCategory = products.reduce((acc, p) => {
     const cat = p.category || "Uncategorized";
     if (!acc[cat]) acc[cat] = [];

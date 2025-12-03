@@ -3,13 +3,14 @@ import mongoose from "mongoose";
 
 const ticketSchema = new mongoose.Schema(
   {
-    requester: { type: String, required: true }, // Username of the buyer
+    requester: { type: String, required: true }, // buyer username
     subject: { type: String, required: true },
-    type: { type: String, required: true }, // e.g., 'general', 'technical', 'billing'
+    // 'general', 'technical', 'billing'
+    type: { type: String, required: true },
     description: { type: String, required: true },
-    status: { type: String, default: "Open" }, // 'Open', 'Resolved'
+    status: { type: String, default: "Open" }, // 'Open' | 'Resolved'
     expert_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    attachment: { type: String }, // Base64 or URL for image
+    attachment: { type: String }, // base64 data URL
     resolution: { type: String },
     resolved_at: { type: Date },
   },
