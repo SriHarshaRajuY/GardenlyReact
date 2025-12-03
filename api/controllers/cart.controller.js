@@ -2,13 +2,13 @@
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
 
+// Get cart for logged-in buyer
 export const getCart = async (req, res, next) => {
   try {
     let cart = await Cart.findOne({ user_id: req.user.id }).populate(
       "items.product"
     );
 
-    // If no cart, create an empty one for this user
     if (!cart) {
       cart = new Cart({ user_id: req.user.id, items: [] });
       await cart.save();
@@ -32,7 +32,6 @@ export const addToCart = async (req, res, next) => {
     if (!product)
       return next({ statusCode: 404, message: "Product not found" });
 
-    // find cart for this user by user_id
     let cart = await Cart.findOne({ user_id: req.user.id });
     if (!cart) {
       cart = new Cart({ user_id: req.user.id, items: [] });
@@ -58,7 +57,7 @@ export const addToCart = async (req, res, next) => {
   }
 };
 
-// Update quantity of an item
+// Update quantity
 export const updateCartItem = async (req, res, next) => {
   try {
     const { productId, quantity } = req.body;
@@ -95,7 +94,7 @@ export const updateCartItem = async (req, res, next) => {
   }
 };
 
-// Remove item from cart
+// Remove item
 export const removeFromCart = async (req, res, next) => {
   try {
     const { productId } = req.params;
@@ -117,7 +116,7 @@ export const removeFromCart = async (req, res, next) => {
   }
 };
 
-// Checkout (not used in OTP flow, but fine to keep)
+// Old checkout (not used with OTP but OK to keep)
 export const checkout = async (req, res, next) => {
   try {
     const cart = await Cart.findOne({ user_id: req.user.id }).populate(

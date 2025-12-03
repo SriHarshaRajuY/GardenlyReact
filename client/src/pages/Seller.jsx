@@ -23,8 +23,17 @@ export default function Seller() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // redirect non-sellers away from seller page
   useEffect(() => {
-    fetchAll();
+    if (user && user.role !== "seller") {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (user && user.role === "seller") {
+      fetchAll();
+    }
   }, [user]);
 
   const fetchAll = async () => {
@@ -78,7 +87,7 @@ export default function Seller() {
       r.readAsDataURL(file);
     });
 
-  // ---------- IMAGE CHANGE (frontend validation) ----------
+  // ---------- IMAGE CHANGE ----------
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) {
@@ -93,8 +102,15 @@ export default function Seller() {
       return;
     }
 
-    const ext = file.name.toLowerCase();
-    if (!ext.endsWith(".jpg") && !ext.endsWith(".jpeg") && !ext.endsWith(".png") && !ext.endsWith(".gif") && !ext.endsWith(".webp")) {
+    const name = file.name.toLowerCase();
+    const ok =
+      name.endsWith(".jpg") ||
+      name.endsWith(".jpeg") ||
+      name.endsWith(".png") ||
+      name.endsWith(".gif") ||
+      name.endsWith(".webp");
+
+    if (!ok) {
       alert("Only jpg, jpeg, png, gif, webp images are allowed");
       e.target.value = "";
       setImage(null);
@@ -170,7 +186,8 @@ export default function Seller() {
         setPrice("");
         setQuantity("");
         setImage(null);
-        document.getElementById("image-input").value = "";
+        const el = document.getElementById("image-input");
+        if (el) el.value = "";
         fetchAll();
       } else {
         alert(data.message || "Failed");
@@ -225,7 +242,7 @@ export default function Seller() {
 
   // ---------- DELETE ----------
   const handleDelete = async (prod) => {
-    if (!confirm("Delete this product?")) return;
+    if (!window.confirm("Delete this product?")) return;
     try {
       const res = await fetch(`/api/products/${prod._id}`, {
         method: "DELETE",
@@ -340,7 +357,7 @@ export default function Seller() {
                         <ProductCard
                           key={p._id}
                           product={p}
-                          onView={setModalProduct}
+                          onOpenDetail={setModalProduct}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
                         />
@@ -359,7 +376,7 @@ export default function Seller() {
                   <ProductCard
                     key={p._id}
                     product={p}
-                    onView={setModalProduct}
+                    onOpenDetail={setModalProduct}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />
@@ -375,7 +392,7 @@ export default function Seller() {
                   <ProductCard
                     key={p._id}
                     product={p}
-                    onView={setModalProduct}
+                    onOpenDetail={setModalProduct}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />

@@ -26,10 +26,12 @@ export default function Cart() {
     pincode: "",
   });
 
-  // Load cart on mount
+  // 👉 Fetch cart ONLY when a buyer is logged in
   useEffect(() => {
-    fetchCart();
-  }, []);
+    if (user?.role === "buyer") {
+      fetchCart();
+    }
+  }, [user, fetchCart]);
 
   // Prefill billing from logged in user
   useEffect(() => {
@@ -51,10 +53,10 @@ export default function Cart() {
 
   const total = useMemo(
     () =>
-      cartItems.reduce(
-        (sum, item) => sum + (item.product?.price || 0) * item.quantity,
-        0
-      ),
+      cartItems.reduce((sum, item) => {
+        const price = item.product?.price ?? 0;
+        return sum + price * (item.quantity ?? 0);
+      }, 0),
     [cartItems]
   );
 
@@ -151,7 +153,7 @@ export default function Cart() {
       setShowBilling(false);
       setOrderId(null);
       setOtp("");
-      await fetchCart(); // cart will be empty now
+      await fetchCart();
     } catch (err) {
       console.error("verify-otp error:", err);
       alert("Network error, please try again.");
@@ -161,18 +163,71 @@ export default function Cart() {
   };
 
   const handleQtyChange = (item, delta) => {
-    const newQty = item.quantity + delta;
+    const productId = item.product?._id;
+    if (!productId) {
+      alert("This product is no longer available.");
+      return;
+    }
+    const newQty = (item.quantity ?? 0) + delta;
     if (newQty < 1) return;
-    updateQuantity(item.product._id, newQty);
+    updateQuantity(productId, newQty);
   };
 
   const handleRemove = (item) => {
+    const productId = item.product?._id;
+    if (!productId) {
+      alert("This product is no longer available.");
+      return;
+    }
     if (window.confirm("Remove this item from cart?")) {
-      removeFromCart(item.product._id);
+      removeFromCart(productId);
     }
   };
 
-  // ---------- UI ----------
+  // ========== ROLE-BASED UI ==========
+
+  // 1) Not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pt-20">
+        <div className="max-w-3xl mx-auto px-4 py-10">
+          <div className="bg-white rounded-3xl shadow-xl p-10 text-center">
+            <h1 className="text-3xl font-bold mb-4">Your Cart</h1>
+            <p className="text-gray-600">
+              Please sign in as a <span className="font-semibold">Buyer</span>{" "}
+              to add items to your cart.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2) Logged in but NOT a buyer (Seller/Admin/Expert)
+  if (user.role !== "buyer") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pt-20">
+        <div className="max-w-3xl mx-auto px-4 py-10">
+          <div className="bg-white rounded-3xl shadow-xl p-10 text-center">
+            <h1 className="text-3xl font-bold mb-4">Cart not available</h1>
+            <p className="text-gray-600 mb-2">
+              You are logged in as{" "}
+              <span className="font-semibold">
+                {user.username} ({user.role})
+              </span>
+              .
+            </p>
+            <p className="text-gray-600">
+              Shopping cart is only available for{" "}
+              <span className="font-semibold">Buyer</span> accounts.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3) Normal cart UI for buyers
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pt-20">
       <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
@@ -187,62 +242,69 @@ export default function Cart() {
           ) : (
             <>
               <div className="space-y-6">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.product._id}
-                    className="flex items-center justify-between border-b pb-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={
-                          item.product.image || "/images/fallback-plant.jpg"
-                        }
-                        alt={item.product.name}
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                      <div>
-                        <h2 className="font-semibold text-lg">
-                          {item.product.name}
-                        </h2>
-                        <p className="text-sm text-gray-500">
-                          ₹{item.product.price} each
-                        </p>
+                {cartItems.map((item, index) => {
+                  const product = item.product || {};
+                  const key = product._id || item._id || index;
+                  const imgSrc = product.image || "/images/fallback-plant.jpg";
+
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between border-b pb-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={imgSrc}
+                          alt={product.name || "Product"}
+                          className="w-16 h-16 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/images/fallback-plant.jpg";
+                          }}
+                        />
+                        <div>
+                          <h2 className="font-semibold text-lg">
+                            {product.name || "Product unavailable"}
+                          </h2>
+                          <p className="text-sm text-gray-500">
+                            ₹{product.price ?? 0} each
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
+                            onClick={() => handleQtyChange(item, -1)}
+                          >
+                            <FaMinus />
+                          </button>
+                          <span className="w-6 text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
+                            onClick={() => handleQtyChange(item, 1)}
+                          >
+                            <FaPlus />
+                          </button>
+                        </div>
+
+                        <div className="w-20 text-right font-semibold">
+                          ₹{((product.price ?? 0) * item.quantity).toFixed(2)}
+                        </div>
+
+                        <button
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => handleRemove(item)}
+                          title="Remove"
+                        >
+                          <FaTrashAlt />
+                        </button>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
-                          onClick={() => handleQtyChange(item, -1)}
-                        >
-                          <FaMinus />
-                        </button>
-                        <span className="w-6 text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
-                          onClick={() => handleQtyChange(item, 1)}
-                        >
-                          <FaPlus />
-                        </button>
-                      </div>
-
-                      <div className="w-20 text-right font-semibold">
-                        ₹{(item.product.price * item.quantity).toFixed(2)}
-                      </div>
-
-                      <button
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleRemove(item)}
-                        title="Remove"
-                      >
-                        <FaTrashAlt />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="flex items-center justify-between mt-6">
@@ -402,7 +464,9 @@ export default function Cart() {
                 <div className="flex flex-col md:flex-row items-center gap-3">
                   <input
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
                     maxLength={6}
                     className="border rounded-lg px-4 py-2 text-center tracking-widest text-lg w-40"
                     placeholder="123456"
