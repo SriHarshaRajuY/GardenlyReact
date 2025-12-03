@@ -229,7 +229,7 @@ export default function ExpertSupport() {
           </div>
         )}
 
-        {/* Article View */}
+        {/* Article */}
         {activeSection === "article" && selectedArticle && (
           <div className="bg-white dark:bg-gray-800 p-6 rounded shadow">
             <h1 className="text-3xl font-bold mb-2 dark:text-white">{selectedArticle.title}</h1>
