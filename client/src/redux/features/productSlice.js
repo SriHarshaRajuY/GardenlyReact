@@ -1,5 +1,5 @@
 // client/src/redux/features/productSlice.js
-// Example product slice – just for showing Redux usage
+
 
 import { createSlice } from "@reduxjs/toolkit";
 

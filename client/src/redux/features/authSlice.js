@@ -1,5 +1,5 @@
 // client/src/redux/features/authSlice.js
-// Example auth slice just for demonstration
+
 
 import { createSlice } from "@reduxjs/toolkit";
 

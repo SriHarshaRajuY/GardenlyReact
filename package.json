@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@reduxjs/toolkit": "^2.11.0",
     "bcryptjs": "^3.0.2",
     "connect-mongo": "^5.1.0",
     "cookie-parser": "^1.4.7",
@@ -26,6 +27,7 @@
     "mongoose": "^8.19.3",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.11",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.6"
   },
   "repository": {

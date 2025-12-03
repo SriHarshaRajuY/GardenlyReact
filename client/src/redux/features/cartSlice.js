@@ -1,5 +1,5 @@
 // client/src/redux/features/cartSlice.js
-// Example cart slice for demo
+
 
 import { createSlice } from "@reduxjs/toolkit";
 
