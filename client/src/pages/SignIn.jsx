@@ -136,6 +136,7 @@ export default function SignIn() {
                   <option value="Expert">Expert</option>
                 </select>
               </InputDiv>
+              
 
               <InputDiv icon={<FaUser />} label="Username" isFocused={focused.username} hasValue={!!username}>
                 <input type="text" value={username} onChange={(e) => setUsername(e.target.value.trim())} onFocus={() => handleFocus("username")} onBlur={() => handleBlur("username")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
