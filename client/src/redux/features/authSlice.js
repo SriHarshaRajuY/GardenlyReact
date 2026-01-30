@@ -13,13 +13,12 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    dummyLogin: (state, action) => {
-      // fake login – not used anywhere
-      state.currentUser = action.payload?.user || "demoUser";
-      state.token = action.payload?.token || "demoToken";
-      state.isAdmin = !!action.payload?.isAdmin;
+    login: (state, action) => {
+      state.currentUser = action.payload.user;
+      state.token = action.payload.token;
+      state.isAdmin = action.payload.isAdmin;
     },
-    dummyLogout: (state) => {
+    logout: (state) => {
       state.currentUser = null;
       state.token = null;
       state.isAdmin = false;
@@ -27,5 +26,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { dummyLogin, dummyLogout } = authSlice.actions;
+export const { login, logout } = authSlice.actions;
 export default authSlice.reducer;

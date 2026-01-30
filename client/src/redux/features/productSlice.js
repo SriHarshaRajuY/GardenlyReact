@@ -13,25 +13,20 @@ const productSlice = createSlice({
   name: "products",
   initialState,
   reducers: {
-    dummySetProducts: (state, action) => {
-      state.list = action.payload || [];
+    setProducts: (state, action) => {
+      state.list = action.payload;
       state.status = "succeeded";
     },
-    dummyStartLoading: (state) => {
+    startLoading: (state) => {
       state.status = "loading";
       state.error = null;
     },
-    dummyLoadingFailed: (state, action) => {
+    loadingFailed: (state, action) => {
       state.status = "failed";
-      state.error = action.payload || "Something went wrong";
+      state.error = action.payload;
     },
   },
 });
 
-export const {
-  dummySetProducts,
-  dummyStartLoading,
-  dummyLoadingFailed,
-} = productSlice.actions;
-
+export const { setProducts, startLoading, loadingFailed } = productSlice.actions;
 export default productSlice.reducer;

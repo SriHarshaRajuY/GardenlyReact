@@ -40,8 +40,6 @@ export const searchProducts = async (req, res, next) => {
     const products = await Product.find({
       $or: [
         { name: regex },
-        { description: regex },
-        { category: regex },
       ],
     })
       .sort({ createdAt: -1 })

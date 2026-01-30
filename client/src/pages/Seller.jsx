@@ -285,14 +285,23 @@ export default function Seller() {
               className="p-2 border dark:border-gray-600 rounded bg-transparent"
               required
             />
-            <input
-              type="text"
-              placeholder="Category"
+            <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="p-2 border dark:border-gray-600 rounded bg-transparent"
               required
-            />
+            >
+              <option value="">Select Category</option>
+              <option value="Plants">Plants</option>
+              <option value="Seeds">Seeds</option>
+              <option value="Pots">Pots</option>
+              <option value="Tools">Tools</option>
+              <option value="Fertilizers">Fertilizers</option>
+              <option value="Pesticides">Pesticides</option>
+              <option value="Soil">Soil</option>
+              <option value="Decorative">Decorative</option>
+              <option value="Other">Other</option>
+            </select>
             <input
               type="number"
               placeholder="Price"
