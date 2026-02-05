@@ -30,7 +30,8 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.11",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.9.6"
+    "react-router-dom": "^7.9.6",
+    "rotating-file-stream": "^3.2.8"
   },
   "repository": {
     "type": "git",
