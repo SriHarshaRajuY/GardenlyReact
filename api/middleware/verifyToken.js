@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 
 export const verifyToken = (req, res, next) => {
-  // use optional chaining so it won't crash if req.cookies is undefined
   const token = req.cookies?.access_token;
 
   if (!token) return next(errorHandler(401, "Unauthorized"));
@@ -33,6 +32,13 @@ export const requireExpert = (req, res, next) => {
 export const requireBuyer = (req, res, next) => {
   if (req.user.role !== "buyer") {
     return next(errorHandler(403, "Access denied. Buyers only."));
+  }
+  next();
+};
+
+export const requireAdmin = (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return next(errorHandler(403, "Admin required"));
   }
   next();
 };

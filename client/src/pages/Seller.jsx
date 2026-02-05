@@ -5,17 +5,14 @@ import { useAuth } from "../context/AuthContext";
 import ProductCard from "../components/ProductCard";
 import ProductDetail from "../components/ProductDetail";
 
-
 export default function Seller() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  //products
+
   const [products, setProducts] = useState([]);
-  //top sales
   const [topSales, setTopSales] = useState([]);
-  //recent sales
   const [recentSales, setRecentSales] = useState([]);
-  //form
+
   const [modalProduct, setModalProduct] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -26,11 +23,19 @@ export default function Seller() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch when component mounts or user changes
+  // redirect non-sellers away from seller page
   useEffect(() => {
-    fetchAll();
+    if (user && user.role !== "seller") {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (user && user.role === "seller") {
+      fetchAll();
+    }
   }, [user]);
-  //fetching products
+
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -44,15 +49,9 @@ export default function Seller() {
       let top = [];
       let recent = [];
 
-      if (allRes.ok) {
-        all = await allRes.json();
-      }
-      if (topRes.ok) {
-        top = await topRes.json();
-      }
-      if (recentRes.ok) {
-        recent = await recentRes.json();
-      }
+      if (allRes.ok) all = await allRes.json();
+      if (topRes.ok) top = await topRes.json();
+      if (recentRes.ok) recent = await recentRes.json();
 
       setProducts(all);
       setTopSales(top);
@@ -63,10 +62,13 @@ export default function Seller() {
       setLoading(false);
     }
   };
-  //handled image compress 
+
   // ---------- IMAGE COMPRESS ----------
   const compressImage = (file) =>
-    new Promise((res) => {
+    new Promise((res, rej) => {
+      if (!file.type.startsWith("image/")) {
+        return rej(new Error("Not an image"));
+      }
       const r = new FileReader();
       r.onload = (e) => {
         const img = new Image();
@@ -79,11 +81,44 @@ export default function Seller() {
           c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
           res(c.toDataURL("image/jpeg", 0.7));
         };
+        img.onerror = () => rej(new Error("Image load error"));
       };
+      r.onerror = () => rej(new Error("File read error"));
       r.readAsDataURL(file);
     });
 
-    //handle sumit 
+  // ---------- IMAGE CHANGE ----------
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setImage(null);
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload only image files (jpg, png, etc.)");
+      e.target.value = "";
+      setImage(null);
+      return;
+    }
+
+    const name = file.name.toLowerCase();
+    const ok =
+      name.endsWith(".jpg") ||
+      name.endsWith(".jpeg") ||
+      name.endsWith(".png") ||
+      name.endsWith(".gif") ||
+      name.endsWith(".webp");
+
+    if (!ok) {
+      alert("Only jpg, jpeg, png, gif, webp images are allowed");
+      e.target.value = "";
+      setImage(null);
+      return;
+    }
+
+    setImage(file);
+  };
 
   // ---------- SUBMIT ----------
   const handleSubmit = async (e) => {
@@ -98,6 +133,11 @@ export default function Seller() {
 
     if (!name || !image || !category || !price || !quantity) {
       alert("All fields are required");
+      return;
+    }
+
+    if (!image.type.startsWith("image/")) {
+      alert("Please upload only image files (jpg, png, etc.)");
       return;
     }
 
@@ -117,7 +157,7 @@ export default function Seller() {
     try {
       compressed = await compressImage(image);
     } catch {
-      alert("Image compression failed");
+      alert("Image compression failed. Please choose a valid image file.");
       setSubmitting(false);
       return;
     }
@@ -130,7 +170,7 @@ export default function Seller() {
     fd.append("category", category.trim());
     fd.append("price", p);
     fd.append("quantity", q);
-    //handling posting products
+
     try {
       const res = await fetch("/api/products", {
         method: "POST",
@@ -146,7 +186,8 @@ export default function Seller() {
         setPrice("");
         setQuantity("");
         setImage(null);
-        document.getElementById("image-input").value = "";
+        const el = document.getElementById("image-input");
+        if (el) el.value = "";
         fetchAll();
       } else {
         alert(data.message || "Failed");
@@ -159,8 +200,6 @@ export default function Seller() {
   };
 
   // ---------- EDIT ----------
-  //handled edit property
-
   const handleEdit = async (prod) => {
     const n = prompt("New name:", prod.name);
     const d = prompt("New description:", prod.description);
@@ -203,7 +242,7 @@ export default function Seller() {
 
   // ---------- DELETE ----------
   const handleDelete = async (prod) => {
-    if (!confirm("Delete this product?")) return;
+    if (!window.confirm("Delete this product?")) return;
     try {
       const res = await fetch(`/api/products/${prod._id}`, {
         method: "DELETE",
@@ -221,8 +260,6 @@ export default function Seller() {
   };
 
   // ---------- GROUP BY CATEGORY ----------
-  //handle the category 
-
   const byCategory = products.reduce((acc, p) => {
     const cat = p.category || "Uncategorized";
     if (!acc[cat]) acc[cat] = [];
@@ -234,17 +271,75 @@ export default function Seller() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-12">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-12"
+        >
           <h2 className="text-2xl font-bold mb-4">Add New Product</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="p-2 border dark:border-gray-600 rounded bg-transparent" required />
-            <input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} className="p-2 border dark:border-gray-600 rounded bg-transparent" required />
-            <input type="number" placeholder="Price" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="p-2 border dark:border-gray-600 rounded bg-transparent" required />
-            <input type="number" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="p-2 border dark:border-gray-600 rounded bg-transparent" required />
-            <input id="image-input" type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} className="p-2 border dark:border-gray-600 rounded bg-transparent" required />
-            <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows="2" className="md:col-span-2 p-2 border dark:border-gray-600 rounded bg-transparent" />
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="p-2 border dark:border-gray-600 rounded bg-transparent"
+              required
+            />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="p-2 border dark:border-gray-600 rounded bg-transparent"
+              required
+            >
+              <option value="">Select Category</option>
+              <option value="Plants">Plants</option>
+              <option value="Seeds">Seeds</option>
+              <option value="Pots">Pots</option>
+              {/*<option value="Tools">Tools</option>
+               <option value="Fertilizers">Fertilizers</option>
+              <option value="Pesticides">Pesticides</option>
+              <option value="Soil">Soil</option>
+              <option value="Decorative">Decorative</option>
+              <option value="Other">Other</option> */}
+            </select>
+            <input
+              type="number"
+              placeholder="Price"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="p-2 border dark:border-gray-600 rounded bg-transparent"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="p-2 border dark:border-gray-600 rounded bg-transparent"
+              required
+            />
+            <input
+              id="image-input"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="p-2 border dark:border-gray-600 rounded bg-transparent"
+              required
+            />
+            <textarea
+              placeholder="Description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows="2"
+              className="md:col-span-2 p-2 border dark:border-gray-600 rounded bg-transparent"
+            />
           </div>
-          <button type="submit" disabled={submitting} className="mt-4 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="mt-4 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
+          >
             {submitting ? "Adding…" : "Post Product"}
           </button>
         </form>
@@ -271,7 +366,7 @@ export default function Seller() {
                         <ProductCard
                           key={p._id}
                           product={p}
-                          onView={setModalProduct}
+                          onOpenDetail={setModalProduct}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
                         />
@@ -290,7 +385,7 @@ export default function Seller() {
                   <ProductCard
                     key={p._id}
                     product={p}
-                    onView={setModalProduct}
+                    onOpenDetail={setModalProduct}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />
@@ -306,7 +401,7 @@ export default function Seller() {
                   <ProductCard
                     key={p._id}
                     product={p}
-                    onView={setModalProduct}
+                    onOpenDetail={setModalProduct}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />
@@ -316,8 +411,12 @@ export default function Seller() {
           </>
         )}
 
-        {/* Product Detail */}
-        {modalProduct && <ProductDetail product={modalProduct} onClose={() => setModalProduct(null)} />}
+        {modalProduct && (
+          <ProductDetail
+            product={modalProduct}
+            onClose={() => setModalProduct(null)}
+          />
+        )}
       </div>
     </div>
   );

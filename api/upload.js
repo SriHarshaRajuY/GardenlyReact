@@ -1,4 +1,4 @@
-// server/upload.js
+// api/upload.js
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -14,31 +14,46 @@ if (!fs.existsSync(uploadDir)) {
   console.log("Created folder:", uploadDir);
 }
 
+// where to store
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `image-${Date.now()}-${Math.round(
-      Math.random() * 1e9
-    )}${ext}`;
+    const ext = path.extname(file.originalname).toLowerCase();
+    const filename = `image-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
     cb(null, filename);
   },
 });
 
+// only allow these
+const ALLOWED_EXT = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+const ALLOWED_MIME = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const ext = path.extname(file.originalname).toLowerCase();
-    const mimetype = allowedTypes.test(file.mimetype);
+    const isExtOk = ALLOWED_EXT.includes(ext);
+    const isMimeOk = ALLOWED_MIME.includes(file.mimetype);
 
-    if (mimetype && allowedTypes.test(ext)) {
+    if (isExtOk && isMimeOk) {
       return cb(null, true);
     }
-    cb(new Error("Only image files (jpeg, jpg, png, gif, webp) are allowed!"));
+
+    // reject non-image files
+    cb(
+      new Error(
+        "Only image files (jpg, jpeg, png, gif, webp) are allowed!"
+      )
+    );
   },
 });
 

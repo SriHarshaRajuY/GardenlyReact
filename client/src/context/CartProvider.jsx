@@ -1,5 +1,5 @@
 // src/context/CartProvider.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CartContext } from "./CartContext";
 import { useAuth } from "./AuthContext";
 
@@ -7,15 +7,13 @@ export default function CartProvider({ children }) {
   const { user } = useAuth();
   const [cart, setCart] = useState({ items: [] });
 
-  useEffect(() => {
-    if (user && user.role === "buyer") {
-      fetchCart();
-    } else {
+  // ------- FETCH CART -------
+  const fetchCart = useCallback(async () => {
+    if (!user || user.role !== "buyer") {
       setCart({ items: [] });
+      return;
     }
-  }, [user]);
 
-  const fetchCart = async () => {
     try {
       const res = await fetch("/api/cart", { credentials: "include" });
       if (res.ok) {
@@ -25,16 +23,26 @@ export default function CartProvider({ children }) {
         setCart({ items: [] });
       }
     } catch (err) {
-      console.error(err);
+      console.error("fetchCart error:", err);
       setCart({ items: [] });
     }
-  };
+  }, [user]);
 
+  useEffect(() => {
+    if (user && user.role === "buyer") {
+      fetchCart();
+    } else {
+      setCart({ items: [] });
+    }
+  }, [user, fetchCart]);
+
+  // ------- ADD TO CART -------
   const addToCart = async (productId, quantity = 1) => {
     if (!user || user.role !== "buyer") {
       alert("Please login as buyer to add to cart");
       return;
     }
+
     try {
       const res = await fetch("/api/cart/add", {
         method: "POST",
@@ -50,10 +58,12 @@ export default function CartProvider({ children }) {
         alert(err.message || "Failed to add to cart");
       }
     } catch (err) {
+      console.error("addToCart error:", err);
       alert("Error adding to cart");
     }
   };
 
+  // ------- UPDATE QUANTITY -------
   const updateQuantity = async (productId, quantity) => {
     try {
       const res = await fetch("/api/cart/update", {
@@ -70,10 +80,12 @@ export default function CartProvider({ children }) {
         alert(err.message || "Failed to update cart");
       }
     } catch (err) {
+      console.error("updateQuantity error:", err);
       alert("Error updating cart");
     }
   };
 
+  // ------- REMOVE ITEM -------
   const removeFromCart = async (productId) => {
     try {
       const res = await fetch(`/api/cart/remove/${productId}`, {
@@ -88,10 +100,12 @@ export default function CartProvider({ children }) {
         alert(err.message || "Failed to remove from cart");
       }
     } catch (err) {
+      console.error("removeFromCart error:", err);
       alert("Error removing from cart");
     }
   };
 
+  // ------- CHECKOUT (old flow, unused with OTP but kept) -------
   const checkout = async () => {
     try {
       const res = await fetch("/api/cart/checkout", {
@@ -107,6 +121,7 @@ export default function CartProvider({ children }) {
         alert(err.message || "Checkout failed");
       }
     } catch (err) {
+      console.error("checkout error:", err);
       alert("Error during checkout");
     }
   };

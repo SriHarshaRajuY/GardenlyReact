@@ -1,39 +1,58 @@
 // api/utils/mailer.js
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { errorHandler } from "./error.js";
 
-// Load .env from project root (where you run `node api/index.js`)
-dotenv.config();
+// ✅ Load .env from project root (two levels up from /utils)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.warn(
+// Read and sanitize env values
+const emailUser = process.env.EMAIL_USER?.trim();
+const emailPass = process.env.EMAIL_PASS?.trim();
+
+console.log("📧 Mailer config check:");
+console.log("  EMAIL_USER =", JSON.stringify(emailUser));
+console.log("  EMAIL_PASS exists? ", !!emailPass);
+
+if (!emailUser || !emailPass) {
+  console.error(
     "⚠️ EMAIL_USER or EMAIL_PASS missing in environment. Mailer will fail."
   );
 }
 
-// ✅ Use Gmail service directly
+// ✅ Explicit Gmail SMTP config (works with app password)
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.EMAIL_HOST || "smtp.gmail.com",
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: process.env.EMAIL_SECURE === "true", // false for 587, true for 465
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: emailUser,
+    pass: emailPass,
   },
 });
 
-// Optional debug: verify on server start
+// Optional: verify on server start
 transporter.verify((err, success) => {
   if (err) {
-    console.error("❌ Mailer verify failed:", err.message || err);
+    console.error("❌ Mailer verify failed:", err);
   } else {
     console.log("✅ Mailer ready to send emails");
   }
 });
 
+/**
+ * Send OTP email
+ * @param {string} to - receiver email
+ * @param {string|number} otp - otp code
+ */
 export const sendOtpMail = async (to, otp) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error("Missing EMAIL_USER or EMAIL_PASS env variables");
+    if (!emailUser || !emailPass) {
+      console.error("❌ Cannot send mail: EMAIL_USER or EMAIL_PASS not set");
       throw errorHandler(
         500,
         "Email configuration error. Please contact support."
@@ -41,7 +60,7 @@ export const sendOtpMail = async (to, otp) => {
     }
 
     const from =
-      process.env.MAIL_FROM || `Gardenly Support <${process.env.EMAIL_USER}>`;
+      process.env.MAIL_FROM || `Gardenly Support <${emailUser}>`;
 
     const info = await transporter.sendMail({
       from,
@@ -67,7 +86,7 @@ export const sendOtpMail = async (to, otp) => {
     console.log("✅ OTP email sent:", info.messageId);
     return true;
   } catch (err) {
-    console.error("Error sending OTP mail:", err.message || err);
+    console.error("Error sending OTP mail:", err);
     throw errorHandler(
       500,
       "Failed to send OTP email. Please try again later."
