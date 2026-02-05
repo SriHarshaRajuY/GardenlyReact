@@ -10,3 +10,5 @@ const router = express.Router();
 router.get("/me", verifyToken, getProfile);
 
 export default router;
+
+// implemented using express router 
