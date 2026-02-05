@@ -295,12 +295,12 @@ export default function Seller() {
               <option value="Plants">Plants</option>
               <option value="Seeds">Seeds</option>
               <option value="Pots">Pots</option>
-              <option value="Tools">Tools</option>
-              <option value="Fertilizers">Fertilizers</option>
+              {/*<option value="Tools">Tools</option>
+               <option value="Fertilizers">Fertilizers</option>
               <option value="Pesticides">Pesticides</option>
               <option value="Soil">Soil</option>
               <option value="Decorative">Decorative</option>
-              <option value="Other">Other</option>
+              <option value="Other">Other</option> */}
             </select>
             <input
               type="number"
