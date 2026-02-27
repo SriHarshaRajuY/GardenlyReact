@@ -5,7 +5,7 @@ import Order from "../models/order.model.js";
 import Ticket from "../models/ticket.model.js";
 import { errorHandler } from "../utils/error.js";
 
-export const getAdminDashboard = async (req, res, next) => {
+export const getAdminDashboard = async (req , res, next) => {
   try {
     const [
       totalUsers,

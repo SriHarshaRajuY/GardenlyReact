@@ -22,4 +22,3 @@ router.post("/checkout", checkout);
 
 export default router;
 
-// cart

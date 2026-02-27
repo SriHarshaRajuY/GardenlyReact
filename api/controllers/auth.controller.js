@@ -3,9 +3,9 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
-import { sendOtpMail } from "../utils/mailer.js";   // ← THIS WAS MISSING!
+import { sendOtpMail } from "../utils/mailer.js";  
 
-// SIGNUP (unchanged)
+// SIGNUP 
 export const signup = async (req, res, next) => {
   const { username, email, password, role, mobile, expertise } = req.body;
 
@@ -61,7 +61,7 @@ export const signup = async (req, res, next) => {
   }
 };
 
-// SIGNIN (unchanged)
+// SIGNIN 
 export const signin = async (req, res, next) => {
   const { username, password, role } = req.body;
 

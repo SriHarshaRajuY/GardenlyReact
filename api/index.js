@@ -1,4 +1,3 @@
-// api/index.js
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -6,10 +5,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
-
 import helmet from "helmet";
-import logger from "./middleware/logger.js";
-
+import logger, { errorLogger } from "./middleware/logger.js";
 import ticketRoute from "./routes/ticket.route.js";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
@@ -17,7 +14,6 @@ import productRouter from "./routes/product.route.js";
 import cartRouter from "./routes/cart.route.js";
 import orderRouter from "./routes/order.route.js";
 import adminRouter from "./routes/admin.route.js";
-
 import upload from "./upload.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,7 +31,6 @@ app.use(logger);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -61,13 +56,25 @@ app.use("/api/orders", orderRouter);
 app.use("/api/admin", adminRouter);
 
 // =======================
-// ERROR HANDLER
+// ERROR HANDLING
 // =======================
+
+// 1. Structured logging of errors
+app.use(errorLogger);
+
+// 2. Final error response to client
 app.use((err, req, res, next) => {
   console.error("Error middleware:", err);
+
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
-  res.status(statusCode).json({ success: false, status: statusCode, message });
+
+  res.status(statusCode).json({
+    success: false,
+    status: statusCode,
+    message,
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+  });
 });
 
 // =======================
@@ -88,7 +95,6 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
-
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1);
