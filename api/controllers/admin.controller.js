@@ -5,13 +5,14 @@ import Order from "../models/order.model.js";
 import Ticket from "../models/ticket.model.js";
 import { errorHandler } from "../utils/error.js";
 
-export const getAdminDashboard = async (req , res, next) => {
+export const getAdminDashboard = async (req, res, next) => {
   try {
     const [
       totalUsers,
       totalBuyers,
       totalSellers,
       totalExperts,
+      totalAdmins,
       totalProducts,
       totalOrders,
       pendingOrders,
@@ -21,13 +22,18 @@ export const getAdminDashboard = async (req , res, next) => {
       ticketsOpen,
       ticketsResolved,
       revenueAgg,
-      latestUsers,
       recentOrders,
+      recentProducts,
+      recentBuyers,
+      recentSellers,
+      recentExperts,
+      recentAdmins,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: "Buyer" }),
       User.countDocuments({ role: "Seller" }),
       User.countDocuments({ role: "Expert" }),
+      User.countDocuments({ role: "Admin" }),
 
       Product.countDocuments(),
 
@@ -45,16 +51,34 @@ export const getAdminDashboard = async (req , res, next) => {
         { $group: { _id: null, total: { $sum: "$totalAmount" } } },
       ]),
 
-      User.find({})
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select("username email role createdAt"),
-
       Order.find({})
         .sort({ createdAt: -1 })
         .limit(5)
         .populate("userId", "username")
         .populate("items.product", "name"),
+
+      Product.find({}).sort({ createdAt: -1 }).limit(5),
+
+      // === SEPARATED USERS ===
+      User.find({ role: "Buyer" })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("username email mobile createdAt"),
+
+      User.find({ role: "Seller" })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("username email mobile createdAt"),
+
+      User.find({ role: "Expert" })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("username email mobile expertise createdAt"),
+
+      User.find({ role: "Admin" })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("username email mobile createdAt"),
     ]);
 
     const totalRevenue = revenueAgg[0]?.total || 0;
@@ -67,10 +91,9 @@ export const getAdminDashboard = async (req , res, next) => {
           buyers: totalBuyers,
           sellers: totalSellers,
           experts: totalExperts,
+          admins: totalAdmins,
         },
-        products: {
-          total: totalProducts,
-        },
+        products: { total: totalProducts },
         orders: {
           total: totalOrders,
           pending: pendingOrders,
@@ -84,8 +107,12 @@ export const getAdminDashboard = async (req , res, next) => {
           resolved: ticketsResolved,
         },
       },
-      latestUsers,
       recentOrders,
+      recentProducts,
+      recentBuyers,
+      recentSellers,
+      recentExperts,
+      recentAdmins,
     });
   } catch (err) {
     next(errorHandler(500, "Failed to load admin dashboard stats"));
