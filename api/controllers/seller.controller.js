@@ -31,7 +31,13 @@ export const getSellerOrders = async (req, res, next) => {
             productImage: item.product.image,
             quantity: item.quantity,
             price: item.price,
-            total: item.price * item.quantity,
+
+            // ✅ Seller actual earning (90%)
+            total: item.sellerEarning,
+
+            // show platform fee (nice marketplace feature)
+            adminCommission: item.adminCommission,
+
             buyer: {
               name: order.billing.fullName,
               phone: order.billing.phone,
@@ -73,11 +79,13 @@ export const getSellerSummary = async (req, res, next) => {
 
     let totalEarnings = 0;
 
+    // ✅ Now calculate earnings using sellerEarning (not full price)
     for (const order of orders) {
       for (const item of order.items) {
         if (!item.product) continue;
+
         if (item.product.seller_id?.toString() === sellerId) {
-          totalEarnings += item.price * item.quantity;
+          totalEarnings += item.sellerEarning || 0;
         }
       }
     }

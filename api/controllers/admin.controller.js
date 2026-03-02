@@ -47,9 +47,9 @@ export const getAdminDashboard = async (req, res, next) => {
       Ticket.countDocuments({ status: "Resolved" }),
 
       Order.aggregate([
-        { $match: { status: "confirmed" } },
-        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-      ]),
+  { $match: { status: "confirmed" } },
+  { $group: { _id: null, total: { $sum: "$totalAdminCommission" } } },
+]),
 
       Order.find({})
         .sort({ createdAt: -1 })
