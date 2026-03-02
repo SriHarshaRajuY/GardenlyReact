@@ -14,6 +14,7 @@ import productRouter from "./routes/product.route.js";
 import cartRouter from "./routes/cart.route.js";
 import orderRouter from "./routes/order.route.js";
 import adminRouter from "./routes/admin.route.js";
+import sellerRouter from "./routes/seller.route.js"; // ✅ NEW
 import upload from "./upload.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,7 @@ app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/seller", sellerRouter); // ✅ NEW SELLER DASHBOARD ROUTE
 
 // =======================
 // ERROR HANDLING

@@ -1,4 +1,3 @@
-// src/pages/Seller.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -11,7 +10,6 @@ export default function Seller() {
 
   const [products, setProducts] = useState([]);
   const [topSales, setTopSales] = useState([]);
-  const [recentSales, setRecentSales] = useState([]);
 
   const [modalProduct, setModalProduct] = useState(null);
   const [name, setName] = useState("");
@@ -23,7 +21,7 @@ export default function Seller() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // redirect non-sellers away from seller page
+  // only seller allowed
   useEffect(() => {
     if (user && user.role !== "seller") {
       navigate("/");
@@ -36,26 +34,23 @@ export default function Seller() {
     }
   }, [user]);
 
+  /* ================= FETCH PRODUCTS ================= */
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [allRes, topRes, recentRes] = await Promise.all([
+      const [allRes, topRes] = await Promise.all([
         fetch("/api/products/seller", { credentials: "include" }),
         fetch("/api/products/top-sales", { credentials: "include" }),
-        fetch("/api/products/recent-sales", { credentials: "include" }),
       ]);
 
       let all = [];
       let top = [];
-      let recent = [];
 
       if (allRes.ok) all = await allRes.json();
       if (topRes.ok) top = await topRes.json();
-      if (recentRes.ok) recent = await recentRes.json();
 
       setProducts(all);
       setTopSales(top);
-      setRecentSales(recent);
     } catch (e) {
       console.error(e);
     } finally {
@@ -63,113 +58,61 @@ export default function Seller() {
     }
   };
 
-  // ---------- IMAGE COMPRESS ----------
+  /* ================= IMAGE HANDLING ================= */
+
   const compressImage = (file) =>
     new Promise((res, rej) => {
-      if (!file.type.startsWith("image/")) {
-        return rej(new Error("Not an image"));
-      }
-      const r = new FileReader();
-      r.onload = (e) => {
+      if (!file.type.startsWith("image/")) return rej("Not image");
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
         const img = new Image();
         img.src = e.target.result;
         img.onload = () => {
-          const c = document.createElement("canvas");
-          const s = Math.min(800 / img.width, 1);
-          c.width = img.width * s;
-          c.height = img.height * s;
-          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-          res(c.toDataURL("image/jpeg", 0.7));
+          const canvas = document.createElement("canvas");
+          const scale = Math.min(800 / img.width, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          res(canvas.toDataURL("image/jpeg", 0.7));
         };
-        img.onerror = () => rej(new Error("Image load error"));
       };
-      r.onerror = () => rej(new Error("File read error"));
-      r.readAsDataURL(file);
+      reader.readAsDataURL(file);
     });
 
-  // ---------- IMAGE CHANGE ----------
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (!file) {
-      setImage(null);
-      return;
-    }
-
+    if (!file) return setImage(null);
     if (!file.type.startsWith("image/")) {
-      alert("Please upload only image files (jpg, png, etc.)");
-      e.target.value = "";
-      setImage(null);
+      alert("Upload image only");
       return;
     }
-
-    const name = file.name.toLowerCase();
-    const ok =
-      name.endsWith(".jpg") ||
-      name.endsWith(".jpeg") ||
-      name.endsWith(".png") ||
-      name.endsWith(".gif") ||
-      name.endsWith(".webp");
-
-    if (!ok) {
-      alert("Only jpg, jpeg, png, gif, webp images are allowed");
-      e.target.value = "";
-      setImage(null);
-      return;
-    }
-
     setImage(file);
   };
 
-  // ---------- SUBMIT ----------
+  /* ================= ADD PRODUCT ================= */
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
 
-    if (!user || user.role !== "seller") {
-      alert("You must login as a Seller to add a product");
-      navigate("/signin");
-      return;
-    }
-
     if (!name || !image || !category || !price || !quantity) {
-      alert("All fields are required");
-      return;
-    }
-
-    if (!image.type.startsWith("image/")) {
-      alert("Please upload only image files (jpg, png, etc.)");
-      return;
-    }
-
-    const p = parseFloat(price);
-    const q = parseInt(quantity, 10);
-    if (p <= 0 || q <= 0) {
-      alert("Price and quantity must be positive");
-      return;
-    }
-    if (image.size > 5 * 1024 * 1024) {
-      alert("Image must be ≤ 5 MB");
+      alert("All fields required");
       return;
     }
 
     setSubmitting(true);
-    let compressed;
-    try {
-      compressed = await compressImage(image);
-    } catch {
-      alert("Image compression failed. Please choose a valid image file.");
-      setSubmitting(false);
-      return;
-    }
 
+    const compressed = await compressImage(image);
     const fd = new FormData();
     const blob = await fetch(compressed).then((r) => r.blob());
+
     fd.append("image", blob, image.name);
     fd.append("name", name.trim());
     fd.append("description", description.trim());
     fd.append("category", category.trim());
-    fd.append("price", p);
-    fd.append("quantity", q);
+    fd.append("price", parseFloat(price));
+    fd.append("quantity", parseInt(quantity));
 
     try {
       const res = await fetch("/api/products", {
@@ -177,7 +120,9 @@ export default function Seller() {
         body: fd,
         credentials: "include",
       });
+
       const data = await res.json();
+
       if (res.ok && data.success) {
         alert("Product added!");
         setName("");
@@ -186,80 +131,17 @@ export default function Seller() {
         setPrice("");
         setQuantity("");
         setImage(null);
-        const el = document.getElementById("image-input");
-        if (el) el.value = "";
         fetchAll();
       } else {
         alert(data.message || "Failed");
       }
-    } catch {
-      alert("Network error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ---------- EDIT ----------
-  const handleEdit = async (prod) => {
-    const n = prompt("New name:", prod.name);
-    const d = prompt("New description:", prod.description);
-    const c = prompt("New category:", prod.category);
-    const pr = prompt("New price:", prod.price);
-    const q = prompt("New quantity:", prod.quantity);
-    if (!n || !c || !pr || !q) return;
+  /* ================= GROUP PRODUCTS ================= */
 
-    const priceNum = parseFloat(pr);
-    const qtyNum = parseInt(q);
-    if (isNaN(priceNum) || priceNum <= 0 || isNaN(qtyNum) || qtyNum < 0) {
-      alert("Invalid price/quantity");
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/products/${prod._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: n,
-          description: d,
-          category: c,
-          price: priceNum,
-          quantity: qtyNum,
-        }),
-        credentials: "include",
-      });
-      if (res.ok) {
-        alert("Updated!");
-        fetchAll();
-      } else {
-        const txt = await res.text();
-        alert(txt || "Update failed");
-      }
-    } catch {
-      alert("Edit error");
-    }
-  };
-
-  // ---------- DELETE ----------
-  const handleDelete = async (prod) => {
-    if (!window.confirm("Delete this product?")) return;
-    try {
-      const res = await fetch(`/api/products/${prod._id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (res.ok) {
-        alert("Deleted!");
-        fetchAll();
-      } else {
-        alert("Delete failed");
-      }
-    } catch {
-      alert("Delete error");
-    }
-  };
-
-  // ---------- GROUP BY CATEGORY ----------
   const byCategory = products.reduce((acc, p) => {
     const cat = p.category || "Uncategorized";
     if (!acc[cat]) acc[cat] = [];
@@ -270,145 +152,57 @@ export default function Seller() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-12"
-        >
+
+        {/* ADD PRODUCT FORM */}
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-12">
           <h2 className="text-2xl font-bold mb-4">Add New Product</h2>
+
           <div className="grid md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="p-2 border dark:border-gray-600 rounded bg-transparent"
-              required
-            />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="p-2 border dark:border-gray-600 rounded bg-transparent"
-              required
-            >
+            <input type="text" placeholder="Name" value={name} onChange={(e)=>setName(e.target.value)} className="p-2 border rounded" />
+            <select value={category} onChange={(e)=>setCategory(e.target.value)} className="p-2 border rounded">
               <option value="">Select Category</option>
               <option value="Plants">Plants</option>
               <option value="Seeds">Seeds</option>
               <option value="Pots">Pots</option>
-              {/*<option value="Tools">Tools</option>
-               <option value="Fertilizers">Fertilizers</option>
-              <option value="Pesticides">Pesticides</option>
-              <option value="Soil">Soil</option>
-              <option value="Decorative">Decorative</option>
-              <option value="Other">Other</option> */}
             </select>
-            <input
-              type="number"
-              placeholder="Price"
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="p-2 border dark:border-gray-600 rounded bg-transparent"
-              required
-            />
-            <input
-              type="number"
-              placeholder="Quantity"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="p-2 border dark:border-gray-600 rounded bg-transparent"
-              required
-            />
-            <input
-              id="image-input"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="p-2 border dark:border-gray-600 rounded bg-transparent"
-              required
-            />
-            <textarea
-              placeholder="Description (optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows="2"
-              className="md:col-span-2 p-2 border dark:border-gray-600 rounded bg-transparent"
-            />
+            <input type="number" placeholder="Price" value={price} onChange={(e)=>setPrice(e.target.value)} className="p-2 border rounded" />
+            <input type="number" placeholder="Quantity" value={quantity} onChange={(e)=>setQuantity(e.target.value)} className="p-2 border rounded" />
+            <input type="file" onChange={handleImageChange} className="p-2 border rounded" />
+            <textarea placeholder="Description" value={description} onChange={(e)=>setDescription(e.target.value)} className="p-2 border rounded md:col-span-2"/>
           </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-4 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            {submitting ? "Adding…" : "Post Product"}
+
+          <button type="submit" className="mt-4 w-full bg-green-600 text-white py-2 rounded">
+            {submitting ? "Adding..." : "Post Product"}
           </button>
         </form>
 
+        {/* PRODUCTS LIST */}
         {loading ? (
           <p className="text-center text-xl">Loading…</p>
         ) : (
-          <>
-            {/* Products by Category */}
-            <section className="mb-12">
-              <h2 className="text-3xl font-bold mb-6">
-                {user?.role === "seller" ? "Your Products" : "All Products"}
-              </h2>
-              {Object.keys(byCategory).length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400">
-                  No products yet. Add one!
-                </p>
-              ) : (
-                Object.entries(byCategory).map(([cat, list]) => (
-                  <div key={cat} className="mb-10">
-                    <h3 className="text-2xl font-semibold mb-3">{cat}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {list.map((p) => (
-                        <ProductCard
-                          key={p._id}
-                          product={p}
-                          onOpenDetail={setModalProduct}
-                          onEdit={handleEdit}
-                          onDelete={handleDelete}
-                        />
-                      ))}
-                    </div>
+          <section className="mb-12">
+            <h2 className="text-3xl font-bold mb-6">Your Products</h2>
+
+            {Object.keys(byCategory).length === 0 ? (
+              <p className="text-gray-500 text-center">No products yet</p>
+            ) : (
+              Object.entries(byCategory).map(([cat, list]) => (
+                <div key={cat} className="mb-10">
+                  <h3 className="text-xl font-semibold mb-3">{cat}</h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {list.map((p) => (
+                      <ProductCard
+                        key={p._id}
+                        product={p}
+                        onOpenDetail={setModalProduct}
+                      />
+                    ))}
                   </div>
-                ))
-              )}
-            </section>
-
-            {/* Recent Sales */}
-            <section className="mb-12">
-              <h2 className="text-3xl font-bold mb-6">Recent Sales</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {recentSales.map((p) => (
-                  <ProductCard
-                    key={p._id}
-                    product={p}
-                    onOpenDetail={setModalProduct}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </section>
-
-            {/* Top Sales */}
-            <section>
-              <h2 className="text-3xl font-bold mb-6">Top Sales</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {topSales.map((p) => (
-                  <ProductCard
-                    key={p._id}
-                    product={p}
-                    onOpenDetail={setModalProduct}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </section>
-          </>
+                </div>
+              ))
+            )}
+          </section>
         )}
 
         {modalProduct && (
