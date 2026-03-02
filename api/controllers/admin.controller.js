@@ -1,10 +1,10 @@
-// api/controllers/admin.controller.js
 import User from "../models/user.model.js";
 import Product from "../models/product.model.js";
 import Order from "../models/order.model.js";
 import Ticket from "../models/ticket.model.js";
 import { errorHandler } from "../utils/error.js";
 
+/* ================= ADMIN DASHBOARD ================= */
 export const getAdminDashboard = async (req, res, next) => {
   try {
     const [
@@ -59,7 +59,6 @@ export const getAdminDashboard = async (req, res, next) => {
 
       Product.find({}).sort({ createdAt: -1 }).limit(5),
 
-      // === SEPARATED USERS ===
       User.find({ role: "Buyer" })
         .sort({ createdAt: -1 })
         .limit(5)
@@ -116,5 +115,39 @@ export const getAdminDashboard = async (req, res, next) => {
     });
   } catch (err) {
     next(errorHandler(500, "Failed to load admin dashboard stats"));
+  }
+};
+
+/* ================= GET ALL USERS ================= */
+export const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({})
+      .select("-password -resetOtp -resetOtpExpiresAt")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: users.length,
+      users,
+    });
+  } catch (err) {
+    next(errorHandler(500, "Failed to fetch users"));
+  }
+};
+
+/* ================= GET ALL PRODUCTS ================= */
+export const getAllProducts = async (req, res, next) => {
+  try {
+    const products = await Product.find({})
+      .populate("seller_id", "username email")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: products.length,
+      products,
+    });
+  } catch (err) {
+    next(errorHandler(500, "Failed to fetch products"));
   }
 };

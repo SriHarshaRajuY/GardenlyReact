@@ -93,7 +93,7 @@ export default function SignIn() {
           navigate("/");
           break;
         case "Admin":
-          navigate("/admin-dashboard"); // ✅ fixed path
+          navigate("/admin/dashboard"); // ✅ fixed path
           break;
         default:
           navigate("/");

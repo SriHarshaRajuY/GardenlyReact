@@ -1,4 +1,3 @@
-// src/pages/AdminDashboard.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -76,26 +75,37 @@ export default function AdminDashboard() {
   const s = stats;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white pt-20 pb-16">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
+    <div className="space-y-8">
+      <div className="px-2 md:px-4">
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-bold text-green-800">Admin Dashboard</h1>
-            <p className="text-gray-600 mt-1">Live data from database • Users separated by role</p>
+            <h1 className="text-3xl font-semibold text-gray-800">Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Live data from database • Users separated by role
+            </p>
           </div>
+
           <button
             onClick={() => { setRefreshing(true); loadDashboard(false); }}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-green-500 text-green-700 hover:bg-green-50 font-medium"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium transition"
           >
             <RefreshCcw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
           </button>
         </div>
 
-        {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">{error}</div>}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
+            {error}
+          </div>
+        )}
 
         {loading && !s ? (
-          <div className="py-32 text-center text-green-700 text-lg">Loading live dashboard...</div>
+          <div className="py-32 text-center text-gray-600 text-lg">
+            Loading dashboard...
+          </div>
         ) : (
           s && (
             <>
@@ -115,7 +125,6 @@ export default function AdminDashboard() {
                 <MiniStat icon={ClipboardList} label="Open Tickets" value={s.tickets.open} color="bg-sky-50 border-sky-200 text-sky-700" sub={`${s.tickets.resolved} resolved`} />
               </div>
 
-              {/* USERS - SEPARATED BY ROLE */}
               <Section title="Recent Buyers" icon={UserCheck}>
                 <UserTable users={recentBuyers} />
               </Section>
@@ -132,7 +141,6 @@ export default function AdminDashboard() {
                 <UserTable users={recentAdmins} />
               </Section>
 
-              {/* PRODUCTS & ORDERS */}
               <Section title="Recent Products (Newest First)" icon={Package}>
                 <ProductGrid products={recentProducts} />
               </Section>
@@ -148,17 +156,18 @@ export default function AdminDashboard() {
   );
 }
 
-/* ====================== REUSABLE COMPONENTS ====================== */
+/* ---------- Reusable Components ---------- */
+
 function StatCard({ icon: Icon, label, value, sub }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5 flex flex-col gap-2">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col gap-2 hover:shadow-md transition">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
-          <p className="text-2xl font-bold text-green-800 mt-1">{value}</p>
+          <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-green-600" />
+        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-gray-600" />
         </div>
       </div>
       {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
@@ -168,8 +177,8 @@ function StatCard({ icon: Icon, label, value, sub }) {
 
 function MiniStat({ icon: Icon, label, value, sub, color }) {
   return (
-    <div className={`rounded-2xl border p-4 flex items-center gap-4 ${color}`}>
-      <div className="w-10 h-10 rounded-full bg-white/70 flex items-center justify-center">
+    <div className={`rounded-xl border p-4 flex items-center gap-4 ${color}`}>
+      <div className="w-10 h-10 rounded-lg bg-white/70 flex items-center justify-center">
         <Icon className="w-5 h-5" />
       </div>
       <div>
@@ -185,10 +194,10 @@ function Section({ title, icon: Icon, children }) {
   return (
     <div className="mb-12">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center">
-          <Icon className="w-5 h-5 text-green-700" />
+        <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
+          <Icon className="w-5 h-5 text-gray-700" />
         </div>
-        <h2 className="text-2xl font-bold text-green-800">{title}</h2>
+        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
       </div>
       {children}
     </div>
@@ -197,9 +206,9 @@ function Section({ title, icon: Icon, children }) {
 
 function UserTable({ users, showExpertise = false }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <table className="min-w-full text-sm">
-        <thead className="bg-green-50">
+        <thead className="bg-gray-50">
           <tr>
             <th className="px-5 py-3 text-left">Username</th>
             <th className="px-5 py-3 text-left">Email</th>
@@ -213,7 +222,7 @@ function UserTable({ users, showExpertise = false }) {
             <tr><td colSpan={showExpertise ? 5 : 4} className="px-5 py-8 text-center text-gray-500">No records yet</td></tr>
           ) : (
             users.map((u) => (
-              <tr key={u._id} className="border-t border-gray-100 hover:bg-green-50/50">
+              <tr key={u._id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-5 py-3 font-medium">{u.username}</td>
                 <td className="px-5 py-3">{u.email}</td>
                 <td className="px-5 py-3 text-xs font-mono">{u.mobile}</td>
@@ -235,7 +244,7 @@ function ProductGrid({ products }) {
         <p className="col-span-full text-center text-gray-500 py-8">No products yet</p>
       ) : (
         products.map((p) => (
-          <div key={p._id} className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition">
+          <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
             <img src={p.image?.startsWith("/") ? p.image : `/images/${p.image}`} alt={p.name} className="w-full h-40 object-cover" onError={(e) => (e.target.src = "/images/fallback.png")} />
             <div className="p-4">
               <h4 className="font-semibold line-clamp-1">{p.name}</h4>
@@ -251,9 +260,9 @@ function ProductGrid({ products }) {
 
 function OrderTable({ orders }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <table className="min-w-full text-sm">
-        <thead className="bg-green-50">
+        <thead className="bg-gray-50">
           <tr>
             <th className="px-5 py-3 text-left">Order ID</th>
             <th className="px-5 py-3 text-left">Customer</th>
@@ -267,7 +276,7 @@ function OrderTable({ orders }) {
             <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-500">No orders yet</td></tr>
           ) : (
             orders.map((o) => (
-              <tr key={o._id} className="border-t border-gray-100 hover:bg-green-50/50">
+              <tr key={o._id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-5 py-3 font-mono text-xs">{o._id.slice(-8)}</td>
                 <td className="px-5 py-3">{o.userId?.username || "—"}</td>
                 <td className="px-5 py-3 font-semibold">₹{o.totalAmount}</td>
