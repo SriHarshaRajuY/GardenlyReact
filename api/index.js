@@ -16,6 +16,7 @@ import orderRouter from "./routes/order.route.js";
 import adminRouter from "./routes/admin.route.js";
 import sellerRouter from "./routes/seller.route.js"; // ✅ NEW
 import upload from "./upload.js";
+import setupSwagger from './config/swagger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +24,11 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const app = express();
+
+// Add a root route
+app.get('/', (req, res) => {
+  res.send('Welcome to the Gardenly API!');
+});
 
 // =======================
 // MIDDLEWARES
@@ -56,6 +62,35 @@ app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/seller", sellerRouter); // ✅ NEW SELLER DASHBOARD ROUTE
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Retrieve a list of users
+ *     description: Retrieve a list of all users in the system.
+ *     responses:
+ *       200:
+ *         description: A list of users.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     description: The user ID.
+ *                     example: 12345
+ *                   name:
+ *                     type: string
+ *                     description: The user's name.
+ *                     example: John Doe
+ */
+app.get('/users', (req, res) => {
+  res.send('List of users');
+});
 
 // =======================
 // ERROR HANDLING
@@ -104,5 +139,7 @@ async function startServer() {
 }
 
 startServer();
+
+setupSwagger(app);
 
 export { upload };

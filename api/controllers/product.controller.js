@@ -17,7 +17,9 @@ export const getRecentProducts = async (req, res, next) => {
 export const getProductsByCategory = async (req, res, next) => {
   try {
     const { category } = req.params;
-    const products = await Product.find({ category }).sort({ createdAt: -1 });
+    const products = await Product.find({
+      category: { $regex: new RegExp(`^${category}$`, "i") },
+    }).sort({ createdAt: -1 });
     res.status(200).json(products);
   } catch (err) {
     next(err);

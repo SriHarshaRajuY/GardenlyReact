@@ -4,7 +4,62 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/auth/signin:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: test@gmail.com
+ *               password:
+ *                 type: string
+ *                 example: 123456
+ *     responses:
+ *       200:
+ *         description: Login successful
+ */
+
 router.post("/signup", signup);
+
+/**
+ * @swagger
+ * /api/auth/signin:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: test@gmail.com
+ *               password:
+ *                 type: string
+ *                 example: 123456
+ *     responses:
+ *       200:
+ *         description: Login successful
+ */
+
 router.post("/signin", signin);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
