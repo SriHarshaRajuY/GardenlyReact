@@ -29,7 +29,21 @@ const router = express.Router();
  *     security:
  *       - bearerAuth: []
  *     responses:
- *       200: { description: Success, content: { application/json: { schema: { type: object, properties: { success: {type:boolean}, user: {$ref: '#/components/schemas/User'}, stats: {type:object}, orders: {type:array, items:{$ref: '#/components/schemas/Order'}} } } } } }
+ *       200:
+ *         description: Successfully retrieved user profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 user:
+ *                   type: object
+ *                 orders:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Order'
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       404: { $ref: '#/components/responses/NotFound' }
  */

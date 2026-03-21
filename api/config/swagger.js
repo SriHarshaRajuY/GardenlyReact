@@ -42,13 +42,14 @@ const options = {
           properties: {
             _id: { type: 'string', example: '64f8e123abc456def7890123' },
             name: { type: 'string', example: 'Monstera Deliciosa' },
+            slug: { type: 'string', example: 'monstera-deliciosa' },
             price: { type: 'number', example: 799 },
-            category: { type: 'string', example: 'Plants' },
-            description: { type: 'string', example: 'Beautiful indoor plant...' },
-            stock: { type: 'integer', example: 45 },
             image: { type: 'string', example: 'https://cdn.gardenly.in/plants/monstera.jpg' },
-            seller: { type: 'string', example: '64f7d456789abc123def4567' },
-            sold: { type: 'integer', example: 12 },
+            category: { type: 'string', example: 'Plants' },
+            quantity: { type: 'integer', example: 45 },
+            sold: { type: 'integer', default: 0 },
+            isActive: { type: 'boolean', default: true },
+            seller_id: { type: 'string' }, // or seller: { type: 'string' }
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
@@ -73,8 +74,27 @@ const options = {
                   price: { type: 'number', example: 799 },
                   adminCommission: { type: 'number', example: 160 },
                   sellerEarning: { type: 'number', example: 639 },
-                },
-              },
+                  status: {
+                    type: 'string',
+                    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+                    default: 'pending'
+                  },
+                  tracking: {
+                    type: 'object',
+                    properties: {
+                      number: { type: 'string' },
+                      carrier: { type: 'string' },
+                      shippedAt: { type: 'string', format: 'date-time' },
+                      url: { type: 'string' }
+                    }
+                  },
+                  shippedNotes: { type: 'string' }
+                }
+              }
+            },
+            status: {
+              type: 'string',
+              enum: ['pending_otp', 'confirmed', 'shipped', 'delivered', 'cancelled'],
             },
             totalAmount: { type: 'number', example: 1598 },
             totalAdminCommission: { type: 'number', example: 320 },
@@ -90,7 +110,6 @@ const options = {
                 pincode: { type: 'string' },
               },
             },
-            status: { type: 'string', enum: ['pending_otp', 'confirmed', 'cancelled'] },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
@@ -203,20 +222,39 @@ const options = {
         }
       }
     },
+    responses: {
+      Unauthorized: {
+        description: 'Missing or invalid authentication',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+      },
+      Forbidden: {
+        description: 'Insufficient permissions (not admin)',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+      },
+      NotFound: {
+        description: 'Resource not found',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+      },
+      ServerError: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+      }
+    },
     tags: [
       { name: 'Products', description: 'Product catalog & seller management' },
       { name: 'Orders', description: 'Order placement with OTP verification (buyers)' },
       { name: 'Cart', description: 'Shopping cart management (buyers)' },
       { name: 'Tickets', description: 'Support ticket system (issue reporting & resolution)' },
       { name: 'Auth', description: 'Authentication endpoints' },
-      { name: 'Users', description: 'User profile & account management' }
+      { name: 'Users', description: 'User profile & account management' },
+      { name: 'Sellers', description: 'Seller dashboard endpoints (product management, order fulfillment, earnings)' }
     ]
   },
 
   apis: [
     path.join(process.cwd(), 'routes/**/*.js'),
     path.join(process.cwd(), 'src/routes/**/*.js'),
-    path.join(process.cwd(), 'api/routes/**/*.js')
+    path.join(process.cwd(), 'api/routes/**/*.js') // Ensure admin.route.js is scanned
   ]
 };
 
