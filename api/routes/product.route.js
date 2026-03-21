@@ -212,20 +212,37 @@ router.get("/recent-sales", verifyToken, requireSeller, getRecentSales);
  *             properties:
  *               name:
  *                 type: string
+ *                 example: "Updated Rose Plant"
  *               price:
  *                 type: number
+ *                 example: 499
  *               category:
  *                 type: string
+ *                 example: "Plants"
  *               description:
  *                 type: string
  *               stock:
  *                 type: integer
+ *                 example: 30
  *               image:
  *                 type: string
  *                 format: binary
  *     responses:
  *       200:
- *         description: Product updated
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product updated successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/Product'
  *       403:
  *         description: Not authorized to update this product
  *       404:
@@ -250,7 +267,18 @@ router.put("/:id", verifyToken, requireSeller, updateProduct);
  *         description: Product ID
  *     responses:
  *       200:
- *         description: Product deleted successfully
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product deleted successfully"
  *       403:
  *         description: Not authorized to delete this product
  *       404:
