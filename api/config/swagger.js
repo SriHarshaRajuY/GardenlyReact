@@ -220,24 +220,24 @@ const options = {
             updatedAt: { type: 'string', format: 'date-time' }
           }
         }
-      }
-    },
-    responses: {
-      Unauthorized: {
-        description: 'Missing or invalid authentication',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
       },
-      Forbidden: {
-        description: 'Insufficient permissions (not admin)',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
-      },
-      NotFound: {
-        description: 'Resource not found',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
-      },
-      ServerError: {
-        description: 'Internal server error',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+      responses: {
+        Unauthorized: {
+          description: 'Missing or invalid authentication',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+        },
+        Forbidden: {
+          description: 'Insufficient permissions (not admin)',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+        },
+        NotFound: {
+          description: 'Resource not found',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+        },
+        ServerError: {
+          description: 'Internal server error',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+        }
       }
     },
     tags: [
@@ -247,7 +247,8 @@ const options = {
       { name: 'Tickets', description: 'Support ticket system (issue reporting & resolution)' },
       { name: 'Auth', description: 'Authentication endpoints' },
       { name: 'Users', description: 'User profile & account management' },
-      { name: 'Sellers', description: 'Seller dashboard endpoints (product management, order fulfillment, earnings)' }
+      { name: 'Sellers', description: 'Seller dashboard endpoints (product management, order fulfillment, earnings)' },
+      { name: 'Admin', description: 'Admin management endpoints (seller approval, product moderation, analytics)' }
     ]
   },
 
