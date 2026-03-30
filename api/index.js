@@ -137,8 +137,9 @@ async function startServer() {
     process.exit(1);
   }
 }
-setupSwagger(app);
+
 startServer();
 
+setupSwagger(app);
 
 export { upload };
