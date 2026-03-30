@@ -35,11 +35,10 @@ export const sendOrderOtp = async (req, res, next) => {
       return next(errorHandler(400, "Your cart is empty."));
     }
 
-    // 2. Remove items where product is null (product deleted from DB)
+    // 2. Remove items where product is null
     const items = cart.items.filter((i) => i.product !== null);
 
     if (items.length === 0) {
-      // Clean the cart in DB so this doesn't keep happening
       cart.items = [];
       await cart.save();
       return next(
@@ -50,7 +49,7 @@ export const sendOrderOtp = async (req, res, next) => {
       );
     }
 
-    // If we removed some invalid items, persist the cleaned list
+    // Clean cart if needed
     if (items.length !== cart.items.length) {
       cart.items = items.map((i) => ({
         product: i.product._id,
@@ -59,15 +58,34 @@ export const sendOrderOtp = async (req, res, next) => {
       await cart.save();
     }
 
-    // 3. Build orderItems and total
+    // ============================
+    // BUILD ORDER + REVENUE LOGIC
+    // ============================
     let total = 0;
+    let totalAdminCommission = 0;
+
     const orderItems = items.map((item) => {
       const price = item.product.price ?? 0;
-      total += price * item.quantity;
+      const quantity = item.quantity;
+
+      const itemTotal = price * quantity;
+
+      // 10% commission to Gardenly
+      const adminCommission = Math.round(itemTotal * 0.10);
+
+      // 90% to seller
+      const sellerEarning = itemTotal - adminCommission;
+
+      total += itemTotal;
+      totalAdminCommission += adminCommission;
+
       return {
         product: item.product._id,
-        quantity: item.quantity,
+        sellerId: item.product.seller_id,
+        quantity,
         price,
+        adminCommission,
+        sellerEarning,
       };
     });
 
@@ -85,13 +103,14 @@ export const sendOrderOtp = async (req, res, next) => {
     if (!user) return next(errorHandler(404, "User not found."));
 
     const otp = generateOtp();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // 5. Create order with pending_otp status
+    // 5. Create order
     const order = new Order({
       userId: user._id,
       items: orderItems,
       totalAmount: total,
+      totalAdminCommission,
       billing: { fullName, phone, address1, address2, city, state, pincode },
       status: "pending_otp",
       otp,
@@ -100,7 +119,7 @@ export const sendOrderOtp = async (req, res, next) => {
 
     await order.save();
 
-    // 6. Send OTP mail
+    // 6. Send OTP
     await sendOtpMail(user.email, otp);
 
     res.status(200).json({
@@ -146,9 +165,8 @@ export const verifyOrderOtp = async (req, res, next) => {
       return next(errorHandler(400, "OTP expired. Please try again."));
     }
 
-    // 1. For each order item, update stock & sold
+    // Update stock
     for (const item of order.items) {
-      // If product was deleted after order creation, just skip that item
       if (!item.product) continue;
 
       const product = await Product.findById(item.product._id);
@@ -169,14 +187,14 @@ export const verifyOrderOtp = async (req, res, next) => {
       await product.save();
     }
 
-    // 2. Clear the user's cart
+    // Clear cart
     const cart = await Cart.findOne({ user_id: req.user.id });
     if (cart) {
       cart.items = [];
       await cart.save();
     }
 
-    // 3. Mark order as confirmed
+    // Confirm order
     order.status = "confirmed";
     order.otp = undefined;
     order.otpExpiresAt = undefined;
