@@ -63,7 +63,10 @@ const openApiSpec = {
     version: "1.0.0",
     description: "OpenAPI specification for the Gardenly backend (Express).",
   },
-  servers: [{ url: "http://localhost:3000", description: "Local dev" }],
+  servers: [
+    { url: "/", description: "Current server (same origin)" },
+    { url: "http://localhost:3000", description: "Local dev" },
+  ],
   tags: [
     { name: "Auth" },
     { name: "User" },
@@ -73,6 +76,7 @@ const openApiSpec = {
     { name: "Admin" },
     { name: "Seller" },
     { name: "Tickets" },
+    { name: "Test" },
   ],
   components: {
     securitySchemes: {
@@ -167,6 +171,104 @@ const openApiSpec = {
         },
         additionalProperties: true,
       },
+      SignupRequest: {
+        type: "object",
+        required: ["username", "email", "password", "role", "mobile"],
+        properties: {
+          username: { type: "string", default: "john_doe" },
+          email: { type: "string", default: "john@example.com" },
+          password: { type: "string", default: "Secure@123" },
+          role: { type: "string", enum: ["Buyer", "Seller", "Admin", "Expert"], default: "Buyer" },
+          mobile: { type: "string", default: "9876543210" },
+          expertise: { type: "string", enum: ["General", "Technical", "Billing"], default: "General" },
+        },
+      },
+      SigninRequest: {
+        type: "object",
+        required: ["username", "password", "role"],
+        properties: {
+          username: { type: "string", default: "john_doe" },
+          password: { type: "string", default: "Secure@123" },
+          role: { type: "string", default: "Buyer" },
+        },
+      },
+      ForgotPasswordRequest: {
+        type: "object",
+        required: ["email"],
+        properties: {
+          email: { type: "string", default: "john@example.com" },
+        },
+      },
+      ResetPasswordRequest: {
+        type: "object",
+        required: ["email", "otp", "newPassword"],
+        properties: {
+          email: { type: "string", default: "john@example.com" },
+          otp: { type: "string", default: "123456" },
+          newPassword: { type: "string", default: "NewSecure@123" },
+        },
+      },
+      AddToCartRequest: {
+        type: "object",
+        required: ["productId"],
+        properties: {
+          productId: { type: "string", default: "65f0c2f2c2a1b2c3d4e5f678" },
+          quantity: { type: "integer", default: 1 },
+        },
+      },
+      UpdateCartItemRequest: {
+        type: "object",
+        required: ["productId", "quantity"],
+        properties: {
+          productId: { type: "string", default: "65f0c2f2c2a1b2c3d4e5f678" },
+          quantity: { type: "integer", default: 2, minimum: 1 },
+        },
+      },
+      SendOrderOtpRequest: {
+        type: "object",
+        required: ["fullName", "phone", "address1", "city", "state", "pincode"],
+        properties: {
+          fullName: { type: "string", default: "John Doe" },
+          phone: { type: "string", default: "9876543210" },
+          address1: { type: "string", default: "123 Green Street" },
+          address2: { type: "string", default: "Near Central Park" },
+          city: { type: "string", default: "Bengaluru" },
+          state: { type: "string", default: "Karnataka" },
+          pincode: { type: "string", default: "560001" },
+        },
+      },
+      VerifyOrderOtpRequest: {
+        type: "object",
+        required: ["orderId", "otp"],
+        properties: {
+          orderId: { type: "string", default: "65f1d3e4f5a6b7c8d9e01234" },
+          otp: { type: "string", default: "123456" },
+        },
+      },
+      ResolveTicketRequest: {
+        type: "object",
+        required: ["resolution"],
+        properties: {
+          resolution: { type: "string", default: "Issue resolved. Please retry now." },
+        },
+      },
+      TestEmailRequest: {
+        type: "object",
+        required: ["email"],
+        properties: {
+          email: { type: "string", default: "john@example.com" },
+        },
+      },
+      UpdateProductRequest: {
+        type: "object",
+        properties: {
+          name: { type: "string", default: "Updated Aloe Vera" },
+          description: { type: "string", default: "Updated description" },
+          category: { type: "string", default: "Succulent" },
+          price: { type: "number", default: 349 },
+          quantity: { type: "integer", default: 15 },
+        },
+      },
     },
     responses: {
       Unauthorized: {
@@ -188,12 +290,12 @@ const openApiSpec = {
           required: true,
           content: {
             "application/json": {
-              schema: { type: "object", additionalProperties: true },
+              schema: { $ref: "#/components/schemas/SignupRequest" },
             },
           },
         },
         responses: {
-          200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+          201: { description: "Created", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
           400: { description: "Bad Request" },
         },
       },
@@ -206,7 +308,7 @@ const openApiSpec = {
           required: true,
           content: {
             "application/json": {
-              schema: { type: "object", additionalProperties: true },
+              schema: { $ref: "#/components/schemas/SigninRequest" },
             },
           },
         },
@@ -224,7 +326,7 @@ const openApiSpec = {
           required: true,
           content: {
             "application/json": {
-              schema: { type: "object", additionalProperties: true },
+              schema: { $ref: "#/components/schemas/ForgotPasswordRequest" },
             },
           },
         },
@@ -239,11 +341,20 @@ const openApiSpec = {
           required: true,
           content: {
             "application/json": {
-              schema: { type: "object", additionalProperties: true },
+              schema: { $ref: "#/components/schemas/ResetPasswordRequest" },
             },
           },
         },
         responses: { 200: { description: "OK" }, 400: { description: "Bad Request" } },
+      },
+    },
+    "/api/auth/logout": {
+      post: {
+        tags: ["Auth"],
+        summary: "Logout current user (clears access_token cookie)",
+        responses: {
+          200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+        },
       },
     },
     "/api/auth/check": {
@@ -294,8 +405,15 @@ const openApiSpec = {
             "multipart/form-data": {
               schema: {
                 type: "object",
-                properties: { image: { type: "string", format: "binary" } },
-                additionalProperties: true,
+                properties: {
+                  name: { type: "string", default: "Aloe Vera" },
+                  description: { type: "string", default: "Low maintenance indoor plant" },
+                  category: { type: "string", default: "Succulent" },
+                  price: { type: "number", default: 299 },
+                  quantity: { type: "integer", default: 10 },
+                  image: { type: "string", format: "binary" },
+                },
+                required: ["name", "category", "price", "quantity", "image"],
               },
             },
           },
@@ -313,14 +431,24 @@ const openApiSpec = {
       get: {
         tags: ["Products"],
         summary: "Search products",
-        parameters: [{ in: "query", name: "q", required: false, schema: { type: "string" } }],
+        parameters: [{ in: "query", name: "q", required: true, schema: { type: "string", default: "aloe" } }],
         responses: {
           200: {
             description: "OK",
             content: {
-              "application/json": { schema: { type: "array", items: { $ref: "#/components/schemas/Product" } } },
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    count: { type: "integer", example: 1 },
+                    products: { type: "array", items: { $ref: "#/components/schemas/Product" } },
+                  },
+                },
+              },
             },
           },
+          400: { description: "Search query missing" },
         },
       },
     },
@@ -372,7 +500,7 @@ const openApiSpec = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { type: "object", additionalProperties: true } },
+            "application/json": { schema: { $ref: "#/components/schemas/UpdateProductRequest" } },
           },
         },
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
@@ -404,7 +532,7 @@ const openApiSpec = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { type: "object", additionalProperties: true } },
+            "application/json": { schema: { $ref: "#/components/schemas/AddToCartRequest" } },
           },
         },
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
@@ -418,7 +546,7 @@ const openApiSpec = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { type: "object", additionalProperties: true } },
+            "application/json": { schema: { $ref: "#/components/schemas/UpdateCartItemRequest" } },
           },
         },
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
@@ -447,9 +575,9 @@ const openApiSpec = {
         summary: "Send order OTP (buyer only)",
         security: [{ cookieAuth: [] }],
         requestBody: {
-          required: false,
+          required: true,
           content: {
-            "application/json": { schema: { $ref: "#/components/schemas/OtpRequest" } },
+            "application/json": { schema: { $ref: "#/components/schemas/SendOrderOtpRequest" } },
           },
         },
         responses: {
@@ -466,7 +594,7 @@ const openApiSpec = {
         requestBody: {
           required: true,
           content: {
-            "application/json": { schema: { type: "object", additionalProperties: true } },
+            "application/json": { schema: { $ref: "#/components/schemas/VerifyOrderOtpRequest" } },
           },
         },
         responses: {
@@ -526,8 +654,13 @@ const openApiSpec = {
             "multipart/form-data": {
               schema: {
                 type: "object",
-                properties: { attachment: { type: "string", format: "binary" } },
-                additionalProperties: true,
+                properties: {
+                  subject: { type: "string", default: "Need help with my order" },
+                  type: { type: "string", enum: ["general", "technical", "billing"], default: "general" },
+                  description: { type: "string", default: "Please help me track my order status." },
+                  attachment: { type: "string", format: "binary" },
+                },
+                required: ["subject", "type", "description"],
               },
             },
           },
@@ -584,9 +717,31 @@ const openApiSpec = {
         summary: "Resolve a ticket (expert)",
         security: [{ cookieAuth: [] }],
         parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/ResolveTicketRequest" } },
+          },
+        },
         responses: {
           200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
           401: { $ref: "#/components/responses/Unauthorized" },
+        },
+      },
+    },
+    "/api/test/send-test-email": {
+      post: {
+        tags: ["Test"],
+        summary: "Send test OTP email",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/TestEmailRequest" } },
+          },
+        },
+        responses: {
+          200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+          400: { description: "Email is required" },
         },
       },
     },
