@@ -192,6 +192,14 @@ const openApiSpec = {
           role: { type: "string", default: "Buyer" },
         },
       },
+      GoogleSigninRequest: {
+        type: "object",
+        required: ["credential"],
+        properties: {
+          credential: { type: "string", default: "google_id_token_here" },
+          role: { type: "string", enum: ["Buyer", "Seller", "Admin", "Expert"], default: "Buyer" },
+        },
+      },
       ForgotPasswordRequest: {
         type: "object",
         required: ["email"],
@@ -315,6 +323,24 @@ const openApiSpec = {
         responses: {
           200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
           400: { description: "Bad Request" },
+        },
+      },
+    },
+    "/api/auth/google": {
+      post: {
+        tags: ["Auth"],
+        summary: "Sign in with Google",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/GoogleSigninRequest" },
+            },
+          },
+        },
+        responses: {
+          200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
+          401: { description: "Invalid Google token" },
         },
       },
     },

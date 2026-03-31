@@ -2,8 +2,31 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import { errorHandler } from "../utils/error.js";
 import { sendOtpMail } from "../utils/mailer.js";  
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const buildAuthResponse = (res, user) => {
+  const token = jwt.sign(
+    { id: user._id, username: user.username, role: user.role.toLowerCase() },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  const { password: _, ...userWithoutPassword } = user._doc;
+
+  return res
+    .cookie("access_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+    .status(200)
+    .json({ success: true, token, user: userWithoutPassword });
+};
 
 // SIGNUP 
 export const signup = async (req, res, next) => {
@@ -80,25 +103,80 @@ export const signin = async (req, res, next) => {
       return next(errorHandler(403, "Role mismatch. Please select correct role."));
     }
 
-    const token = jwt.sign(
-      { id: user._id, username: user.username, role: user.role.toLowerCase() },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    const { password: _, ...userWithoutPassword } = user._doc;
-
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
-    .status(200)
-    .json({ success: true, token, user: userWithoutPassword });
+    return buildAuthResponse(res, user);
 
   } catch (err) {
     next(err);
+  }
+};
+
+// GOOGLE SIGNIN
+export const googleSignin = async (req, res, next) => {
+  const { credential, role = "Buyer" } = req.body;
+
+  try {
+    if (!credential) {
+      return next(errorHandler(400, "Google credential is required"));
+    }
+
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return next(errorHandler(500, "GOOGLE_CLIENT_ID is not configured"));
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload?.email?.toLowerCase();
+    if (!email) {
+      return next(errorHandler(400, "Google account email is missing"));
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const safeRole = ["Buyer", "Seller", "Admin", "Expert"].includes(role)
+        ? role
+        : "Buyer";
+
+      const emailPrefix = (email.split("@")[0] || "user")
+        .replace(/[^a-zA-Z0-9_-]/g, "")
+        .slice(0, 12);
+
+      let username = `${emailPrefix || "user"}_${Math.floor(
+        100 + Math.random() * 900
+      )}`;
+      while (await User.findOne({ username })) {
+        username = `${emailPrefix || "user"}_${Math.floor(
+          100 + Math.random() * 900
+        )}`;
+      }
+
+      let mobile = `${Date.now()}`.slice(-10);
+      while (await User.findOne({ mobile })) {
+        mobile = `${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+      }
+
+      const tempPassword = bcrypt.hashSync(
+        `google_${Date.now()}_${Math.random()}`,
+        10
+      );
+
+      user = await User.create({
+        username,
+        email,
+        password: tempPassword,
+        role: safeRole,
+        mobile,
+        expertise: safeRole === "Expert" ? "General" : "General",
+      });
+    }
+
+    return buildAuthResponse(res, user);
+  } catch (err) {
+    return next(errorHandler(401, "Invalid Google token"));
   }
 };
 

@@ -1,5 +1,5 @@
 // src/pages/SignIn.jsx
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaUserTag, FaHome, FaEnvelope } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
@@ -37,6 +37,8 @@ const InputDiv = ({ icon, label, children, isFocused, hasValue }) => (
 export default function SignIn() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const googleBtnRef = useRef(null);
+  const roleRef = useRef("");
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -62,6 +64,95 @@ export default function SignIn() {
   const [forgotError, setForgotError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState("");
 
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
+
+  const handlePostLoginNavigation = (loggedInUserRole) => {
+    switch (loggedInUserRole) {
+      case "Expert":
+        navigate("/expert-dashboard");
+        break;
+      case "Seller":
+        navigate("/seller");
+        break;
+      case "Buyer":
+        navigate("/");
+        break;
+      case "Admin":
+        navigate("/admin/dashboard");
+        break;
+      default:
+        navigate("/");
+    }
+  };
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || !googleBtnRef.current) return;
+
+    let cancelled = false;
+
+    const initializeGoogle = () => {
+      if (cancelled || !window.google?.accounts?.id) return;
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          try {
+            setError("");
+            const res = await fetch("/api/auth/google", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                credential: response.credential,
+                role: roleRef.current || "Buyer",
+              }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+              setError(data.message || "Google sign in failed");
+              return;
+            }
+
+            login(data.token);
+            handlePostLoginNavigation(data.user.role);
+          } catch {
+            setError("Google sign in failed");
+          }
+        },
+      });
+
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "pill",
+        width: 320,
+      });
+    };
+
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogle;
+    document.body.appendChild(script);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [login, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -82,22 +173,7 @@ export default function SignIn() {
       // Save token on client side too
       login(data.token);
 
-      switch (data.user.role) {
-        case "Expert":
-          navigate("/expert-dashboard");
-          break;
-        case "Seller":
-          navigate("/seller");
-          break;
-        case "Buyer":
-          navigate("/");
-          break;
-        case "Admin":
-          navigate("/admin/dashboard"); // ✅ fixed path
-          break;
-        default:
-          navigate("/");
-      }
+      handlePostLoginNavigation(data.user.role);
     } catch {
       setError("Server error");
     }
@@ -251,6 +327,11 @@ export default function SignIn() {
                 Login
               </button>
             </form>
+
+            <div className="my-4 text-center text-sm text-gray-500">or</div>
+            <div className="flex justify-center">
+              <div ref={googleBtnRef} />
+            </div>
 
             <Link
               to="/signup"
