@@ -88,7 +88,7 @@ export default function SignIn() {
   };
 
   useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
     if (!clientId || !googleBtnRef.current) return;
     let cancelled = false;
 
