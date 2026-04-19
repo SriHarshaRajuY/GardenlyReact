@@ -21,7 +21,7 @@ export default function ExpertDashboard() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/tickets/expert", {
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/tickets/expert", {
         credentials: "include",
       });
       if (res.ok) {
@@ -50,7 +50,7 @@ export default function ExpertDashboard() {
     if (!resolution) return alert("Please write a resolution");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tickets/${selectedTicket._id}/resolve`, {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/tickets/${selectedTicket._id}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolution }),

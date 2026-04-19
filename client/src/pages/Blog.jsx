@@ -23,7 +23,7 @@ export default function Blog() {
 
   const fetchBlogs = async () => {
     try {
-      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/blogs");
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/blogs");
       const data = await res.json();
       if (data.success && data.blogs) {
         setBlogsList(data.blogs);
@@ -53,7 +53,7 @@ export default function Blog() {
   const handleLike = async (blogId) => {
     if (!user) return alert("Please login to like");
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/blogs/${blogId}/like`, { method: "POST", credentials: "include" });
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/blogs/${blogId}/like`, { method: "POST", credentials: "include" });
       if (res.ok) fetchBlogs();
     } catch (err) { console.error(err); }
   };
@@ -62,7 +62,7 @@ export default function Blog() {
     e.preventDefault();
     if (!user || !commentText.trim()) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/blogs/${selectedBlog._id}/comment`, {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/blogs/${selectedBlog._id}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: commentText }),

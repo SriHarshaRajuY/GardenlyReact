@@ -28,7 +28,7 @@ export default function ManagerDashboard() {
         setLoading(true);
 
         // Fetch unassigned orders
-        const ordersRes = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/unassigned", {
+        const ordersRes = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/orders/unassigned", {
           credentials: "include",
         });
         if (ordersRes.ok) {
@@ -37,7 +37,7 @@ export default function ManagerDashboard() {
         }
 
         // Fetch delivery agents
-        const agentsRes = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/delivery/agents", {
+        const agentsRes = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/delivery/agents", {
           credentials: "include",
         });
         if (agentsRes.ok) {
@@ -63,7 +63,7 @@ export default function ManagerDashboard() {
 
     try {
       setAssigningOrder(orderId);
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/orders/${orderId}/assign-agent`, {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/orders/${orderId}/assign-agent`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

@@ -52,7 +52,7 @@ export default function CustomRequests() {
   const handleCreateRequest = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/custom-requests", {
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/custom-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description, budget: Number(budget) }),
@@ -76,7 +76,7 @@ export default function CustomRequests() {
     e.preventDefault();
     if (!selectedRequest) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/custom-requests/${selectedRequest}/proposals`, {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/custom-requests/${selectedRequest}/proposals`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ price: Number(proposalPrice), message: proposalMessage }),
@@ -100,7 +100,7 @@ export default function CustomRequests() {
   const handleAcceptProposal = async (requestId, proposalId) => {
     if (!window.confirm("Accepting this proposal will confirm the deal and share contact details via email. Proceed?")) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/custom-requests/${requestId}/proposals/${proposalId}/accept`, {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/custom-requests/${requestId}/proposals/${proposalId}/accept`, {
         method: "PUT",
         credentials: "include"
       });

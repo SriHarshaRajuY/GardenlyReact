@@ -99,7 +99,7 @@ export default function SignIn() {
         callback: async (response) => {
           try {
             setError("");
-            const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/google", {
+            const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/auth/google", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",
@@ -157,7 +157,7 @@ export default function SignIn() {
       return setError("Please fill all fields");
 
     try {
-      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/signin", {
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -227,7 +227,7 @@ export default function SignIn() {
     if (forgotStep === 1) {
       if (!forgotEmail) return setForgotError("Email is required");
       try {
-        const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/forgot-password", {
+        const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/auth/forgot-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: forgotEmail }),
@@ -243,7 +243,7 @@ export default function SignIn() {
       if (!forgotOtp || !newPassword)
         return setForgotError("OTP and new password required");
       try {
-        const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/reset-password", {
+        const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/auth/reset-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: forgotEmail, otp: forgotOtp, newPassword }),

@@ -25,7 +25,7 @@ export default function AgentDashboard() {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/my-deliveries", {
+        const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/orders/my-deliveries", {
           credentials: "include",
         });
 
@@ -49,7 +49,7 @@ export default function AgentDashboard() {
   const updateDeliveryStatus = async (orderId, newStatus) => {
     try {
       setUpdatingOrder(orderId);
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/orders/${orderId}/update-delivery-status`, {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/orders/${orderId}/update-delivery-status`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

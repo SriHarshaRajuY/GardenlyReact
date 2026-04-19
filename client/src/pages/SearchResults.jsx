@@ -22,7 +22,7 @@ export default function SearchResults() {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/products/search?q=${encodeURIComponent(query)}`
+        const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/products/search?q=${encodeURIComponent(query)}`
         );
         const data = await res.json();
         if (!res.ok || !data.success) {

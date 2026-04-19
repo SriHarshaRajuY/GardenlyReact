@@ -11,7 +11,7 @@ export default function AuthProvider({ children }) {
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/user/me", {
+        const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/user/me", {
           credentials: "include", // sends the httpOnly cookie
         });
         if (res.ok) {
@@ -50,7 +50,7 @@ export default function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/logout", { method: "POST", credentials: "include" });
+      await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/auth/logout", { method: "POST", credentials: "include" });
     } catch (err) {
       console.error("Logout failed", err);
     }

@@ -23,7 +23,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/products?limit=12", { credentials: "include" });
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products?limit=12", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch products");
       const data = await res.json();
       // Handle both paginated response { products: [...] } and plain array

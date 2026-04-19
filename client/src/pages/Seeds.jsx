@@ -17,7 +17,7 @@ export default function Seeds() {
 
   const fetchSeeds = (currentPage) => {
     setLoading(true);
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/products/category/Seeds?page=${currentPage}&limit=${limit}`, { credentials: "include" })
+    fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/products/category/Seeds?page=${currentPage}&limit=${limit}`, { credentials: "include" })
       .then(r => r.json())
       .then(d => {
         const items = d.products || (Array.isArray(d) ? d : []);

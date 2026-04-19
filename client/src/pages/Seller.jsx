@@ -41,8 +41,8 @@ export default function Seller() {
     setLoading(true);
     try {
       const [allRes, topRes] = await Promise.all([
-        fetch(import.meta.env.VITE_BACKEND_URL + "/api/products/seller", { credentials: "include" }),
-        fetch(import.meta.env.VITE_BACKEND_URL + "/api/products/top-sales", { credentials: "include" }),
+        fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products/seller", { credentials: "include" }),
+        fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products/top-sales", { credentials: "include" }),
       ]);
 
       let all = [];
@@ -117,7 +117,7 @@ export default function Seller() {
     fd.append("quantity", parseInt(quantity));
 
     try {
-      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/products", {
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products", {
         method: "POST",
         body: fd,
         credentials: "include",

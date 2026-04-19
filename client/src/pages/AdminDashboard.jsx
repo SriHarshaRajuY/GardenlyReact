@@ -29,7 +29,7 @@ export default function AdminDashboard() {
     if (showSpinner) setLoading(true);
     setError("");
     try {
-      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/admin/dashboard", { credentials: "include" });
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/admin/dashboard", { credentials: "include" });
       const data = await res.json();
       if (!res.ok || !data.success) {
         setError(data.message || "Failed to load dashboard");
