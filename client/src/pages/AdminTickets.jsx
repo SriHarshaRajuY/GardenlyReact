@@ -20,7 +20,7 @@ export default function AdminTickets() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/tickets", { credentials: "include" });
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/admin/tickets", { credentials: "include" });
       const data = await res.json();
       if (!res.ok) return setError(data.message || "Failed to load tickets");
       setTickets(data.tickets);
@@ -48,7 +48,7 @@ export default function AdminTickets() {
     if (!resolution.trim()) return alert("Please enter a resolution note");
     setResolvingId(resolveModal._id);
     try {
-      const res = await fetch(`/api/admin/tickets/${resolveModal._id}/resolve`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets/${resolveModal._id}/resolve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

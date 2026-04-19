@@ -15,7 +15,7 @@ export default function CartProvider({ children }) {
     }
 
     try {
-      const res = await fetch("/api/cart", { credentials: "include" });
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/cart", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setCart(data);
@@ -44,7 +44,7 @@ export default function CartProvider({ children }) {
     }
 
     try {
-      const res = await fetch("/api/cart/add", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/cart/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, quantity }),
@@ -66,7 +66,7 @@ export default function CartProvider({ children }) {
   // ------- UPDATE QUANTITY -------
   const updateQuantity = async (productId, quantity) => {
     try {
-      const res = await fetch("/api/cart/update", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/cart/update", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, quantity }),
@@ -88,7 +88,7 @@ export default function CartProvider({ children }) {
   // ------- REMOVE ITEM -------
   const removeFromCart = async (productId) => {
     try {
-      const res = await fetch(`/api/cart/remove/${productId}`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cart/remove/${productId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -108,7 +108,7 @@ export default function CartProvider({ children }) {
   // ------- CHECKOUT (old flow, unused with OTP but kept) -------
   const checkout = async () => {
     try {
-      const res = await fetch("/api/cart/checkout", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/cart/checkout", {
         method: "POST",
         credentials: "include",
       });

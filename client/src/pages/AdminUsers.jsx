@@ -20,7 +20,7 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/users", { credentials: "include" });
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/admin/users", { credentials: "include" });
       const data = await res.json();
       if (!res.ok) return setError(data.message || "Failed to load users");
       setUsers(data.users);
@@ -48,7 +48,7 @@ export default function AdminUsers() {
     if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
     setDeleting(id);
     try {
-      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE", credentials: "include" });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users/${id}`, { method: "DELETE", credentials: "include" });
       const data = await res.json();
       if (!res.ok) return alert(data.message || "Failed to delete");
       setUsers(prev => prev.filter(u => u._id !== id));

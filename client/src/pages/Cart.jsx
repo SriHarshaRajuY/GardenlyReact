@@ -102,7 +102,7 @@ export default function Cart() {
 
     setVerifying(true);
     try {
-      const orderRes = await fetch("/api/orders/create-razorpay-order", {
+      const orderRes = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/create-razorpay-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -119,7 +119,7 @@ export default function Cart() {
         description: "Plant Purchase",
         order_id: orderData.order.id,
         handler: async (response) => {
-          const verifyRes = await fetch("/api/orders/verify-razorpay-payment", {
+          const verifyRes = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/verify-razorpay-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -152,7 +152,7 @@ export default function Cart() {
 
   const finalizeOrder = async (paymentId) => {
     try {
-      const res = await fetch("/api/orders/send-otp", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -161,7 +161,7 @@ export default function Cart() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      const finalRes = await fetch("/api/orders/verify-otp", {
+      const finalRes = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -187,7 +187,7 @@ export default function Cart() {
 
     setSendingOtp(true);
     try {
-      const res = await fetch("/api/orders/send-otp", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -210,7 +210,7 @@ export default function Cart() {
     if (!otp.trim()) return alert("Please enter OTP");
     setVerifying(true);
     try {
-      const res = await fetch("/api/orders/verify-otp", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/orders/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

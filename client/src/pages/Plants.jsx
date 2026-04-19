@@ -18,7 +18,7 @@ export default function Plants() {
 
   const fetchPlants = (currentPage) => {
     setLoading(true);
-    fetch(`/api/products/category/Plants?page=${currentPage}&limit=${limit}`, { credentials: "include" })
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/products/category/Plants?page=${currentPage}&limit=${limit}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
         // Handle pagination response structure

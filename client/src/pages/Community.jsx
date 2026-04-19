@@ -74,7 +74,7 @@ export default function Community() {
 
   const fetchCommunities = async () => {
     try {
-      const res = await fetch("/api/community", { credentials: "include" });
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/community", { credentials: "include" });
       const data = await res.json();
       if (data.success) {
         setCommunities({ joined: data.joined, suggested: data.suggested });
@@ -88,7 +88,7 @@ export default function Community() {
   const fetchPosts = async (communityId) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/community/posts?communityId=${communityId}`, { credentials: "include" });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/community/posts?communityId=${communityId}`, { credentials: "include" });
       const data = await res.json();
       if (data.success) setPosts(data.posts);
     } catch (err) { console.error(err); }
@@ -97,7 +97,7 @@ export default function Community() {
 
   const handleJoin = async (id) => {
     try {
-      const res = await fetch(`/api/community/join/${id}`, { method: "POST", credentials: "include" });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/community/join/${id}`, { method: "POST", credentials: "include" });
       if (res.ok) fetchCommunities();
     } catch (err) { console.error(err); }
   };
@@ -106,7 +106,7 @@ export default function Community() {
     e.preventDefault();
     if (!newPost.content.trim() && !newPost.mediaUrl) return;
     try {
-      const res = await fetch("/api/community/posts", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/community/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...newPost, communityId: activeComm._id }),
@@ -123,7 +123,7 @@ export default function Community() {
 
   const handleLike = async (postId) => {
     try {
-      const res = await fetch(`/api/community/posts/${postId}/like`, { method: "POST", credentials: "include" });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/community/posts/${postId}/like`, { method: "POST", credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         // Update locally
@@ -137,7 +137,7 @@ export default function Community() {
   const handleComment = async (postId) => {
     if (!commentText[postId]?.trim()) return;
     try {
-      const res = await fetch(`/api/community/posts/${postId}/comment`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/community/posts/${postId}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: commentText[postId] }),
@@ -163,7 +163,7 @@ export default function Community() {
     const formData = new FormData();
     formData.append("image", file);
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/upload", { method: "POST", body: formData, credentials: "include" });
       const data = await res.json();
       if (data.success) {
         setNewPost({ ...newPost, mediaUrl: data.url, mediaType: "image" });
@@ -175,7 +175,7 @@ export default function Community() {
   const handleCreateComm = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/community", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/community", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newComm),
@@ -192,7 +192,7 @@ export default function Community() {
   const handleDeletePost = async (postId) => {
     if (!window.confirm("Delete this post?")) return;
     try {
-      const res = await fetch(`/api/community/posts/${postId}`, { method: "DELETE", credentials: "include" });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/community/posts/${postId}`, { method: "DELETE", credentials: "include" });
       if (res.ok) setPosts(posts.filter(p => p._id !== postId));
     } catch (err) { console.error(err); }
   };

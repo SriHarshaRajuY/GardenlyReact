@@ -20,7 +20,7 @@ export default function AdminOrders() {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/admin/orders", { credentials: "include" });
+        const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/admin/orders", { credentials: "include" });
         const data = await res.json();
         if (!res.ok) return setError(data.message || "Failed to load orders");
         setOrders(data.orders);

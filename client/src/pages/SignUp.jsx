@@ -79,7 +79,7 @@ export default function SignUp() {
         callback: async (response) => {
           try {
             setError("");
-            const res = await fetch("/api/auth/google", {
+            const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/google", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",
@@ -155,7 +155,7 @@ export default function SignUp() {
       const payload = { ...form };
       if (form.role !== "Expert") delete payload.expertise;
 
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -187,7 +187,7 @@ export default function SignUp() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/verify-email", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/auth/verify-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, otp }),

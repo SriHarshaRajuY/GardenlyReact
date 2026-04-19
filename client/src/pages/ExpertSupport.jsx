@@ -25,7 +25,7 @@ export default function ExpertSupport() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tickets/user", { credentials: "include" });
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/tickets/user", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setTickets(data);
@@ -46,7 +46,7 @@ export default function ExpertSupport() {
     setLoading(true);
     const formData = new FormData(e.target);
     try {
-      const res = await fetch("/api/tickets/submit", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/tickets/submit", {
         method: "POST",
         body: formData,
         credentials: "include",

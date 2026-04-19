@@ -13,7 +13,7 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/products", { credentials: "include" });
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/admin/products", { credentials: "include" });
       const data = await res.json();
       if (!res.ok) return setError(data.message || "Failed to load products");
       setProducts(data.products);
@@ -40,7 +40,7 @@ export default function AdminProducts() {
     if (!window.confirm("Delete this product? This cannot be undone.")) return;
     setDeleting(id);
     try {
-      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE", credentials: "include" });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/admin/products/${id}`, { method: "DELETE", credentials: "include" });
       const data = await res.json();
       if (!res.ok) return alert(data.message || "Failed to delete");
       setProducts(prev => prev.filter(p => p._id !== id));

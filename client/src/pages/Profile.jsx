@@ -36,8 +36,8 @@ export default function Profile() {
       const loadSeller = async () => {
         try {
           const [orderRes, sumRes] = await Promise.all([
-            fetch("/api/seller/orders", { credentials: "include" }),
-            fetch("/api/seller/summary", { credentials: "include" }),
+            fetch(import.meta.env.VITE_BACKEND_URL + "/api/seller/orders", { credentials: "include" }),
+            fetch(import.meta.env.VITE_BACKEND_URL + "/api/seller/summary", { credentials: "include" }),
           ]);
 
           const orderData = await orderRes.json();
@@ -59,7 +59,7 @@ export default function Profile() {
     // ================= BUYER DASHBOARD =================
     const fetchProfile = async () => {
       try {
-        const res = await fetch("/api/user/me", {
+        const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/user/me", {
           credentials: "include",
         });
         const data = await res.json();

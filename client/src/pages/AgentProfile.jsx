@@ -27,7 +27,7 @@ export default function AgentProfile() {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/user/me", {
+        const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/user/me", {
           credentials: "include",
         });
         const data = await res.json();
@@ -58,7 +58,7 @@ export default function AgentProfile() {
 
   const handleSave = async () => {
     try {
-      const res = await fetch("/api/user/update", {
+      const res = await fetch(import.meta.env.VITE_BACKEND_URL + "/api/user/update", {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
