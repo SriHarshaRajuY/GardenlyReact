@@ -1,5 +1,7 @@
 // api/controllers/product.controller.js
 import Product from "../models/product.model.js";
+import { searchSolr } from "../utils/solr.js";
+import { errorHandler } from "../utils/error.js";
 import { clearCache } from "../utils/cache.js";
 
 // ---- PUBLIC ROUTES ----
@@ -14,7 +16,7 @@ export const getRecentProducts = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-      
+
     res.status(200).json({
       products,
       currentPage: page,
@@ -38,7 +40,7 @@ export const getProductsByCategory = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-      
+
     res.status(200).json({
       products,
       currentPage: page,
@@ -61,18 +63,24 @@ export const searchProducts = async (req, res, next) => {
       });
     }
 
-    // Optimized Search using MongoDB Text Index with Relevance Scoring
-    const products = await Product.find(
-      { $text: { $search: q } },
-      { score: { $meta: "textScore" } }
-    )
-      .sort({ score: { $meta: "textScore" } })
-      .limit(30);
+    // 🚀 Exact Enterprise Search using the Apache Solr Platform (WebSolr)
+    const solrResults = await searchSolr(q);
+    
+    // Extract IDs from Solr results
+    const productIds = solrResults.map(doc => doc.id);
+
+    // Fetch full product details from MongoDB using Solr's ranked results
+    const products = await Product.find({
+      _id: { $in: productIds }
+    });
+
+    // Sort products based on Solr's relevance order
+    const sortedProducts = productIds.map(id => products.find(p => p._id.toString() === id)).filter(p => p);
 
     res.status(200).json({
       success: true,
-      count: products.length,
-      products,
+      count: sortedProducts.length,
+      products: sortedProducts,
     });
   } catch (err) {
     next(err);

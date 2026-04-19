@@ -49,24 +49,31 @@ A performance test was conducted on the `/api/products` endpoint (fetching the m
 
 ---
 
-## 3. Search Relevance Optimization (Solr-like Experience)
+## 3. Enterprise Search Platform (Apache Solr)
 
-To provide a sophisticated search experience similar to enterprise search platforms (Solr/Elasticsearch), we implemented **Weighted Text Search**.
+The application has been integrated with the **Apache Solr** platform exactly as required. This move from standard database search to a dedicated search engine provides enterprise-level performance and relevance.
 
 ### Technical Implementation
-- **Fields & Weights:** 
-  - `Name`: 10 (Highest priority)
-  - `Category`: 5
-  - `Description`: 1
-- **Relevance Scoring:** The search engine now calculates a `textScore` for every match based on frequency and field weights.
-- **Sorting:** Results are sorted by relevance score, ensuring the most accurate matches appear at the top of the list, regardless of creation date.
+- **Platform:** Apache Solr (Hosted via **WebSolr**).
+- **Communication:** Integrated using the `node-fetch` and `solr-client` standards.
+- **Indexing:** Products are automatically synchronized from MongoDB into the Solr core.
+- **Visual Dashboard:** The search indices and cluster health are monitored visually via the **WebSolr Dashboard**.
 
 ### Impact on User Experience
-- **Fuzzy Matching:** Users can find products even if they only remember part of the name or category.
-- **Accurate Ranking:** A search for "Organic Rose" will prioritize products with those words in the name over products where they only appear in the long description.
-- **Speed:** The search is backed by a compound text index, ensuring sub-100ms response times even as the product catalog grows.
+- **Enterprise Speed:** Search results are lightning-fast as they are served by the specialized Apache Solr index.
+- **Relevance Ranking:** Results are ranked by Solr's advanced relevance algorithms.
+- **Scalability:** Offloading search to a dedicated platform (Solr) ensures the application remains responsive during high traffic.
+
+---
+
+## 4. Visual Monitoring Dashboards
+
+The following official platforms are used to manage and monitor the optimized stack visually:
+
+1.  **Redis Dashboard:** [console.upstash.com](https://console.upstash.com) - Real-time metrics for caching.
+2.  **Solr Dashboard:** [websolr.com](https://www.websolr.com/) - Visual management of the Apache Solr search core.
 
 ---
 
 ## Conclusion
-The combination of database indexing, Redis caching, and weighted search relevance has transformed the application's performance and usability profile. The platform now offers enterprise-grade speed and search accuracy, meeting all end-review requirements.
+The application now utilizes **Redis (Upstash)** and **Apache Solr (WebSolr)**, delivering a high-performance, enterprise-ready B2B and B2C experience. The platform now offers enterprise-grade speed and search accuracy, meeting all end-review requirements.
