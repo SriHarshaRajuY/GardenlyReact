@@ -5,6 +5,9 @@ import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
 import { sendOtpMail } from "../utils/mailer.js";
 import { errorHandler } from "../utils/error.js";
+import razorpay from "../utils/razorpay.js";
+import crypto from "crypto";
+
 
 // Helper: generate 6-digit OTP as string
 const generateOtp = () =>
@@ -157,17 +160,25 @@ export const verifyOrderOtp = async (req, res, next) => {
       );
     }
 
-    if (!order.otp || order.otp !== otp) {
-      return next(errorHandler(400, "Invalid OTP."));
+    if (order.otpExpiresAt && order.otpExpiresAt < new Date() && otp !== "PAYMENT_DONE") {
+      return next(errorHandler(400, "OTP expired. Please try again."));
     }
 
-    if (order.otpExpiresAt && order.otpExpiresAt < new Date()) {
-      return next(errorHandler(400, "OTP expired. Please try again."));
+    if (otp === "PAYMENT_DONE") {
+      // Payment already verified via Razorpay
+      order.paymentId = req.body.paymentId;
+      order.paymentMethod = "razorpay";
+    } else {
+      if (!order.otp || order.otp !== otp) {
+        return next(errorHandler(400, "Invalid OTP."));
+      }
+      order.paymentMethod = "cod";
     }
 
     // Update stock
     for (const item of order.items) {
       if (!item.product) continue;
+
 
       const product = await Product.findById(item.product._id);
       if (!product) continue;
@@ -209,3 +220,51 @@ export const verifyOrderOtp = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * POST /api/orders/razorpay
+
+ * Create a Razorpay Order
+ */
+export const createRazorpayOrder = async (req, res, next) => {
+  try {
+    const { amount } = req.body;
+    if (!amount) return next(errorHandler(400, "Amount is required"));
+
+    const options = {
+      amount: amount * 100, // Razorpay works in paisa
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+    res.status(200).json({ success: true, order });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/orders/razorpay/verify
+ * Verify Razorpay Payment
+ */
+export const verifyRazorpayPayment = async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "placeholder_secret")
+      .update(sign.toString())
+      .digest("hex");
+
+    if (razorpay_signature === expectedSign) {
+      return res.status(200).json({ success: true, message: "Payment verified successfully" });
+    } else {
+      return next(errorHandler(400, "Invalid payment signature"));
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+

@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import helmet from "helmet";
+import { Server } from "socket.io";
+import { createServer } from "http";
 import logger, { errorLogger } from "./middleware/logger.js";
 import ticketRoute from "./routes/ticket.route.js";
 import userRouter from "./routes/user.route.js";
@@ -14,10 +16,11 @@ import productRouter from "./routes/product.route.js";
 import cartRouter from "./routes/cart.route.js";
 import orderRouter from "./routes/order.route.js";
 import adminRouter from "./routes/admin.route.js";
-import sellerRouter from "./routes/seller.route.js"; // ✅ NEW
+import sellerRouter from "./routes/seller.route.js";
 import customRequestRoute from "./routes/customRequest.route.js";
+import blogRoute from "./routes/blog.route.js";
+import communityRoute from "./routes/community.route.js";
 import upload from "./upload.js";
-import { createSwaggerRouter } from "./config/swagger.js";
 import { connectRedis } from "./utils/cache.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,10 +29,14 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  },
+});
 
-// =======================
-// MIDDLEWARES
-// =======================
 app.use(helmet());
 app.use(logger);
 app.use(cookieParser());
@@ -42,15 +49,9 @@ app.use(
   })
 );
 
-// =======================
-// STATIC FILES
-// =======================
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// =======================
-// ROUTES
-// =======================
 app.use("/api/tickets", ticketRoute);
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
@@ -58,63 +59,70 @@ app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/admin", adminRouter);
-app.use("/api/seller", sellerRouter); // ✅ NEW SELLER DASHBOARD ROUTE
+app.use("/api/seller", sellerRouter);
 app.use("/api/custom-requests", customRequestRoute);
+app.use("/api/blogs", blogRoute);
+app.use("/api/community", communityRoute);
 
-// =======================
-// API DOCS (Swagger UI)
-// =======================
-app.use("/api-docs", createSwaggerRouter());
 
-// =======================
-// ERROR HANDLING
-// =======================
+// Generic Image Upload (Cloudinary)
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+  res.status(200).json({ success: true, url: req.file.path });
+});
 
-// 1. Structured logging of errors
-app.use(errorLogger);
 
-// 2. Final error response to client
-app.use((err, req, res, next) => {
-  console.error("Error middleware:", err);
+// Socket.io logic
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
+  
+  socket.on("join_post", (communityId) => {
+    socket.join(communityId);
+    console.log(`User joined community: ${communityId}`);
+  });
 
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+  socket.on("new_post", (data) => {
+    socket.to(data.communityId).emit("receive_post", data);
+  });
 
-  res.status(statusCode).json({
-    success: false,
-    status: statusCode,
-    message,
-    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+  socket.on("new_comment", (data) => {
+    socket.to(data.communityId).emit("receive_comment", data);
+  });
+
+  socket.on("new_like", (data) => {
+    socket.to(data.communityId).emit("receive_like", data);
+  });
+
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
   });
 });
 
-// =======================
-// DATABASE + SERVER START
-// =======================
+app.use(errorLogger);
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    status: statusCode,
+    message: err.message || "Internal Server Error",
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
-    // 🔥 CONNECT TO MONGODB FIRST
-    await mongoose.connect(process.env.MONGO_URI, {
-      dbName: "gardenly",
-    });
-
-    console.log("🟢 MongoDB connected successfully");
-
-    // 🔥 CONNECT TO REDIS
+    await mongoose.connect(process.env.MONGO_URI, { dbName: "gardenly" });
+    console.log("🟢 MongoDB connected");
     await connectRedis();
-
-    // THEN start server
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("❌ Startup failed:", err.message);
     process.exit(1);
   }
 }
 
-startServer();
-
-export { upload };
+startServer();export { upload };

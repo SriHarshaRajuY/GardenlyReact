@@ -67,12 +67,15 @@ const orderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending_otp", "confirmed", "cancelled"],
+      enum: ["pending_otp", "confirmed", "shipped", "delivered", "cancelled"],
       default: "pending_otp",
     },
 
     otp: { type: String },
     otpExpiresAt: { type: Date },
+    paymentId: { type: String },
+    paymentMethod: { type: String, enum: ["cod", "razorpay"], default: "cod" },
+
   },
   { timestamps: true }
 );

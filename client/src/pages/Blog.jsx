@@ -1,184 +1,217 @@
-// src/pages/Blog.jsx (MODIFIED - COMPLETE CODE)
-import React from "react";
-
-const blogs = [
-  {
-    id: 1,
-    title: "Top 10 Indoor Plants for Beginners",
-    excerpt: "Discover the easiest houseplants to care for, perfect for starting your indoor garden journey. Low maintenance and air-purifying benefits included.",
-    date: "2025-01-15",
-    image: "/images/blogs/all1.webp",
-    slug: "top-10-indoor-plants-for-beginners",
-  },
-  {
-    id: 2,
-    title: "Sustainable Gardening: Eco-Friendly Tips",
-    excerpt: "Learn how to create a green thumb without harming the planet. From composting to water-saving techniques, go green the right way.",
-    date: "2025-01-12",
-    image: "/images/blogs/all2.webp",
-    slug: "sustainable-gardening-eco-friendly-tips",
-  },
-  {
-    id: 3,
-    title: "The Benefits of Herb Gardens at Home",
-    excerpt: "Grow your own fresh herbs and elevate your cooking. Rosemary, basil, and more—simple steps to a flavorful kitchen garden.",
-    date: "2025-01-10",
-    image: "/images/blogs/f1.webp",
-    slug: "benefits-of-herb-gardens-at-home",
-  },
-  {
-    id: 4,
-    title: "Choosing the Perfect Pot for Your Plants",
-    excerpt: "Not all pots are created equal. Explore materials, sizes, and drainage tips to keep your plants thriving and stylish.",
-    date: "2025-01-08",
-    image: "/images/blogs/f4.webp",
-    slug: "choosing-perfect-pot-for-plants",
-  },
-  {
-    id: 5,
-    title: "Seasonal Seeds: What to Plant in Winter",
-    excerpt: "Beat the cold with these hardy seeds. Guide to winter sowing and preparing your garden for spring blooms.",
-    date: "2025-01-05",
-    image: "/images/blogs/article4.webp",
-    slug: "seasonal-seeds-winter-planting",
-  },
-  {
-    id: 7,
-    title: "Balcony Gardening for Urban Dwellers",
-    excerpt: "Transform your small space into a lush oasis. Compact plants, vertical ideas, and sunlight hacks for city living.",
-    date: "2025-01-01",
-    image: "/images/blogs/image1.webp",
-    slug: "balcony-gardening-urban-dwellers",
-  },
-];
+import React, { useState, useEffect } from "react";
+import { Search, Filter, Calendar, User, ArrowRight, Sparkles, Sprout, Heart, MessageCircle, Send, ShieldQuestion } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Blog() {
+  const { user } = useAuth();
+  const socket = useSocket();
+  const navigate = useNavigate();
+  
+  const [blogsList, setBlogsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  
+  const [selectedBlog, setSelectedBlog] = useState(null);
+  const [commentText, setCommentText] = useState("");
+
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  const fetchBlogs = async () => {
+    try {
+      const res = await fetch("/api/blogs");
+      const data = await res.json();
+      if (data.success && data.blogs) {
+        setBlogsList(data.blogs);
+      }
+    } catch (err) {
+      console.error("Failed to fetch blogs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (socket && selectedBlog) {
+      socket.emit("join_post", selectedBlog._id);
+      socket.on("receive_comment", (data) => {
+        if (data.postId === selectedBlog._id) {
+          setSelectedBlog(prev => ({
+            ...prev,
+            comments: [...prev.comments, data.comment]
+          }));
+        }
+      });
+      return () => socket.off("receive_comment");
+    }
+  }, [socket, selectedBlog]);
+
+  const handleLike = async (blogId) => {
+    if (!user) return alert("Please login to like");
+    try {
+      const res = await fetch(`/api/blogs/${blogId}/like`, { method: "POST", credentials: "include" });
+      if (res.ok) fetchBlogs();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleComment = async (e) => {
+    e.preventDefault();
+    if (!user || !commentText.trim()) return;
+    try {
+      const res = await fetch(`/api/blogs/${selectedBlog._id}/comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: commentText }),
+        credentials: "include"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newComment = data.comments[data.comments.length - 1];
+        socket.emit("new_comment", { postId: selectedBlog._id, comment: newComment });
+        setCommentText("");
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const categories = ["All", ...new Set(blogsList.map((b) => b.category).filter(Boolean))];
+
+  const filteredBlogs = blogsList.filter((blog) => {
+    const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          blog.excerpt?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = activeCategory === "All" || blog.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  if (selectedBlog) {
+    return (
+      <div className="pt-24 min-h-screen bg-[#f8faf7] dark:bg-gray-950 px-6 pb-20">
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setSelectedBlog(null)} className="mb-8 text-green-600 font-bold flex items-center gap-2">
+            <ArrowRight className="rotate-180" /> Back to Feed
+          </button>
+          
+          <img src={selectedBlog.image} className="w-full h-[400px] object-cover rounded-[3rem] shadow-2xl mb-10" alt="" />
+          
+          <div className="flex items-center justify-between mb-6">
+            <span className="bg-green-100 text-green-700 px-4 py-1 rounded-full text-xs font-black uppercase">{selectedBlog.category}</span>
+            <div className="flex gap-4">
+              <button onClick={() => handleLike(selectedBlog._id)} className="flex items-center gap-2 font-bold text-gray-500 hover:text-red-500 transition">
+                <Heart className={selectedBlog.likes?.includes(user?.id) ? "fill-red-500 text-red-500" : ""} /> {selectedBlog.likes?.length || 0}
+              </button>
+              <div className="flex items-center gap-2 font-bold text-gray-500">
+                <MessageCircle /> {selectedBlog.comments?.length || 0}
+              </div>
+            </div>
+          </div>
+
+          <h1 className="text-4xl md:text-5xl font-black mb-8 leading-tight">{selectedBlog.title}</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-10 leading-relaxed whitespace-pre-wrap">{selectedBlog.content || selectedBlog.excerpt}</p>
+          
+          <div className="bg-green-600 p-8 rounded-[2.5rem] text-white flex flex-col md:flex-row items-center justify-between gap-6 mb-16 shadow-xl">
+             <div>
+               <h3 className="text-2xl font-bold mb-2">Confused about this plant?</h3>
+               <p className="text-green-50 opacity-80">Our experts can give you personalized advice based on this article.</p>
+             </div>
+             <button 
+               onClick={() => navigate("/expert-support", { state: { subject: `Question about ${selectedBlog.title}` } })} 
+               className="bg-white text-green-700 px-8 py-4 rounded-2xl font-black shadow-lg hover:scale-105 transition flex items-center gap-2 whitespace-nowrap"
+             >
+               <ShieldQuestion /> Ask Expert Now
+             </button>
+          </div>
+
+          {/* Comment Section */}
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-10 shadow-sm border dark:border-gray-800">
+            <h3 className="text-2xl font-black mb-8">Discussions ({selectedBlog.comments?.length || 0})</h3>
+            <div className="space-y-6 mb-10 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+              {selectedBlog.comments?.map((c, i) => (
+                <div key={i} className="flex gap-4 items-start">
+                  <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center font-bold text-green-600">{c.username?.[0].toUpperCase()}</div>
+                  <div className="flex-1 bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-bold text-sm">{c.username}</span>
+                      <span className="text-[10px] text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{c.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {user ? (
+              <form onSubmit={handleComment} className="flex gap-4">
+                <input 
+                  value={commentText} 
+                  onChange={(e) => setCommentText(e.target.value)} 
+                  placeholder="Share your thoughts..." 
+                  className="flex-1 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <button type="submit" className="bg-green-600 text-white p-4 rounded-2xl hover:bg-green-700 transition">
+                  <Send size={20} />
+                </button>
+              </form>
+            ) : (
+              <p className="text-center text-gray-400 italic">Please login to join the discussion.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-20 bg-[#f8faf7] dark:bg-gray-900 min-h-screen text-gray-800 dark:text-gray-100">
-      {/* Hero Section */}
-      <section className="relative h-[300px] md:h-[400px] bg-cover bg-center flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-gradient-to-r from-green-800/80 via-green-600/70 to-emerald-900/80"
-          style={{
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('/images/blogs/article1.webp')`,
-          }}
-        ></div>
-        <div className="relative z-10 text-center text-white px-4">
-          <h1 className="text-3xl md:text-5xl font-bold mb-4 drop-shadow-lg">
-            Gardening <br />
-            <span className="text-green-300">Insights & Tips</span>
-          </h1>
-          <p className="text-lg md:text-xl mb-6 font-light max-w-2xl mx-auto drop-shadow-md">
-            Explore our latest articles on plant care, sustainable practices, and green living to nurture your passion for gardening.
-          </p>
+    <div className="pt-20 bg-[#f8faf7] dark:bg-gray-950 min-h-screen text-gray-800 dark:text-gray-100">
+      <section className="relative py-20 px-6 bg-gradient-to-br from-green-900 to-emerald-900 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/leaf.png')]"></div>
+        <div className="max-w-7xl mx-auto relative z-10 text-center">
+           <h1 className="text-5xl md:text-7xl font-black text-white mb-6">Expert <span className="text-green-400">Insights</span></h1>
+           <div className="relative max-w-xl mx-auto group">
+              <Search className="absolute left-6 top-5 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search articles..." 
+                className="w-full pl-16 pr-6 py-5 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-gray-300 focus:ring-2 focus:ring-green-400 outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+           </div>
         </div>
       </section>
 
-      {/* Blogs Grid */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-green-700 dark:text-green-400 mb-4">
-            Latest Blogs
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Dive into expert advice and inspiring stories from the world of plants and sustainability.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {blogs.map((blog) => (
-            <article
-              key={blog.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
-            >
-              <div className="relative overflow-hidden">
-                <img
-                  src={blog.image}
-                  alt={blog.title}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    e.target.src = "/images/fallback.png"; // Fallback image
-                  }}
-                />
-                <div className="absolute top-3 right-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                  New
-                </div>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                  {blog.date}
-                </p>
-                <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                  {blog.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                  {blog.excerpt}
-                </p>
-              </div>
-            </article>
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        <div className="flex gap-4 mb-12 overflow-x-auto pb-2 no-scrollbar">
+          {categories.map(cat => (
+            <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-8 py-3 rounded-2xl font-bold transition ${activeCategory === cat ? "bg-green-600 text-white shadow-lg" : "bg-white dark:bg-gray-900 text-gray-500 border dark:border-gray-800"}`}>{cat}</button>
           ))}
         </div>
 
-        {/* Additional Articles Section (using article images) */}
-        <div className="mt-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-green-700 dark:text-green-400 mb-4">
-              Featured Articles
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              In-depth guides and stories to inspire your gardening adventures.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <article className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row">
-              <div className="md:w-1/2">
-                <img
-                  src="/images/blogs/article1.webp"
-                  alt="Succulent Care Guide"
-                  className="w-full h-64 object-cover"
-                  onError={(e) => {
-                    e.target.src = "/images/fallback.png";
-                  }}
-                />
-              </div>
-              <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">2025-01-20</p>
-                  <h3 className="text-2xl font-bold mb-3 text-gray-800 dark:text-white">
-                    Ultimate Succulent Care Guide
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    From propagation to pest control, everything you need to know to keep your succulents happy and healthy.
-                  </p>
+        {loading ? <div className="text-center py-20"><Sprout className="w-12 h-12 text-green-600 animate-bounce mx-auto" /></div> : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {filteredBlogs.map(blog => (
+              <article key={blog._id} className="bg-white dark:bg-gray-900 rounded-[2.5rem] overflow-hidden border dark:border-gray-800 hover:shadow-2xl transition duration-500 flex flex-col group">
+                <div className="relative h-64 overflow-hidden">
+                  <img src={blog.image} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt="" />
+                  <div className="absolute top-6 right-6 bg-white/90 backdrop-blur px-4 py-1 rounded-full text-[10px] font-black text-green-700">{blog.category}</div>
                 </div>
-              </div>
-            </article>
-
-            <article className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row">
-              <div className="md:w-1/2">
-                <img
-                  src="/images/blogs/article2.jpg"
-                  alt="Vertical Gardens"
-                  className="w-full h-64 object-cover"
-                  onError={(e) => {
-                    e.target.src = "/images/fallback.png";
-                  }}
-                />
-              </div>
-              <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">2025-01-18</p>
-                  <h3 className="text-2xl font-bold mb-3 text-gray-800 dark:text-white">
-                    Creating Stunning Vertical Gardens
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    Maximize your space with creative vertical planting ideas. Perfect for apartments and small patios.
-                  </p>
+                <div className="p-8 flex-1 flex flex-col">
+                  <h3 className="text-2xl font-black mb-4 group-hover:text-green-600 transition">{blog.title}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-8 line-clamp-3">{blog.excerpt}</p>
+                  <div className="mt-auto flex items-center justify-between">
+                    <button onClick={() => setSelectedBlog(blog)} className="text-green-600 font-black flex items-center gap-2 hover:gap-4 transition-all">Read More <ArrowRight /></button>
+                    <div className="flex gap-3 text-gray-400">
+                       <div className="flex items-center gap-1 font-bold text-xs"><Heart size={14} /> {blog.likes?.length || 0}</div>
+                       <div className="flex items-center gap-1 font-bold text-xs"><MessageCircle size={14} /> {blog.comments?.length || 0}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
+            ))}
           </div>
-        </div>
+        )}
       </section>
     </div>
   );

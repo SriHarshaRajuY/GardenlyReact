@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema(
     // === FOR PASSWORD RESET OTP ===
     resetOtp: { type: String },
     resetOtpExpiresAt: { type: Date },
+    joinedCommunities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Community" }],
+
   },
   { timestamps: true }
 );

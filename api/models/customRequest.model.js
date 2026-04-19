@@ -21,7 +21,7 @@ const customRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Open", "In Progress", "Completed", "Closed"],
+      enum: ["Open", "Confirmed", "Completed", "Closed"],
       default: "Open",
     },
     proposals: [

@@ -1,5 +1,7 @@
 import CustomRequest from "../models/customRequest.model.js";
 import { errorHandler } from "../utils/error.js";
+import { sendMail } from "../utils/mailer.js";
+import User from "../models/user.model.js";
 
 // Buyer: Create a new custom request
 export const createRequest = async (req, res, next) => {
@@ -78,21 +80,34 @@ export const submitProposal = async (req, res, next) => {
 export const acceptProposal = async (req, res, next) => {
   try {
     const { id, proposalId } = req.params;
-    const request = await CustomRequest.findById(id);
+    const request = await CustomRequest.findById(id).populate("buyer_id", "username email");
 
     if (!request) return next(errorHandler(404, "Request not found"));
-    if (request.buyer_id.toString() !== req.user.id) return next(errorHandler(403, "Not authorized"));
+    if (request.buyer_id._id.toString() !== req.user.id) return next(errorHandler(403, "Not authorized"));
 
     const proposal = request.proposals.id(proposalId);
     if (!proposal) return next(errorHandler(404, "Proposal not found"));
 
-    // Accept this one, reject others
-    request.proposals.forEach((p) => {
-      p.status = p._id.toString() === proposalId ? "Accepted" : "Rejected";
-    });
+    // Get seller details for notification
+    const seller = await User.findById(proposal.seller_id);
+
+    // Accept this specific proposal
+    proposal.status = "Accepted";
     
-    request.status = "In Progress";
+    // We keep the request as 'Confirmed' but don't reject others 
+    // so the buyer can accept more sellers if they wish.
+    request.status = "Confirmed";
     await request.save();
+
+
+    // Send confirmation emails
+    if (seller) {
+      const buyerMail = `Hello ${request.buyer_id.username},\n\nYou have accepted the proposal from ${seller.username} for your custom request "${request.title}".\n\nSeller Contact: ${seller.email}\nPrice: ₹${proposal.price}\n\nPlease coordinate with the seller to complete the request.`;
+      const sellerMail = `Hello ${seller.username},\n\nYour proposal for the custom request "${request.title}" has been ACCEPTED by ${request.buyer_id.username}.\n\nBuyer Contact: ${request.buyer_id.email}\nPrice: ₹${proposal.price}\n\nPlease get in touch with the buyer to finalize the details.`;
+      
+      await sendMail(request.buyer_id.email, "Proposal Accepted - Contact Details", buyerMail);
+      await sendMail(seller.email, "Proposal Accepted - Contact Details", sellerMail);
+    }
 
     res.status(200).json({ success: true, request });
   } catch (err) {

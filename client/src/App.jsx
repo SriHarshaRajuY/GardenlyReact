@@ -1,6 +1,8 @@
-// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
+import AuthProvider from "./context/AuthProvider";
+import CartProvider from "./context/CartProvider";
+import { SocketProvider } from "./context/SocketContext";
 
 /* Public pages */
 import Home from "./pages/Home";
@@ -16,6 +18,7 @@ import ExpertSupport from "./pages/ExpertSupport";
 import ExpertDashboard from "./pages/ExpertDashboard";
 import Cart from "./pages/Cart";
 import Blog from "./pages/Blog";
+import Community from "./pages/Community";
 import SearchResults from "./pages/SearchResults";
 import CustomRequests from "./pages/CustomRequests";
 
@@ -27,7 +30,6 @@ import AdminProducts from "./pages/AdminProducts";
 import AdminOrders from "./pages/AdminOrders";
 import AdminTickets from "./pages/AdminTickets";
 
-/* -------- PUBLIC WEBSITE LAYOUT -------- */
 function PublicLayout() {
   return (
     <>
@@ -47,6 +49,7 @@ function PublicLayout() {
           <Route path="/expert-dashboard" element={<ExpertDashboard />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/community" element={<Community />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/custom-requests" element={<CustomRequests />} />
         </Routes>
@@ -55,26 +58,29 @@ function PublicLayout() {
   );
 }
 
-/* -------- MAIN APP -------- */
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <AuthProvider>
+        <CartProvider>
+          <SocketProvider>
+            <Routes>
+              {/* ADMIN PANEL */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="tickets" element={<AdminTickets />} />
+              </Route>
 
-        {/* ADMIN PANEL (NESTED ROUTES) */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="tickets" element={<AdminTickets />} />
-        </Route>
-
-        {/* PUBLIC WEBSITE */}
-        <Route path="/*" element={<PublicLayout />} />
-
-      </Routes>
+              {/* PUBLIC WEBSITE */}
+              <Route path="/*" element={<PublicLayout />} />
+            </Routes>
+          </SocketProvider>
+        </CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

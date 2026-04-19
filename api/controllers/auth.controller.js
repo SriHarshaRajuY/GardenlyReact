@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import Community from "../models/community.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -67,6 +68,16 @@ export const signup = async (req, res, next) => {
     });
     
     await user.save();
+    
+    // Auto-join World Community
+    try {
+      const worldComm = await Community.findOne({ name: "World Community" });
+      if (worldComm) {
+        await Community.findByIdAndUpdate(worldComm._id, { $addToSet: { members: user._id } });
+        await User.findByIdAndUpdate(user._id, { $addToSet: { joinedCommunities: worldComm._id } });
+      }
+    } catch (e) { console.error("Auto-join failed:", e); }
+
     await sendSignupVerificationMail(email, otp);
 
     res.status(201).json({ success: true, requireVerification: true, email: user.email, message: "Verification OTP sent to your email" });
@@ -187,11 +198,20 @@ export const googleSignin = async (req, res, next) => {
       while (await User.findOne({ mobile })) mobile = `${Math.floor(1000000000 + Math.random() * 9000000000)}`;
 
       const tempPassword = bcrypt.hashSync(`google_${Date.now()}_${Math.random()}`, 10);
-      user = await User.create({
-        username, email, password: tempPassword, role: safeRole, mobile, expertise: safeRole === "Expert" ? "General" : "General",
-        isEmailVerified: true // Google accounts are considered verified
-      });
-    }
+        user = await User.create({
+          username, email, password: tempPassword, role: safeRole, mobile, expertise: safeRole === "Expert" ? "General" : "General",
+          isEmailVerified: true // Google accounts are considered verified
+        });
+
+        // Auto-join World Community
+        try {
+          const worldComm = await Community.findOne({ name: "World Community" });
+          if (worldComm) {
+            await Community.findByIdAndUpdate(worldComm._id, { $addToSet: { members: user._id } });
+            await User.findByIdAndUpdate(user._id, { $addToSet: { joinedCommunities: worldComm._id } });
+          }
+        } catch (e) { console.error("Auto-join failed:", e); }
+      }
 
     // Login success directly for Google users (they are already verified by Google)
     return buildAuthResponse(res, user);

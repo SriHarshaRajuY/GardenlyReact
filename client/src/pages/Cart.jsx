@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { FaPlus, FaMinus, FaTrashAlt } from "react-icons/fa";
+import { FaPlus, FaMinus, FaTrashAlt, FaCreditCard } from "react-icons/fa";
 
 export default function Cart() {
   const { cart, fetchCart, updateQuantity, removeFromCart } = useCart();
@@ -75,20 +75,115 @@ export default function Cart() {
     }, 50);
   };
 
-  // -------- SEND OTP ----------
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
+  // -------- RAZORPAY ----------
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
-    if (!cartItems.length) {
-      alert("Your cart is empty");
-      return;
-    }
-
+  const handleRazorpayPayment = async () => {
     const { fullName, phone, address1, city, state, pincode } = billing;
     if (!fullName || !phone || !address1 || !city || !state || !pincode) {
       alert("Please fill all required billing fields (*)");
       return;
     }
+
+    const res = await loadRazorpay();
+    if (!res) {
+      alert("Razorpay SDK failed to load. Are you online?");
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const orderRes = await fetch("/api/orders/create-razorpay-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ amount: total }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(orderData.message);
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_placeholder",
+        amount: orderData.order.amount,
+        currency: "INR",
+        name: "Gardenly",
+        description: "Plant Purchase",
+        order_id: orderData.order.id,
+        handler: async (response) => {
+          const verifyRes = await fetch("/api/orders/verify-razorpay-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(response),
+          });
+          if (verifyRes.ok) {
+            alert("Payment successful! Placing your order...");
+            await finalizeOrder(response.razorpay_payment_id);
+          } else {
+            alert("Payment verification failed");
+          }
+        },
+        prefill: {
+          name: billing.fullName,
+          contact: billing.phone,
+          email: user.email,
+        },
+        theme: { color: "#16a34a" },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (err) {
+      console.error(err);
+      alert("Payment failed: " + err.message);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const finalizeOrder = async (paymentId) => {
+    try {
+      const res = await fetch("/api/orders/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...billing, address2: billing.address2 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      const finalRes = await fetch("/api/orders/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ orderId: data.orderId, otp: "PAYMENT_DONE", paymentId }),
+      });
+      if (finalRes.ok) {
+        alert("Order placed successfully!");
+        setShowBilling(false);
+        setStep("form");
+        await fetchCart();
+      }
+    } catch (err) {
+      alert("Order finalization failed: " + err.message);
+    }
+  };
+
+  // -------- SEND OTP ----------
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    if (!cartItems.length) return alert("Your cart is empty");
+    const { fullName, phone, address1, city, state, pincode } = billing;
+    if (!fullName || !phone || !address1 || !city || !state || !pincode) return alert("Please fill all required fields");
 
     setSendingOtp(true);
     try {
@@ -96,30 +191,15 @@ export default function Cart() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          fullName,
-          phone,
-          address1,
-          address2: billing.address2,
-          city,
-          state,
-          pincode,
-        }),
+        body: JSON.stringify({ ...billing }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Failed to send OTP");
-        return;
-      }
-
+      if (!res.ok) return alert(data.message || "Failed to send OTP");
       setOrderId(data.orderId);
       setStep("otp");
-      alert("OTP sent to your registered email");
+      alert("OTP sent to your email");
     } catch (err) {
-      console.error("send-otp error:", err);
-      alert("Network error, please try again.");
+      alert("Network error");
     } finally {
       setSendingOtp(false);
     }
@@ -127,11 +207,7 @@ export default function Cart() {
 
   // -------- VERIFY OTP ----------
   const handleVerifyOtp = async () => {
-    if (!otp.trim()) {
-      alert("Please enter OTP");
-      return;
-    }
-
+    if (!otp.trim()) return alert("Please enter OTP");
     setVerifying(true);
     try {
       const res = await fetch("/api/orders/verify-otp", {
@@ -140,23 +216,13 @@ export default function Cart() {
         credentials: "include",
         body: JSON.stringify({ orderId, otp }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Failed to verify OTP");
-        return;
-      }
-
+      if (!res.ok) return alert("Invalid OTP");
       alert("Order placed successfully!");
       setStep("form");
       setShowBilling(false);
-      setOrderId(null);
-      setOtp("");
       await fetchCart();
     } catch (err) {
-      console.error("verify-otp error:", err);
-      alert("Network error, please try again.");
+      alert("Network error");
     } finally {
       setVerifying(false);
     }
@@ -164,10 +230,7 @@ export default function Cart() {
 
   const handleQtyChange = (item, delta) => {
     const productId = item.product?._id;
-    if (!productId) {
-      alert("This product is no longer available.");
-      return;
-    }
+    if (!productId) return alert("Product unavailable");
     const newQty = (item.quantity ?? 0) + delta;
     if (newQty < 1) return;
     updateQuantity(productId, newQty);
@@ -175,309 +238,94 @@ export default function Cart() {
 
   const handleRemove = (item) => {
     const productId = item.product?._id;
-    if (!productId) {
-      alert("This product is no longer available.");
-      return;
-    }
-    if (window.confirm("Remove this item from cart?")) {
-      removeFromCart(productId);
-    }
+    if (!productId) return alert("Product unavailable");
+    if (window.confirm("Remove item?")) removeFromCart(productId);
   };
 
-  // ========== ROLE-BASED UI ==========
-
-  // 1) Not logged in
-  if (!user) {
+  if (!user || user.role !== "buyer") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pt-20">
-        <div className="max-w-3xl mx-auto px-4 py-10">
-          <div className="bg-white rounded-3xl shadow-xl p-10 text-center">
-            <h1 className="text-3xl font-bold mb-4">Your Cart</h1>
-            <p className="text-gray-600">
-              Please sign in as a <span className="font-semibold">Buyer</span>{" "}
-              to add items to your cart.
-            </p>
-          </div>
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+        <div className="bg-white p-10 rounded-3xl shadow-lg text-center">
+          <h1 className="text-2xl font-bold mb-4">Cart Not Available</h1>
+          <p className="text-gray-600">Please sign in as a Buyer to use the cart.</p>
         </div>
       </div>
     );
   }
 
-  // 2) Logged in but NOT a buyer (Seller/Admin/Expert)
-  if (user.role !== "buyer") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pt-20">
-        <div className="max-w-3xl mx-auto px-4 py-10">
-          <div className="bg-white rounded-3xl shadow-xl p-10 text-center">
-            <h1 className="text-3xl font-bold mb-4">Cart not available</h1>
-            <p className="text-gray-600 mb-2">
-              You are logged in as{" "}
-              <span className="font-semibold">
-                {user.username} ({user.role})
-              </span>
-              .
-            </p>
-            <p className="text-gray-600">
-              Shopping cart is only available for{" "}
-              <span className="font-semibold">Buyer</span> accounts.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 3) Normal cart UI for buyers
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pt-20">
-      <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
-        {/* CART CARD */}
-        <div className="bg-white rounded-3xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold mb-6 text-center">Your Cart</h1>
-
+    <div className="min-h-screen bg-[#f8faf7] dark:bg-gray-900 pt-24 pb-12">
+      <div className="max-w-5xl mx-auto px-4 space-y-8">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 p-8">
+          <h1 className="text-3xl font-bold mb-8 text-center text-green-800 dark:text-green-400">Shopping Cart</h1>
           {cartItems.length === 0 ? (
-            <p className="text-center text-gray-500 py-10">
-              Your cart is empty.
-            </p>
+            <div className="text-center py-12 text-gray-500">Your cart is empty</div>
           ) : (
             <>
               <div className="space-y-6">
-                {cartItems.map((item, index) => {
-                  const product = item.product || {};
-                  const key = product._id || item._id || index;
-                  const imgSrc = product.image || "/images/fallback-plant.jpg";
-
-                  return (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between border-b pb-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={imgSrc}
-                          alt={product.name || "Product"}
-                          className="w-16 h-16 rounded-lg object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = "/images/fallback-plant.jpg";
-                          }}
-                        />
-                        <div>
-                          <h2 className="font-semibold text-lg">
-                            {product.name || "Product unavailable"}
-                          </h2>
-                          <p className="text-sm text-gray-500">
-                            ₹{product.price ?? 0} each
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
-                            onClick={() => handleQtyChange(item, -1)}
-                          >
-                            <FaMinus />
-                          </button>
-                          <span className="w-6 text-center">
-                            {item.quantity}
-                          </span>
-                          <button
-                            className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100"
-                            onClick={() => handleQtyChange(item, 1)}
-                          >
-                            <FaPlus />
-                          </button>
-                        </div>
-
-                        <div className="w-20 text-right font-semibold">
-                          ₹{((product.price ?? 0) * item.quantity).toFixed(2)}
-                        </div>
-
-                        <button
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => handleRemove(item)}
-                          title="Remove"
-                        >
-                          <FaTrashAlt />
-                        </button>
+                {cartItems.map((item, idx) => (
+                  <div key={item.product?._id || idx} className="flex items-center justify-between border-b dark:border-gray-700 pb-6">
+                    <div className="flex items-center gap-4">
+                      <img src={item.product?.image || "/images/fallback-plant.jpg"} className="w-20 h-20 rounded-xl object-cover" alt="" />
+                      <div>
+                        <h2 className="font-bold text-lg">{item.product?.name || "Product"}</h2>
+                        <p className="text-green-600 font-semibold">₹{item.product?.price ?? 0}</p>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 p-1 rounded-full">
+                        <button onClick={() => handleQtyChange(item, -1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><FaMinus size={12} /></button>
+                        <span className="w-6 text-center font-bold">{item.quantity}</span>
+                        <button onClick={() => handleQtyChange(item, 1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><FaPlus size={12} /></button>
+                      </div>
+                      <div className="text-right font-bold w-24">₹{(item.product?.price * item.quantity).toFixed(2)}</div>
+                      <button onClick={() => handleRemove(item)} className="text-red-400 hover:text-red-600 transition"><FaTrashAlt /></button>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div className="flex items-center justify-between mt-6">
-                <div className="text-lg font-semibold">
-                  Total:{" "}
-                  <span className="text-green-700">
-                    ₹{total.toFixed(2)}
-                  </span>
-                </div>
-                <button
-                  onClick={handleProceedToPayment}
-                  className="bg-green-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700"
-                >
-                  Proceed to Payment
-                </button>
+              <div className="flex items-center justify-between mt-10">
+                <div className="text-2xl font-bold">Total: <span className="text-green-600">₹{total.toFixed(2)}</span></div>
+                <button onClick={handleProceedToPayment} className="bg-green-600 text-white px-8 py-3 rounded-full font-bold hover:bg-green-700 transition shadow-lg">Checkout Now</button>
               </div>
             </>
           )}
         </div>
 
-        {/* BILLING + OTP */}
         {showBilling && (
-          <div ref={billingRef} className="bg-white rounded-3xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold mb-6">Billing Details</h2>
-
-            {/* Billing form */}
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Full Name *
-                  </label>
-                  <input
-                    name="fullName"
-                    value={billing.fullName}
-                    onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                  />
+          <div ref={billingRef} className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold mb-6 text-green-800 dark:text-green-400">Shipping & Billing</h2>
+            <form onSubmit={handleSendOtp} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <input name="fullName" value={billing.fullName} onChange={handleChange} placeholder="Full Name *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
+                <input name="phone" value={billing.phone} onChange={handleChange} placeholder="Phone Number *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
+                <div className="md:col-span-2">
+                  <input name="address1" value={billing.address1} onChange={handleChange} placeholder="Address Line 1 *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Phone *
-                  </label>
-                  <input
-                    name="phone"
-                    value={billing.phone}
-                    onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                  />
-                </div>
+                <input name="city" value={billing.city} onChange={handleChange} placeholder="City *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
+                <input name="state" value={billing.state} onChange={handleChange} placeholder="State *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
+                <input name="pincode" value={billing.pincode} onChange={handleChange} placeholder="Pincode *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Address Line 1 *
-                </label>
-                <input
-                  name="address1"
-                  value={billing.address1}
-                  onChange={handleChange}
-                  className="w-full border rounded-lg px-3 py-2"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Address Line 2
-                </label>
-                <input
-                  name="address2"
-                  value={billing.address2}
-                  onChange={handleChange}
-                  className="w-full border rounded-lg px-3 py-2"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    City *
-                  </label>
-                  <input
-                    name="city"
-                    value={billing.city}
-                    onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    State *
-                  </label>
-                  <input
-                    name="state"
-                    value={billing.state}
-                    onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Pincode *
-                  </label>
-                  <input
-                    name="pincode"
-                    value={billing.pincode}
-                    onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-500 mt-1">
-                OTP will be sent to your registered email:{" "}
-                <span className="font-medium">{user?.email}</span>
-              </p>
-
-              {/* FORM BUTTONS */}
-              <div className="flex justify-end gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowBilling(false);
-                    setStep("form");
-                    setOrderId(null);
-                    setOtp("");
-                  }}
-                  className="px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-
-                {step === "form" && (
-                  <button
-                    type="submit"
-                    disabled={sendingOtp}
-                    className="px-6 py-2 rounded-full bg-green-600 text-white font-semibold disabled:opacity-70"
-                  >
-                    {sendingOtp ? "Sending OTP..." : "Send OTP"}
+              <div className="flex flex-wrap gap-4 justify-between items-center border-t pt-6">
+                <button type="button" onClick={() => setShowBilling(false)} className="text-gray-500 font-bold hover:text-gray-700">Cancel</button>
+                <div className="flex gap-4">
+                  <button type="submit" disabled={sendingOtp} className="bg-amber-500 text-white px-6 py-3 rounded-full font-bold hover:bg-amber-600 transition flex items-center gap-2">
+                    {sendingOtp ? "Sending..." : "Cash on Delivery (OTP)"}
                   </button>
-                )}
+                  <button type="button" onClick={handleRazorpayPayment} disabled={verifying} className="bg-green-600 text-white px-6 py-3 rounded-full font-bold hover:bg-green-700 transition flex items-center gap-2">
+                    <FaCreditCard /> Pay with Razorpay
+                  </button>
+                </div>
               </div>
             </form>
 
-            {/* OTP SECTION */}
             {step === "otp" && (
-              <div className="mt-8 border-t pt-6">
-                <h3 className="text-lg font-semibold mb-3">
-                  Enter OTP to confirm order
-                </h3>
-                <div className="flex flex-col md:flex-row items-center gap-3">
-                  <input
-                    value={otp}
-                    onChange={(e) =>
-                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
-                    maxLength={6}
-                    className="border rounded-lg px-4 py-2 text-center tracking-widest text-lg w-40"
-                    placeholder="123456"
-                  />
-                  <button
-                    onClick={handleVerifyOtp}
-                    disabled={verifying}
-                    className="px-6 py-2 rounded-full bg-green-600 text-white font-semibold disabled:opacity-70"
-                  >
-                    {verifying ? "Verifying..." : "Confirm Order"}
-                  </button>
+              <div className="mt-8 bg-green-50 dark:bg-green-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800">
+                <h3 className="font-bold mb-4">Confirm Your Order</h3>
+                <div className="flex gap-4">
+                  <input value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} className="w-32 p-3 text-center text-xl tracking-widest border rounded-xl font-mono" placeholder="000000" />
+                  <button onClick={handleVerifyOtp} disabled={verifying} className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700">Verify & Place Order</button>
                 </div>
               </div>
             )}

@@ -137,3 +137,19 @@ export const send2FAMail = async (to, otp) => {
     throw errorHandler(500, "Failed to send 2FA email");
   }
 };
+export const sendMail = async (to, subject, text) => {
+  try {
+    const from = process.env.MAIL_FROM || `Gardenly Support <${emailUser}>`;
+    await transporter.sendMail({
+      from,
+      to,
+      subject,
+      text,
+      html: `<div style="font-family: Arial, sans-serif; line-height: 1.5; white-space: pre-wrap;">${text}</div>`,
+    });
+    return true;
+  } catch (err) {
+    console.error("Error sending mail:", err);
+    throw errorHandler(500, "Failed to send email.");
+  }
+};
