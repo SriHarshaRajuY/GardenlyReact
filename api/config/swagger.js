@@ -68,14 +68,9 @@ const openApiSpec = {
     { url: "http://localhost:3000", description: "Local dev" },
   ],
   tags: [
-    { name: "Auth" },
-    { name: "User" },
-    { name: "Products" },
-    { name: "Cart" },
-    { name: "Orders" },
-    { name: "Admin" },
-    { name: "Seller" },
     { name: "Tickets" },
+    { name: "CustomRequests" },
+    { name: "Delivery" },
     { name: "Test" },
   ],
   components: {
@@ -162,6 +157,18 @@ const openApiSpec = {
           createdAt: { type: "string", format: "date-time" },
         },
         additionalProperties: true,
+      },
+      CustomRequest: {
+        type: "object",
+        properties: {
+          _id: { type: "string" },
+          buyer_id: { type: "string" },
+          title: { type: "string" },
+          description: { type: "string" },
+          budget: { type: "number" },
+          status: { type: "string", example: "Open" },
+          proposals: { type: "array", items: { type: "object" } },
+        },
       },
       SuccessResponse: {
         type: "object",
@@ -258,6 +265,23 @@ const openApiSpec = {
         required: ["resolution"],
         properties: {
           resolution: { type: "string", default: "Issue resolved. Please retry now." },
+        },
+      },
+      CreateCustomRequest: {
+        type: "object",
+        required: ["title", "description"],
+        properties: {
+          title: { type: "string", default: "Need 50 pots of Aloe Vera" },
+          description: { type: "string", default: "For a corporate event next week." },
+          budget: { type: "number", default: 5000 },
+        },
+      },
+      SubmitProposalRequest: {
+        type: "object",
+        required: ["price", "message"],
+        properties: {
+          price: { type: "number", default: 4500 },
+          message: { type: "string", default: "I can fulfill this request within 3 days." },
         },
       },
       TestEmailRequest: {
@@ -409,13 +433,17 @@ const openApiSpec = {
     "/api/products": {
       get: {
         tags: ["Products"],
-        summary: "Get recent products",
+        summary: "Get recent products (Paginated)",
+        parameters: [
+          { in: "query", name: "page", schema: { type: "integer", default: 1 } },
+          { in: "query", name: "limit", schema: { type: "integer", default: 12 } },
+        ],
         responses: {
           200: {
             description: "OK",
             content: {
               "application/json": {
-                schema: { type: "array", items: { $ref: "#/components/schemas/Product" } },
+                schema: { type: "object", properties: { products: { type: "array", items: { $ref: "#/components/schemas/Product" } } } },
               },
             },
           },
@@ -456,7 +484,7 @@ const openApiSpec = {
     "/api/products/search": {
       get: {
         tags: ["Products"],
-        summary: "Search products",
+        summary: "Search products (Weighted Relevance)",
         parameters: [{ in: "query", name: "q", required: true, schema: { type: "string", default: "aloe" } }],
         responses: {
           200: {
@@ -482,12 +510,16 @@ const openApiSpec = {
       get: {
         tags: ["Products"],
         summary: "Get products by category",
-        parameters: [{ in: "path", name: "category", required: true, schema: { type: "string" } }],
+        parameters: [
+          { in: "path", name: "category", required: true, schema: { type: "string" } },
+          { in: "query", name: "page", schema: { type: "integer", default: 1 } },
+          { in: "query", name: "limit", schema: { type: "integer", default: 12 } },
+        ],
         responses: {
           200: {
             description: "OK",
             content: {
-              "application/json": { schema: { type: "array", items: { $ref: "#/components/schemas/Product" } } },
+              "application/json": { schema: { type: "object", properties: { products: { type: "array", items: { $ref: "#/components/schemas/Product" } } } } },
             },
           },
         },
@@ -632,7 +664,7 @@ const openApiSpec = {
     "/api/admin/dashboard": {
       get: {
         tags: ["Admin"],
-        summary: "Get admin dashboard (admin only)",
+        summary: "Get admin dashboard analytics",
         security: [{ cookieAuth: [] }],
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
@@ -640,23 +672,70 @@ const openApiSpec = {
     "/api/admin/users": {
       get: {
         tags: ["Admin"],
-        summary: "List all users (admin only)",
+        summary: "List all users",
         security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/admin/users/{id}": {
+      delete: {
+        tags: ["Admin"],
+        summary: "Delete user",
+        security: [{ cookieAuth: [] }],
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
     },
     "/api/admin/products": {
       get: {
         tags: ["Admin"],
-        summary: "List all products (admin only)",
+        summary: "List all products",
         security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/admin/products/{id}": {
+      delete: {
+        tags: ["Admin"],
+        summary: "Delete product",
+        security: [{ cookieAuth: [] }],
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/admin/orders": {
+      get: {
+        tags: ["Admin"],
+        summary: "List all orders",
+        security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/admin/tickets": {
+      get: {
+        tags: ["Admin"],
+        summary: "List all tickets",
+        security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/admin/tickets/{id}/resolve": {
+      patch: {
+        tags: ["Admin"],
+        summary: "Resolve a ticket",
+        security: [{ cookieAuth: [] }],
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ResolveTicketRequest" } } },
+        },
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
     },
     "/api/seller/orders": {
       get: {
         tags: ["Seller"],
-        summary: "Get seller orders (seller only)",
+        summary: "Get seller orders",
         security: [{ cookieAuth: [] }],
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
@@ -664,7 +743,7 @@ const openApiSpec = {
     "/api/seller/summary": {
       get: {
         tags: ["Seller"],
-        summary: "Get seller summary (seller only)",
+        summary: "Get seller business summary",
         security: [{ cookieAuth: [] }],
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
@@ -672,7 +751,7 @@ const openApiSpec = {
     "/api/tickets/submit": {
       post: {
         tags: ["Tickets"],
-        summary: "Submit a support ticket (authenticated; multipart attachment)",
+        summary: "Submit a support ticket (multipart attachment)",
         security: [{ cookieAuth: [] }],
         requestBody: {
           required: true,
@@ -714,7 +793,7 @@ const openApiSpec = {
     "/api/tickets/expert": {
       get: {
         tags: ["Tickets"],
-        summary: "Get expert tickets",
+        summary: "Get tickets assigned to expert",
         security: [{ cookieAuth: [] }],
         responses: {
           200: {
@@ -728,7 +807,7 @@ const openApiSpec = {
     "/api/tickets/{id}": {
       get: {
         tags: ["Tickets"],
-        summary: "Get a ticket by id",
+        summary: "Get a ticket by ID",
         security: [{ cookieAuth: [] }],
         parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
         responses: {
@@ -745,14 +824,78 @@ const openApiSpec = {
         parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
         requestBody: {
           required: true,
-          content: {
-            "application/json": { schema: { $ref: "#/components/schemas/ResolveTicketRequest" } },
-          },
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ResolveTicketRequest" } } },
         },
-        responses: {
-          200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
-          401: { $ref: "#/components/responses/Unauthorized" },
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/custom-requests/": {
+      post: {
+        tags: ["CustomRequests"],
+        summary: "Create a custom request (Buyer)",
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/CreateCustomRequest" } } },
         },
+        responses: { 201: { description: "Created" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/custom-requests/my-requests": {
+      get: {
+        tags: ["CustomRequests"],
+        summary: "Get buyer's own requests",
+        security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/custom-requests/open": {
+      get: {
+        tags: ["CustomRequests"],
+        summary: "Get all open requests (Seller only)",
+        security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/custom-requests/{id}/proposals": {
+      post: {
+        tags: ["CustomRequests"],
+        summary: "Submit a proposal (Seller only)",
+        security: [{ cookieAuth: [] }],
+        parameters: [{ in: "path", name: "id", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/SubmitProposalRequest" } } },
+        },
+        responses: { 201: { description: "Created" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/custom-requests/{id}/proposals/{proposalId}/accept": {
+      put: {
+        tags: ["CustomRequests"],
+        summary: "Accept a proposal (Buyer)",
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          { in: "path", name: "id", required: true, schema: { type: "string" } },
+          { in: "path", name: "proposalId", required: true, schema: { type: "string" } },
+        ],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/delivery/agents": {
+      get: {
+        tags: ["Delivery"],
+        summary: "Get all delivery agents",
+        security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+      },
+    },
+    "/api/delivery/stats": {
+      get: {
+        tags: ["Delivery"],
+        summary: "Get delivery agent statistics",
+        security: [{ cookieAuth: [] }],
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
     },
     "/api/test/send-test-email": {
@@ -761,14 +904,9 @@ const openApiSpec = {
         summary: "Send test OTP email",
         requestBody: {
           required: true,
-          content: {
-            "application/json": { schema: { $ref: "#/components/schemas/TestEmailRequest" } },
-          },
+          content: { "application/json": { schema: { $ref: "#/components/schemas/TestEmailRequest" } } },
         },
-        responses: {
-          200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/SuccessResponse" } } } },
-          400: { description: "Email is required" },
-        },
+        responses: { 200: { description: "OK" }, 400: { description: "Email is required" } },
       },
     },
   },

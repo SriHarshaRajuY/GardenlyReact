@@ -61,14 +61,12 @@ export const searchProducts = async (req, res, next) => {
       });
     }
 
-    const regex = new RegExp(q, "i"); // case-insensitive match
-
-    const products = await Product.find({
-      $or: [
-        { name: regex },
-      ],
-    })
-      .sort({ createdAt: -1 })
+    // Optimized Search using MongoDB Text Index with Relevance Scoring
+    const products = await Product.find(
+      { $text: { $search: q } },
+      { score: { $meta: "textScore" } }
+    )
+      .sort({ score: { $meta: "textScore" } })
       .limit(30);
 
     res.status(200).json({

@@ -16,7 +16,22 @@ const productSchema = new mongoose.Schema({
 
 // Indexes for optimization
 productSchema.index({ category: 1, createdAt: -1 });
-productSchema.index({ name: 'text' }); // Text index for search
+// Weighted text index for superior search experience (Solr-like)
+productSchema.index(
+  { 
+    name: "text", 
+    category: "text", 
+    description: "text" 
+  },
+  {
+    weights: {
+      name: 10,
+      category: 5,
+      description: 1
+    },
+    name: "TextSearchIndex"
+  }
+);
 productSchema.index({ seller_id: 1 });
 
 export default mongoose.model("Product", productSchema);
