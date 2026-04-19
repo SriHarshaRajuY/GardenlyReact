@@ -1,0 +1,11 @@
+node_modules
+client/node_modules
+client/dist
+.git
+.env.*.local
+*.log
+npm-debug.log*
+.vscode
+.idea
+coverage
+.DS_Store

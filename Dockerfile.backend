@@ -1,0 +1,19 @@
+# ============================================
+# Gardenly Backend – Production Dockerfile
+# ============================================
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 1. Copy root package files and install deps
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# 2. Copy backend source code
+COPY api/ ./api/
+
+# 3. Expose the port the server listens on
+EXPOSE 3000
+
+# 4. Start the backend server
+CMD ["node", "api/index.js"]

@@ -1,0 +1,133 @@
+
+> mern-estate@1.0.0 test:coverage
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage
+
+(node:11576) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL api/tests/auth.controller.test.js
+  ● Console
+
+    console.log
+      [dotenv@17.2.3] injecting env (15) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+    console.log
+      📧 Mailer config check:
+
+      at log (api/utils/mailer.js:17:9)
+
+    console.log
+        EMAIL_USER = "maddipatlasaiteja17@gmail.com"
+
+      at log (api/utils/mailer.js:18:9)
+
+    console.log
+        EMAIL_PASS exists?  true
+
+      at log (api/utils/mailer.js:19:9)
+
+  ● Auth Controller Unit Tests › signin › should successfully sign in a valid user
+
+    TypeError: User.findOne.mockResolvedValue is not a function
+
+    [0m [90m 54 |[39m       }[33m;[39m
+     [90m 55 |[39m
+    [31m[1m>[22m[39m[90m 56 |[39m       [33mUser[39m[33m.[39mfindOne[33m.[39mmockResolvedValue(mockUser)[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 57 |[39m       bcrypt[33m.[39mcompareSync[33m.[39mmockReturnValue([36mtrue[39m)[33m;[39m
+     [90m 58 |[39m       jwt[33m.[39msign[33m.[39mmockReturnValue([32m'mock-jwt-token'[39m)[33m;[39m
+     [90m 59 |[39m[0m
+
+      at Object.<anonymous> (api/tests/auth.controller.test.js:56:20)
+
+  ● Auth Controller Unit Tests › signin › should return 401 for invalid password
+
+    TypeError: User.findOne.mockResolvedValue is not a function
+
+    [0m [90m 73 |[39m     it([32m'should return 401 for invalid password'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 74 |[39m       req[33m.[39mbody [33m=[39m { username[33m:[39m [32m'testuser'[39m[33m,[39m password[33m:[39m [32m'WrongPassword!'[39m[33m,[39m role[33m:[39m [32m'Buyer'[39m }[33m;[39m
+    [31m[1m>[22m[39m[90m 75 |[39m       [33mUser[39m[33m.[39mfindOne[33m.[39mmockResolvedValue({ password[33m:[39m [32m'hashed'[39m[33m,[39m role[33m:[39m [32m'Buyer'[39m })[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 76 |[39m       bcrypt[33m.[39mcompareSync[33m.[39mmockReturnValue([36mfalse[39m)[33m;[39m
+     [90m 77 |[39m
+     [90m 78 |[39m       [36mawait[39m signin(req[33m,[39m res[33m,[39m next)[33m;[39m[0m
+
+      at Object.<anonymous> (api/tests/auth.controller.test.js:75:20)
+
+(node:3140) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL api/tests/product.controller.test.js
+  ● Product Controller Unit Tests › getRecentProducts › should fetch paginated products successfully
+
+    TypeError: Product.countDocuments.mockResolvedValue is not a function
+
+    [0m [90m 29 |[39m       [90m// Setup Mock Data[39m
+     [90m 30 |[39m       [36mconst[39m mockProducts [33m=[39m [{ _id[33m:[39m [32m'1'[39m[33m,[39m name[33m:[39m [32m'Test Plant'[39m }][33m;[39m
+    [31m[1m>[22m[39m[90m 31 |[39m       [33mProduct[39m[33m.[39mcountDocuments[33m.[39mmockResolvedValue([35m10[39m)[33m;[39m
+     [90m    |[39m                              [31m[1m^[22m[39m
+     [90m 32 |[39m       
+     [90m 33 |[39m       [36mconst[39m mockFind [33m=[39m {
+     [90m 34 |[39m         sort[33m:[39m jest[33m.[39mfn()[33m.[39mmockReturnThis()[33m,[39m[0m
+
+      at Object.<anonymous> (api/tests/product.controller.test.js:31:30)
+
+  ● Product Controller Unit Tests › getRecentProducts › should call next(err) if database query fails
+
+    TypeError: Product.countDocuments.mockRejectedValue is not a function
+
+    [0m [90m 55 |[39m     it([32m'should call next(err) if database query fails'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 56 |[39m       [36mconst[39m error [33m=[39m [36mnew[39m [33mError[39m([32m'Database Error'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 57 |[39m       [33mProduct[39m[33m.[39mcountDocuments[33m.[39mmockRejectedValue(error)[33m;[39m
+     [90m    |[39m                              [31m[1m^[22m[39m
+     [90m 58 |[39m
+     [90m 59 |[39m       [36mawait[39m getRecentProducts(req[33m,[39m res[33m,[39m next)[33m;[39m
+     [90m 60 |[39m[0m
+
+      at Object.<anonymous> (api/tests/product.controller.test.js:57:30)
+
+  ● Product Controller Unit Tests › searchProducts › should fetch from Solr and hydrate from MongoDB
+
+    TypeError: solrUtil.searchSolr.mockResolvedValue is not a function
+
+    [0m [90m 80 |[39m       
+     [90m 81 |[39m       [36mconst[39m mockSolrResults [33m=[39m [{ id[33m:[39m [32m'1'[39m }[33m,[39m { id[33m:[39m [32m'2'[39m }][33m;[39m
+    [31m[1m>[22m[39m[90m 82 |[39m       solrUtil[33m.[39msearchSolr[33m.[39mmockResolvedValue(mockSolrResults)[33m;[39m
+     [90m    |[39m                           [31m[1m^[22m[39m
+     [90m 83 |[39m
+     [90m 84 |[39m       [36mconst[39m mockMongoProducts [33m=[39m [
+     [90m 85 |[39m         { _id[33m:[39m [32m'1'[39m[33m,[39m name[33m:[39m [32m'Aloe Vera'[39m[33m,[39m toString[33m:[39m () [33m=>[39m [32m'1'[39m }[33m,[39m[0m
+
+      at Object.<anonymous> (api/tests/product.controller.test.js:82:27)
+
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
+File                          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                               
+------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
+All files                     |    7.94 |     6.94 |    4.16 |    8.35 |                                                                 
+ controllers                  |    5.64 |     5.35 |    4.22 |    5.85 |                                                                 
+  admin.controller.js         |       0 |        0 |       0 |       0 | 8-138                                                           
+  auth.controller.js          |   14.72 |     12.5 |      25 |   16.29 | 11-19,36,47-74,79-95,106-138,143-157,163-199,205-222,228-250    
+  cart.controller.js          |       0 |        0 |       0 |       0 | 6-148                                                           
+  customRequest.controller.js |       0 |        0 |       0 |       0 | 5-99                                                            
+  delivery.controller.js      |       0 |        0 |       0 |       0 | 7-146                                                           
+  order.controller.js         |       0 |        0 |       0 |       0 | 10-209                                                          
+  product.controller.js       |   16.25 |    11.53 |    7.69 |    17.1 | 9-27,32-51,67-86,92-133,138-144,149-155,160-166,171-201,206-226 
+  seller.controller.js        |       0 |        0 |       0 |       0 | 9-103                                                           
+  ticket.controller.js        |       0 |        0 |       0 |       0 | 7-141                                                           
+  user.controller.js          |       0 |        0 |       0 |       0 | 10-55                                                           
+ utils                        |   14.95 |    15.68 |       4 |   15.68 |                                                                 
+  cache.js                    |   11.11 |        0 |       0 |   11.62 | 7-25,32-63,69-78                                                
+  checkIndexes.js             |       0 |      100 |       0 |       0 | 7-27                                                            
+  dropIndex.js                |       0 |      100 |       0 |       0 | 7-26                                                            
+  error.js                    |     100 |       75 |     100 |     100 | 6                                                               
+  mailer.js                   |      35 |    31.25 |       0 |      35 | 22,40-43,53-90,98-115,120-137                                   
+  performanceTest.js          |       0 |        0 |       0 |       0 | 4-42                                                            
+  solr.js                     |   13.46 |        0 |       0 |   15.21 | 10-33,41-53,61-85,93-105,110                                    
+  syncToSolr.js               |       0 |      100 |       0 |       0 | 9-37                                                            
+------------------------------|---------|----------|---------|---------|-----------------------------------------------------------------
+Test Suites: 2 failed, 2 total
+Tests:       5 failed, 3 passed, 8 total
+Snapshots:   0 total
+Time:        2.69 s
+Ran all test suites.

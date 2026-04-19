@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon api/index.js",
-    "start": "node api/index.js"
+    "start": "node api/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +21,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
+    "docker": "^1.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
@@ -48,6 +51,9 @@
   "homepage": "https://github.com/SriHarshaRajuY/GardenlyReact#readme",
   "description": "",
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "jest": "^30.3.0",
+    "mongodb-memory-server": "^11.0.1",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.2.2"
   }
 }
