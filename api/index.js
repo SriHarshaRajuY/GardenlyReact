@@ -15,8 +15,10 @@ import cartRouter from "./routes/cart.route.js";
 import orderRouter from "./routes/order.route.js";
 import adminRouter from "./routes/admin.route.js";
 import sellerRouter from "./routes/seller.route.js"; // ✅ NEW
+import customRequestRoute from "./routes/customRequest.route.js";
 import upload from "./upload.js";
 import { createSwaggerRouter } from "./config/swagger.js";
+import { connectRedis } from "./utils/cache.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,6 +59,7 @@ app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/seller", sellerRouter); // ✅ NEW SELLER DASHBOARD ROUTE
+app.use("/api/custom-requests", customRequestRoute);
 
 // =======================
 // API DOCS (Swagger UI)
@@ -98,6 +101,9 @@ async function startServer() {
     });
 
     console.log("🟢 MongoDB connected successfully");
+
+    // 🔥 CONNECT TO REDIS
+    await connectRedis();
 
     // THEN start server
     app.listen(PORT, () => {

@@ -1,10 +1,9 @@
-// api/controllers/auth.controller.js
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { errorHandler } from "../utils/error.js";
-import { sendOtpMail } from "../utils/mailer.js";  
+import { sendOtpMail, sendSignupVerificationMail, send2FAMail } from "../utils/mailer.js";  
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -42,43 +41,56 @@ export const signup = async (req, res, next) => {
     const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
     const mobileRegex = /^\d{10}$/;
 
-    if (!usernameRegex.test(username)) {
-      return next(errorHandler(400, "Invalid username (3-20 chars, letters, numbers, _, -)"));
-    }
-    if (!passwordRegex.test(password)) {
-      return next(errorHandler(400, "Password must be 8+ chars with uppercase, number, special char"));
-    }
-    if (!emailRegex.test(email)) {
-      return next(errorHandler(400, "Invalid email format"));
-    }
-    if (!mobileRegex.test(mobile)) {
-      return next(errorHandler(400, "Mobile must be 10 digits"));
-    }
-    if (!["Buyer", "Seller", "Admin", "Expert"].includes(role)) {
-      return next(errorHandler(400, "Invalid role"));
-    }
+    if (!usernameRegex.test(username)) return next(errorHandler(400, "Invalid username"));
+    if (!passwordRegex.test(password)) return next(errorHandler(400, "Password must be 8+ chars with uppercase, number, special char"));
+    if (!emailRegex.test(email)) return next(errorHandler(400, "Invalid email format"));
+    if (!mobileRegex.test(mobile)) return next(errorHandler(400, "Mobile must be 10 digits"));
+    if (!["Buyer", "Seller", "Admin", "Expert"].includes(role)) return next(errorHandler(400, "Invalid role"));
 
     let finalExpertise = "General";
     if (role === "Expert") {
       const allowed = ["General", "Technical", "Billing"];
-      if (!expertise || !allowed.includes(expertise)) {
-        return next(errorHandler(400, "Expertise required for Expert role"));
-      }
+      if (!expertise || !allowed.includes(expertise)) return next(errorHandler(400, "Expertise required for Expert role"));
       finalExpertise = expertise;
     }
 
     const existing = await User.findOne({ $or: [{ username }, { email }, { mobile }] });
-    if (existing) {
-      return next(errorHandler(400, "User with this username/email/mobile already exists"));
-    }
+    if (existing) return next(errorHandler(400, "User with this username/email/mobile already exists"));
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedPassword = bcrypt.hashSync(password, 10);
     const user = new User({
-      username, email, password: hashedPassword, role, mobile, expertise: finalExpertise
+      username, email, password: hashedPassword, role, mobile, expertise: finalExpertise,
+      isEmailVerified: false,
+      emailVerificationOtp: otp,
+      emailVerificationOtpExpiresAt: new Date(Date.now() + 10 * 60 * 1000)
     });
+    
+    await user.save();
+    await sendSignupVerificationMail(email, otp);
+
+    res.status(201).json({ success: true, requireVerification: true, email: user.email, message: "Verification OTP sent to your email" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const verifyEmail = async (req, res, next) => {
+  const { email, otp } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return next(errorHandler(404, "User not found"));
+    if (user.isEmailVerified) return res.status(200).json({ success: true, message: "Already verified" });
+
+    if (user.emailVerificationOtp !== otp) return next(errorHandler(400, "Invalid OTP"));
+    if (user.emailVerificationOtpExpiresAt < new Date()) return next(errorHandler(400, "OTP expired"));
+
+    user.isEmailVerified = true;
+    user.emailVerificationOtp = undefined;
+    user.emailVerificationOtpExpiresAt = undefined;
     await user.save();
 
-    res.status(201).json({ message: "User created successfully" });
+    res.status(200).json({ success: true, message: "Email verified successfully. You can now login." });
   } catch (err) {
     next(err);
   }
@@ -89,9 +101,7 @@ export const signin = async (req, res, next) => {
   const { username, password, role } = req.body;
 
   try {
-    if (!username || !password || !role) {
-      return next(errorHandler(400, "Username, password, and role are required"));
-    }
+    if (!username || !password || !role) return next(errorHandler(400, "Username, password, and role are required"));
 
     const user = await User.findOne({ username });
     if (!user) return next(errorHandler(404, "User not found"));
@@ -103,8 +113,46 @@ export const signin = async (req, res, next) => {
       return next(errorHandler(403, "Role mismatch. Please select correct role."));
     }
 
+    // Email verification: only block if user was explicitly set as unverified AND has a pending OTP
+    // (i.e. they registered through the new signup flow but never verified)
+    if (!user.isEmailVerified && user.emailVerificationOtp) {
+      // Re-send OTP if not verified
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.emailVerificationOtp = otp;
+      user.emailVerificationOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await user.save();
+      await sendSignupVerificationMail(user.email, otp);
+      return res.status(403).json({ success: false, requireVerification: true, email: user.email, message: "Please verify your email first. A new OTP has been sent." });
+    }
+
+    // Auto-verify old accounts that have no OTP pending (were created before email verification)
+    if (!user.isEmailVerified && !user.emailVerificationOtp) {
+      user.isEmailVerified = true;
+      await user.save();
+    }
+
+    // Login success - return token directly (no forced 2FA for existing accounts)
     return buildAuthResponse(res, user);
 
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const verify2FA = async (req, res, next) => {
+  const { email, otp } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return next(errorHandler(404, "User not found"));
+    
+    if (user.twoFactorOtp !== otp) return next(errorHandler(400, "Invalid 2FA code"));
+    if (user.twoFactorOtpExpiresAt < new Date()) return next(errorHandler(400, "2FA code expired"));
+
+    user.twoFactorOtp = undefined;
+    user.twoFactorOtpExpiresAt = undefined;
+    await user.save();
+
+    return buildAuthResponse(res, user);
   } catch (err) {
     next(err);
   }
@@ -115,13 +163,8 @@ export const googleSignin = async (req, res, next) => {
   const { credential, role = "Buyer" } = req.body;
 
   try {
-    if (!credential) {
-      return next(errorHandler(400, "Google credential is required"));
-    }
-
-    if (!process.env.GOOGLE_CLIENT_ID) {
-      return next(errorHandler(500, "GOOGLE_CLIENT_ID is not configured"));
-    }
+    if (!credential) return next(errorHandler(400, "Google credential is required"));
+    if (!process.env.GOOGLE_CLIENT_ID) return next(errorHandler(500, "GOOGLE_CLIENT_ID is not configured"));
 
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
@@ -130,50 +173,27 @@ export const googleSignin = async (req, res, next) => {
 
     const payload = ticket.getPayload();
     const email = payload?.email?.toLowerCase();
-    if (!email) {
-      return next(errorHandler(400, "Google account email is missing"));
-    }
+    if (!email) return next(errorHandler(400, "Google account email is missing"));
 
     let user = await User.findOne({ email });
 
     if (!user) {
-      const safeRole = ["Buyer", "Seller", "Admin", "Expert"].includes(role)
-        ? role
-        : "Buyer";
-
-      const emailPrefix = (email.split("@")[0] || "user")
-        .replace(/[^a-zA-Z0-9_-]/g, "")
-        .slice(0, 12);
-
-      let username = `${emailPrefix || "user"}_${Math.floor(
-        100 + Math.random() * 900
-      )}`;
-      while (await User.findOne({ username })) {
-        username = `${emailPrefix || "user"}_${Math.floor(
-          100 + Math.random() * 900
-        )}`;
-      }
+      const safeRole = ["Buyer", "Seller", "Admin", "Expert"].includes(role) ? role : "Buyer";
+      const emailPrefix = (email.split("@")[0] || "user").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 12);
+      let username = `${emailPrefix || "user"}_${Math.floor(100 + Math.random() * 900)}`;
+      while (await User.findOne({ username })) username = `${emailPrefix || "user"}_${Math.floor(100 + Math.random() * 900)}`;
 
       let mobile = `${Date.now()}`.slice(-10);
-      while (await User.findOne({ mobile })) {
-        mobile = `${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-      }
+      while (await User.findOne({ mobile })) mobile = `${Math.floor(1000000000 + Math.random() * 9000000000)}`;
 
-      const tempPassword = bcrypt.hashSync(
-        `google_${Date.now()}_${Math.random()}`,
-        10
-      );
-
+      const tempPassword = bcrypt.hashSync(`google_${Date.now()}_${Math.random()}`, 10);
       user = await User.create({
-        username,
-        email,
-        password: tempPassword,
-        role: safeRole,
-        mobile,
-        expertise: safeRole === "Expert" ? "General" : "General",
+        username, email, password: tempPassword, role: safeRole, mobile, expertise: safeRole === "Expert" ? "General" : "General",
+        isEmailVerified: true // Google accounts are considered verified
       });
     }
 
+    // Login success directly for Google users (they are already verified by Google)
     return buildAuthResponse(res, user);
   } catch (err) {
     return next(errorHandler(401, "Invalid Google token"));
@@ -183,26 +203,21 @@ export const googleSignin = async (req, res, next) => {
 // FORGOT PASSWORD - SEND OTP
 export const forgotPassword = async (req, res, next) => {
   const { email } = req.body;
-
   try {
     if (!email) return next(errorHandler(400, "Email is required"));
-
     const user = await User.findOne({ email });
     if (!user) return next(errorHandler(404, "No account found with this email"));
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expires = new Date(Date.now() + 10 * 60 * 1000); 
 
     user.resetOtp = otp;
     user.resetOtpExpiresAt = expires;
     await user.save();
 
-    await sendOtpMail(email, otp);   // Now works!
+    await sendOtpMail(email, otp);   
 
-    res.status(200).json({
-      success: true,
-      message: "OTP sent to your email",
-    });
+    res.status(200).json({ success: true, message: "OTP sent to your email" });
   } catch (err) {
     next(err);
   }
@@ -211,23 +226,13 @@ export const forgotPassword = async (req, res, next) => {
 // VERIFY OTP & RESET PASSWORD
 export const resetPassword = async (req, res, next) => {
   const { email, otp, newPassword } = req.body;
-
   try {
-    if (!email || !otp || !newPassword) {
-      return next(errorHandler(400, "Email, OTP, and new password are required"));
-    }
-
-    if (!/^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/.test(newPassword)) {
-      return next(errorHandler(400, "Password must be 8+ chars with uppercase, number, special char"));
-    }
+    if (!email || !otp || !newPassword) return next(errorHandler(400, "Email, OTP, and new password are required"));
+    if (!/^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9]).{8,}$/.test(newPassword)) return next(errorHandler(400, "Password must be 8+ chars with uppercase, number, special char"));
 
     const user = await User.findOne({ email });
     if (!user) return next(errorHandler(404, "User not found"));
-
-    if (!user.resetOtp || user.resetOtp !== otp) {
-      return next(errorHandler(400, "Invalid OTP"));
-    }
-
+    if (!user.resetOtp || user.resetOtp !== otp) return next(errorHandler(400, "Invalid OTP"));
     if (user.resetOtpExpiresAt < new Date()) {
       user.resetOtp = undefined;
       user.resetOtpExpiresAt = undefined;
@@ -240,10 +245,7 @@ export const resetPassword = async (req, res, next) => {
     user.resetOtpExpiresAt = undefined;
     await user.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Password reset successfully! You can now login.",
-    });
+    res.status(200).json({ success: true, message: "Password reset successfully! You can now login." });
   } catch (err) {
     next(err);
   }

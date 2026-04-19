@@ -1,7 +1,7 @@
 // src/pages/SignIn.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUser, FaLock, FaUserTag, FaHome, FaEnvelope } from "react-icons/fa";
+import { FaUser, FaLock, FaUserTag, FaHome, FaEnvelope, FaShieldAlt } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
 const InputDiv = ({ icon, label, children, isFocused, hasValue }) => (
@@ -44,23 +44,22 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
-  const [focused, setFocused] = useState({
-    username: false,
-    password: false,
-    role: false,
-  });
+  const [focused, setFocused] = useState({});
 
-  const handleFocus = (field) =>
-    setFocused((prev) => ({ ...prev, [field]: true }));
-  const handleBlur = (field) =>
-    setFocused((prev) => ({ ...prev, [field]: false }));
+  // Auth Flow states
+  const [authStep, setAuthStep] = useState("LOGIN"); // LOGIN, VERIFY_EMAIL, VERIFY_2FA
+  const [tempEmail, setTempEmail] = useState("");
+  const [otp, setOtp] = useState("");
+
+  const handleFocus = (field) => setFocused((prev) => ({ ...prev, [field]: true }));
+  const handleBlur = (field) => setFocused((prev) => ({ ...prev, [field]: false }));
 
   // Forgot Password Modal
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [step, setStep] = useState(1);
+  const [forgotStep, setForgotStep] = useState(1);
   const [forgotError, setForgotError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState("");
 
@@ -69,17 +68,18 @@ export default function SignIn() {
   }, [role]);
 
   const handlePostLoginNavigation = (loggedInUserRole) => {
-    switch (loggedInUserRole) {
-      case "Expert":
+    const role = (loggedInUserRole || "").toLowerCase();
+    switch (role) {
+      case "expert":
         navigate("/expert-dashboard");
         break;
-      case "Seller":
+      case "seller":
         navigate("/seller");
         break;
-      case "Buyer":
+      case "buyer":
         navigate("/");
         break;
-      case "Admin":
+      case "admin":
         navigate("/admin/dashboard");
         break;
       default:
@@ -90,12 +90,10 @@ export default function SignIn() {
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId || !googleBtnRef.current) return;
-
     let cancelled = false;
 
     const initializeGoogle = () => {
       if (cancelled || !window.google?.accounts?.id) return;
-
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: async (response) => {
@@ -110,15 +108,18 @@ export default function SignIn() {
                 role: roleRef.current || "Buyer",
               }),
             });
-
             const data = await res.json();
             if (!res.ok) {
               setError(data.message || "Google sign in failed");
               return;
             }
-
-            login(data.token);
-            handlePostLoginNavigation(data.user.role);
+            if (data.require2FA) {
+              setTempEmail(data.email);
+              setAuthStep("VERIFY_2FA");
+            } else {
+              login(data.token);
+              handlePostLoginNavigation(data.user.role);
+            }
           } catch {
             setError("Google sign in failed");
           }
@@ -136,9 +137,7 @@ export default function SignIn() {
 
     if (window.google?.accounts?.id) {
       initializeGoogle();
-      return () => {
-        cancelled = true;
-      };
+      return () => { cancelled = true; };
     }
 
     const script = document.createElement("script");
@@ -148,9 +147,7 @@ export default function SignIn() {
     script.onload = initializeGoogle;
     document.body.appendChild(script);
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [login, navigate]);
 
   const handleSubmit = async (e) => {
@@ -163,17 +160,60 @@ export default function SignIn() {
       const res = await fetch("/api/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ so cookie is set
+        credentials: "include",
         body: JSON.stringify({ username, password, role }),
       });
 
       const data = await res.json();
-      if (!res.ok) return setError(data.message || "Invalid credentials");
+      
+      if (!res.ok) {
+        if (data.requireVerification) {
+          setTempEmail(data.email);
+          setAuthStep("VERIFY_EMAIL");
+          return setError(data.message);
+        }
+        return setError(data.message || "Invalid credentials");
+      }
 
-      // Save token on client side too
+      if (data.require2FA) {
+        setTempEmail(data.email);
+        setAuthStep("VERIFY_2FA");
+        return;
+      }
+
       login(data.token);
-
       handlePostLoginNavigation(data.user.role);
+    } catch {
+      setError("Server error");
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!otp) return setError("Please enter the OTP");
+
+    const endpoint = authStep === "VERIFY_EMAIL" ? "/api/auth/verify-email" : "/api/auth/verify-2fa";
+    
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: tempEmail, otp }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) return setError(data.message || "Invalid OTP");
+
+      if (authStep === "VERIFY_EMAIL") {
+        alert("Email verified successfully! Please sign in again.");
+        setAuthStep("LOGIN");
+        setOtp("");
+      } else {
+        login(data.token);
+        handlePostLoginNavigation(data.user.role);
+      }
     } catch {
       setError("Server error");
     }
@@ -184,7 +224,7 @@ export default function SignIn() {
     setForgotError("");
     setForgotSuccess("");
 
-    if (step === 1) {
+    if (forgotStep === 1) {
       if (!forgotEmail) return setForgotError("Email is required");
       try {
         const res = await fetch("/api/auth/forgot-password", {
@@ -195,27 +235,27 @@ export default function SignIn() {
         const data = await res.json();
         if (!res.ok) return setForgotError(data.message || "Failed to send OTP");
         setForgotSuccess("OTP sent! Check your email.");
-        setStep(2);
+        setForgotStep(2);
       } catch {
         setForgotError("Network error. Try again.");
       }
     } else {
-      if (!otp || !newPassword)
+      if (!forgotOtp || !newPassword)
         return setForgotError("OTP and new password required");
       try {
         const res = await fetch("/api/auth/reset-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: forgotEmail, otp, newPassword }),
+          body: JSON.stringify({ email: forgotEmail, otp: forgotOtp, newPassword }),
         });
         const data = await res.json();
         if (!res.ok) return setForgotError(data.message || "Failed to reset");
         setForgotSuccess("Password changed! You can now login.");
         setTimeout(() => {
           setShowForgot(false);
-          setStep(1);
+          setForgotStep(1);
           setForgotEmail("");
-          setOtp("");
+          setForgotOtp("");
           setNewPassword("");
         }, 2000);
       } catch {
@@ -226,119 +266,85 @@ export default function SignIn() {
 
   return (
     <div className="font-poppins min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white relative overflow-hidden">
-      <img
-        src="/images/login-register/wave.png"
-        className="fixed bottom-0 left-0 h-full -z-10"
-        alt=""
-      />
-
+      <img src="/images/login-register/wave.png" className="fixed bottom-0 left-0 h-full -z-10" alt="" />
       <div className="h-screen grid grid-cols-1 md:grid-cols-2 px-8">
         <div className="hidden md:flex justify-end items-center">
-          <img
-            src="/images/login-register/bg.png"
-            className="w-[500px]"
-            alt=""
-          />
+          <img src="/images/login-register/bg.png" className="w-[500px]" alt="" />
         </div>
 
         <div className="flex items-center justify-start">
           <div className="w-[360px] max-w-full">
-            <Link
-              to="/"
-              className="fixed top-5 right-5 flex items-center gap-2 px-4 py-2 rounded-3xl hover:bg-[#38d39f11] hover:text-[#38d39f] transition z-50"
-            >
+            <Link to="/" className="fixed top-5 right-5 flex items-center gap-2 px-4 py-2 rounded-3xl hover:bg-[#38d39f11] hover:text-[#38d39f] transition z-50">
               <FaHome /> Home
             </Link>
 
-            <img
-              src="/images/login-register/avatar.png"
-              className="h-24 mx-auto mb-4"
-              alt=""
-            />
-            <h2 className="text-5xl uppercase text-[#333] mb-6">Welcome</h2>
-            {error && (
-              <p className="text-red-500 text-sm mb-4">{error}</p>
+            {authStep === "LOGIN" && (
+              <>
+                <img src="/images/login-register/avatar.png" className="h-24 mx-auto mb-4" alt="" />
+                <h2 className="text-5xl uppercase text-[#333] mb-6">Welcome</h2>
+                {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                
+                <form onSubmit={handleSubmit}>
+                  <InputDiv icon={<FaUserTag />} label="Role" isFocused={focused.role} hasValue={!!role}>
+                    <select value={role} onChange={(e) => setRole(e.target.value)} onFocus={() => handleFocus("role")} onBlur={() => handleBlur("role")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700">
+                      <option value=""></option>
+                      <option value="Buyer">Buyer</option>
+                      <option value="Seller">Seller</option>
+                      <option value="Admin">Admin</option>
+                      <option value="Expert">Expert</option>
+                    </select>
+                  </InputDiv>
+                  
+                  <InputDiv icon={<FaUser />} label="Username" isFocused={focused.username} hasValue={!!username}>
+                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value.trim())} onFocus={() => handleFocus("username")} onBlur={() => handleBlur("username")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
+                  </InputDiv>
+
+                  <InputDiv icon={<FaLock />} label="Password" isFocused={focused.password} hasValue={!!password}>
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => handleFocus("password")} onBlur={() => handleBlur("password")} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" />
+                  </InputDiv>
+
+                  <button type="button" onClick={() => setShowForgot(true)} className="text-sm text-[#38d39f] hover:underline block text-right mb-4">
+                    Forgot Password?
+                  </button>
+
+                  <button className="w-full h-12 rounded-3xl bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white text-lg uppercase font-medium hover:opacity-90 transition">
+                    Login
+                  </button>
+                </form>
+
+                <div className="my-4 text-center text-sm text-gray-500">or</div>
+                <div className="flex justify-center">
+                  <div ref={googleBtnRef} />
+                </div>
+
+                <Link to="/signup" className="block text-right mt-4 text-[#999] hover:text-[#38d39f] text-sm">
+                  Don't have an account? Register
+                </Link>
+              </>
             )}
 
-            <form onSubmit={handleSubmit}>
-              <InputDiv
-                icon={<FaUserTag />}
-                label="Role"
-                isFocused={focused.role}
-                hasValue={!!role}
-              >
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  onFocus={() => handleFocus("role")}
-                  onBlur={() => handleBlur("role")}
-                  className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
-                >
-                  <option value=""></option>
-                  <option value="Buyer">Buyer</option>
-                  <option value="Seller">Seller</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Expert">Expert</option>
-                </select>
-              </InputDiv>
-              
+            {(authStep === "VERIFY_EMAIL" || authStep === "VERIFY_2FA") && (
+              <div className="text-center">
+                <FaShieldAlt className="text-6xl text-[#38d39f] mx-auto mb-4" />
+                <h2 className="text-3xl uppercase text-[#333] mb-2">{authStep === "VERIFY_EMAIL" ? "Verify Email" : "2FA Login"}</h2>
+                <p className="text-gray-500 mb-6">Code sent to {tempEmail}</p>
+                
+                {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                
+                <form onSubmit={handleVerifyOTP}>
+                  <InputDiv icon={<FaLock />} label="OTP Code" isFocused={focused.otp} hasValue={!!otp}>
+                    <input type="text" maxLength="6" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} onFocus={() => handleFocus("otp")} onBlur={() => handleBlur("otp")} className="w-full pt-4 pb-2 bg-transparent outline-none text-xl tracking-widest text-center text-gray-700" autoFocus />
+                  </InputDiv>
 
-              <InputDiv
-                icon={<FaUser />}
-                label="Username"
-                isFocused={focused.username}
-                hasValue={!!username}
-              >
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.trim())}
-                  onFocus={() => handleFocus("username")}
-                  onBlur={() => handleBlur("username")}
-                  className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
-                />
-              </InputDiv>
-
-              <InputDiv
-                icon={<FaLock />}
-                label="Password"
-                isFocused={focused.password}
-                hasValue={!!password}
-              >
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => handleFocus("password")}
-                  onBlur={() => handleBlur("password")}
-                  className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
-                />
-              </InputDiv>
-
-              <button
-                type="button"
-                onClick={() => setShowForgot(true)}
-                className="text-sm text-[#38d39f] hover:underline block text-right mb-4"
-              >
-                Forgot Password?
-              </button>
-
-              <button className="w-full h-12 rounded-3xl bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white text-lg uppercase font-medium hover:opacity-90 transition">
-                Login
-              </button>
-            </form>
-
-            <div className="my-4 text-center text-sm text-gray-500">or</div>
-            <div className="flex justify-center">
-              <div ref={googleBtnRef} />
-            </div>
-
-            <Link
-              to="/signup"
-              className="block text-right mt-4 text-[#999] hover:text-[#38d39f] text-sm"
-            >
-              Don't have an account? Register
-            </Link>
+                  <button type="submit" className="w-full h-12 mt-6 rounded-3xl bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white text-lg uppercase font-medium hover:opacity-90 transition">
+                    Verify Code
+                  </button>
+                  <button type="button" onClick={() => {setAuthStep("LOGIN"); setOtp(""); setError("");}} className="mt-4 text-sm text-gray-500 hover:text-gray-700 w-full text-center">
+                    Back to Login
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -347,94 +353,33 @@ export default function SignIn() {
       {showForgot && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-            <h3 className="text-2xl font-bold mb-6 text-center">
-              Reset Password
-            </h3>
-
-            {forgotError && (
-              <p className="text-red-500 text-sm mb-4 text-center">
-                {forgotError}
-              </p>
-            )}
-            {forgotSuccess && (
-              <p className="text-green-500 text-sm mb-4 text-center">
-                {forgotSuccess}
-              </p>
-            )}
+            <h3 className="text-2xl font-bold mb-6 text-center">Reset Password</h3>
+            {forgotError && <p className="text-red-500 text-sm mb-4 text-center">{forgotError}</p>}
+            {forgotSuccess && <p className="text-green-500 text-sm mb-4 text-center">{forgotSuccess}</p>}
 
             <form onSubmit={handleForgotPassword}>
-              {step === 1 ? (
-                <InputDiv
-                  icon={<FaEnvelope />}
-                  label="Email"
-                  isFocused={true}
-                  hasValue={!!forgotEmail}
-                >
-                  <input
-                    type="email"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
-                    required
-                    autoFocus
-                  />
+              {forgotStep === 1 ? (
+                <InputDiv icon={<FaEnvelope />} label="Email" isFocused={true} hasValue={!!forgotEmail}>
+                  <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" required autoFocus />
                 </InputDiv>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600 mb-4 text-center">
-                    Enter OTP sent to <strong>{forgotEmail}</strong>
-                  </p>
-                  <InputDiv
-                    icon={<FaLock />}
-                    label="OTP"
-                    isFocused={true}
-                    hasValue={!!otp}
-                  >
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                      maxLength="6"
-                      className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-center tracking-widest font-mono"
-                      required
-                    />
+                  <p className="text-sm text-gray-600 mb-4 text-center">Enter OTP sent to <strong>{forgotEmail}</strong></p>
+                  <InputDiv icon={<FaLock />} label="OTP" isFocused={true} hasValue={!!forgotOtp}>
+                    <input type="text" value={forgotOtp} onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} maxLength="6" className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-center tracking-widest font-mono" required />
                   </InputDiv>
-                  <InputDiv
-                    icon={<FaLock />}
-                    label="New Password"
-                    isFocused={true}
-                    hasValue={!!newPassword}
-                  >
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700"
-                      required
-                    />
+                  <InputDiv icon={<FaLock />} label="New Password" isFocused={true} hasValue={!!newPassword}>
+                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full pt-4 pb-2 bg-transparent outline-none text-lg text-gray-700" required />
                   </InputDiv>
                 </>
               )}
 
               <button className="w-full h-12 mt-6 bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white rounded-3xl font-medium hover:opacity-90 transition">
-                {step === 1 ? "Send OTP" : "Reset Password"}
+                {forgotStep === 1 ? "Send OTP" : "Reset Password"}
               </button>
             </form>
 
-            <button
-              onClick={() => {
-                setShowForgot(false);
-                setStep(1);
-                setForgotError("");
-                setForgotSuccess("");
-                setForgotEmail("");
-                setOtp("");
-                setNewPassword("");
-              }}
-              className="mt-4 text-sm text-gray-500 hover:text-gray-700 w-full text-center"
-            >
+            <button onClick={() => { setShowForgot(false); setForgotStep(1); setForgotError(""); setForgotSuccess(""); setForgotEmail(""); setForgotOtp(""); setNewPassword(""); }} className="mt-4 text-sm text-gray-500 hover:text-gray-700 w-full text-center">
               Back to Login
             </button>
           </div>

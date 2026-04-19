@@ -13,13 +13,14 @@ import {
 } from "../controllers/product.controller.js";
 import { verifyToken, requireSeller } from "../middleware/verifyToken.js";
 import upload from "../upload.js";
+import { cacheMiddleware } from "../utils/cache.js";
 
 const router = express.Router();
 
-// public
-router.get("/", getRecentProducts);
-router.get("/category/:category", getProductsByCategory);
-router.get("/search", searchProducts);        // ✅ /api/products/search?q=rose
+// public (Cached for 1 hour = 3600 seconds)
+router.get("/", cacheMiddleware("products", 3600), getRecentProducts);
+router.get("/category/:category", cacheMiddleware("products:category", 3600), getProductsByCategory);
+router.get("/search", cacheMiddleware("products:search", 600), searchProducts);        // ✅ /api/products/search?q=rose
 
 // seller only
 router.post("/", verifyToken, requireSeller, upload.single("image"), addProduct);

@@ -17,4 +17,8 @@ const ticketSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+ticketSchema.index({ status: 1 });
+ticketSchema.index({ requester: 1 });
+ticketSchema.index({ expert_id: 1 });
+
 export default mongoose.model("Ticket", ticketSchema);

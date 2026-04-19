@@ -1,32 +1,26 @@
-// api/upload.js
 import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import dotenv from "dotenv";
 import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-const uploadDir = path.join(__dirname, "public/images");
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log("Created folder:", uploadDir);
-}
-
-// where to store
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const filename = `image-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, filename);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "gardenly/images",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+    transformation: [{ width: 1000, crop: "limit" }],
   },
 });
 
-// only allow these
 const ALLOWED_EXT = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 const ALLOWED_MIME = [
   "image/jpeg",
@@ -48,13 +42,9 @@ const upload = multer({
       return cb(null, true);
     }
 
-    // reject non-image files
-    cb(
-      new Error(
-        "Only image files (jpg, jpeg, png, gif, webp) are allowed!"
-      )
-    );
+    cb(new Error("Only image files (jpg, jpeg, png, gif, webp) are allowed!"));
   },
 });
 
+export { cloudinary };
 export default upload;

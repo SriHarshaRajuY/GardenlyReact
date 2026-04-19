@@ -10,23 +10,43 @@ export default function Pots() {
   const [showSort, setShowSort] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/products/category/Pots", { credentials: "include" })
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 12;
+
+  const fetchPots = (currentPage) => {
+    setLoading(true);
+    fetch(`/api/products/category/Pots?page=${currentPage}&limit=${limit}`, { credentials: "include" })
       .then(r => r.json())
       .then(d => {
-        if (Array.isArray(d)) {
-          const withRating = d.map(p => ({
-            ...p,
-            rating: Math.floor(Math.random() * 2) + 4,
-            image: p.image || "/images/fallback-pot.jpg"
-          }));
-          setProducts(withRating);
-          setFiltered(withRating);
-        }
+        const items = d.products || (Array.isArray(d) ? d : []);
+        setTotalPages(d.totalPages || 1);
+        
+        const withRating = items.map(p => ({
+          ...p,
+          rating: Math.floor(Math.random() * 2) + 4,
+          image: p.image || "/images/fallback-pot.jpg"
+        }));
+        
+        setProducts(withRating);
+        setFiltered(withRating);
       })
       .catch(() => setFiltered([]))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchPots(page);
+  }, [page]);
+
+  const handleNextPage = () => {
+    if (page < totalPages) setPage(page + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (page > 1) setPage(page - 1);
+  };
 
   const applyFilters = () => {
     let list = [...products];
@@ -181,11 +201,34 @@ export default function Pots() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-gray-600">No pots found.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {filtered.map(p => (
-              <ProductCard key={p._id} product={p} onOpenDetail={setDetailProduct} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {filtered.map(p => (
+                <ProductCard key={p._id} product={p} onOpenDetail={setDetailProduct} />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-12">
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={page === 1}
+                  className="px-6 py-2 bg-white border border-gray-300 rounded-full font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Previous
+                </button>
+                <span className="text-gray-700 font-medium">Page {page} of {totalPages}</span>
+                <button 
+                  onClick={handleNextPage} 
+                  disabled={page === totalPages}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-full font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

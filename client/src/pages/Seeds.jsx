@@ -10,23 +10,43 @@ export default function Seeds() {
   const [showSort, setShowSort] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/products/category/Seeds", { credentials: "include" })
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 12;
+
+  const fetchSeeds = (currentPage) => {
+    setLoading(true);
+    fetch(`/api/products/category/Seeds?page=${currentPage}&limit=${limit}`, { credentials: "include" })
       .then(r => r.json())
       .then(d => {
-        if (Array.isArray(d)) {
-          const withRating = d.map(p => ({
-            ...p,
-            rating: Math.floor(Math.random() * 2) + 4,
-            image: p.image || "/images/fallback-seed.jpg"
-          }));
-          setProducts(withRating);
-          setFiltered(withRating);
-        }
+        const items = d.products || (Array.isArray(d) ? d : []);
+        setTotalPages(d.totalPages || 1);
+        
+        const withRating = items.map(p => ({
+          ...p,
+          rating: Math.floor(Math.random() * 2) + 4,
+          image: p.image || "/images/fallback-seed.jpg"
+        }));
+        
+        setProducts(withRating);
+        setFiltered(withRating);
       })
       .catch(() => setFiltered([]))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchSeeds(page);
+  }, [page]);
+
+  const handleNextPage = () => {
+    if (page < totalPages) setPage(page + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (page > 1) setPage(page - 1);
+  };
 
   const applyFilters = () => {
     let list = [...products];
@@ -92,14 +112,12 @@ export default function Seeds() {
             >
               Home
             </button>
-
             <button
               onClick={() => setShowFilter(!showFilter)}
               className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-5 py-2 rounded-full shadow hover:shadow-lg transition"
             >
               Filter
             </button>
-
             <button
               onClick={() => setShowSort(!showSort)}
               className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-white px-5 py-2 rounded-full shadow hover:shadow-lg transition"
@@ -132,7 +150,6 @@ export default function Seeds() {
             {showFilter && (
               <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl p-4 z-50">
                 <h3 className="font-semibold mb-3">Filters</h3>
-
                 <div className="mb-4">
                   <h4 className="font-medium mb-1">Price Range</h4>
                   {['0-100', '100-300', '300+'].map(v => (
@@ -142,19 +159,15 @@ export default function Seeds() {
                     </label>
                   ))}
                 </div>
-
                 <div className="mb-4">
                   <h4 className="font-medium mb-1">Availability</h4>
                   <label className="flex items-center gap-2 mb-1">
-                    <input type="checkbox" className="filter-availability" value="inStock" />
-                    In Stock
+                    <input type="checkbox" className="filter-availability" value="inStock" /> In Stock
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="filter-availability" value="outOfStock" />
-                    Out of Stock
+                    <input type="checkbox" className="filter-availability" value="outOfStock" /> Out of Stock
                   </label>
                 </div>
-
                 <div className="mb-4">
                   <h4 className="font-medium mb-1">Rating</h4>
                   {[5, 4].map(v => (
@@ -164,7 +177,6 @@ export default function Seeds() {
                     </label>
                   ))}
                 </div>
-
                 <button
                   onClick={applyFilters}
                   className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-white py-2 rounded-lg font-medium"
@@ -181,11 +193,34 @@ export default function Seeds() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-gray-600">No seeds found.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {filtered.map(p => (
-              <ProductCard key={p._id} product={p} onOpenDetail={setDetailProduct} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {filtered.map(p => (
+                <ProductCard key={p._id} product={p} onOpenDetail={setDetailProduct} />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-12">
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={page === 1}
+                  className="px-6 py-2 bg-white border border-gray-300 rounded-full font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Previous
+                </button>
+                <span className="text-gray-700 font-medium">Page {page} of {totalPages}</span>
+                <button 
+                  onClick={handleNextPage} 
+                  disabled={page === totalPages}
+                  className="px-6 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-white rounded-full font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

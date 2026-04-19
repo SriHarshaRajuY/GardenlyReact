@@ -26,7 +26,8 @@ export default function Home() {
       const res = await fetch("/api/products?limit=12", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch products");
       const data = await res.json();
-      setProducts(data);
+      // Handle both paginated response { products: [...] } and plain array
+      setProducts(data.products || (Array.isArray(data) ? data : []));
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -83,24 +84,26 @@ export default function Home() {
         >
           {slides.map((s, idx) => (
             <SwiperSlide key={idx}>
-              <div
-                className="relative h-[420px] md:h-[520px] bg-cover bg-center flex items-center justify-center"
-                style={{ backgroundImage: `url(${s})` }}
-              >
-                <div className="absolute inset-0 bg-black/30 dark:bg-black/50"></div>
-                <div className="relative z-10 text-center text-white px-4">
-                  <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
-                    Bring Nature <br />
+              <div className="relative w-full aspect-[4/3] md:aspect-[16/9] lg:h-[550px] flex items-center justify-center overflow-hidden bg-gray-100">
+                <img 
+                  src={s} 
+                  alt={`Hero slide ${idx + 1}`} 
+                  className="absolute inset-0 w-full h-full object-cover object-center" 
+                />
+                <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
+                <div className="relative z-10 text-center text-white px-6 w-full max-w-4xl">
+                  <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold mb-4 md:mb-6 drop-shadow-xl tracking-tight leading-tight">
+                    Bring Nature <br className="hidden sm:block" />
                     <span className="text-green-400">Closer to Home</span>
                   </h1>
-                  <p className="text-lg mb-6 font-light drop-shadow-md">
+                  <p className="text-lg md:text-xl lg:text-2xl mb-8 font-medium drop-shadow-md text-gray-200">
                     Fresh plants, stylish pots, and seeds for your green space
                   </p>
                   <a
                     href="#shop"
-                    className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg shadow-lg text-white transition"
+                    className="inline-block bg-green-600 hover:bg-green-500 px-8 py-3.5 rounded-full shadow-lg text-white font-bold text-lg transition-all hover:scale-105 hover:shadow-green-500/30"
                   >
-                    Shop Now
+                    Shop Collection
                   </a>
                 </div>
               </div>

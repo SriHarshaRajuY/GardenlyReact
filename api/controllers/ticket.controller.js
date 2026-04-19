@@ -40,13 +40,10 @@ export const submitTicket = async (req, res, next) => {
       );
     }
 
-    // Handle attachment (if any) → store as base64 data URL
+    // Handle attachment (if any) → store Cloudinary URL
     let attachment = null;
     if (attachmentFile) {
-      const buffer = attachmentFile.buffer;
-      attachment = `data:${attachmentFile.mimetype};base64,${buffer.toString(
-        "base64"
-      )}`;
+      attachment = attachmentFile.path;
     }
 
     const ticket = new Ticket({

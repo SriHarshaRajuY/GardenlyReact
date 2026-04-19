@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 
 /* Public pages */
@@ -17,6 +17,7 @@ import ExpertDashboard from "./pages/ExpertDashboard";
 import Cart from "./pages/Cart";
 import Blog from "./pages/Blog";
 import SearchResults from "./pages/SearchResults";
+import CustomRequests from "./pages/CustomRequests";
 
 /* Admin pages */
 import AdminLayout from "./layouts/AdminLayout";
@@ -47,6 +48,7 @@ function PublicLayout() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/search" element={<SearchResults />} />
+          <Route path="/custom-requests" element={<CustomRequests />} />
         </Routes>
       </div>
     </>
@@ -61,7 +63,7 @@ export default function App() {
 
         {/* ADMIN PANEL (NESTED ROUTES) */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="products" element={<AdminProducts />} />

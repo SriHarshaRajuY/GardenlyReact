@@ -1,32 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Users,
-  ShoppingBag,
-  IndianRupee,
-  Package,
-  AlertCircle,
-  CheckCircle2,
-  ClipboardList,
-  RefreshCcw,
-  UserCheck,
-  UserCog,
-  Leaf,
-} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import {
+  Users, ShoppingBag, IndianRupee, Package, AlertCircle,
+  CheckCircle2, ClipboardList, RefreshCcw, UserCheck, UserCog, Leaf,
+  TrendingUp, BarChart3
+} from "lucide-react";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentProducts, setRecentProducts] = useState([]);
   const [recentBuyers, setRecentBuyers] = useState([]);
   const [recentSellers, setRecentSellers] = useState([]);
   const [recentExperts, setRecentExperts] = useState([]);
-  const [recentAdmins, setRecentAdmins] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -46,15 +35,14 @@ export default function AdminDashboard() {
         setError(data.message || "Failed to load dashboard");
       } else {
         setStats(data.stats);
-        setRecentOrders(data.recentOrders);
-        setRecentProducts(data.recentProducts);
-        setRecentBuyers(data.recentBuyers);
-        setRecentSellers(data.recentSellers);
-        setRecentExperts(data.recentExperts);
-        setRecentAdmins(data.recentAdmins);
+        setRecentOrders(data.recentOrders || []);
+        setRecentProducts(data.recentProducts || []);
+        setRecentBuyers(data.recentBuyers || []);
+        setRecentSellers(data.recentSellers || []);
+        setRecentExperts(data.recentExperts || []);
       }
     } catch {
-      setError("Network error");
+      setError("Network error. Is the server running?");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -63,10 +51,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadDashboard(true);
-    const id = setInterval(() => {
-      setRefreshing(true);
-      loadDashboard(false);
-    }, 30000);
+    const id = setInterval(() => { setRefreshing(true); loadDashboard(false); }, 30000);
     return () => clearInterval(id);
   }, []);
 
@@ -76,219 +61,206 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="px-2 md:px-4">
-
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-800">Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Live data from database • Users separated by role
-            </p>
-          </div>
-
-          <button
-            onClick={() => { setRefreshing(true); loadDashboard(false); }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium transition"
-          >
-            <RefreshCcw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
-            {error}
-          </div>
-        )}
-
-        {loading && !s ? (
-          <div className="py-32 text-center text-gray-600 text-lg">
-            Loading dashboard...
-          </div>
-        ) : (
-          s && (
-            <>
-              {/* KPI Cards */}
-              <div className="grid gap-6 md:grid-cols-5 mb-10">
-                <StatCard icon={Users} label="Total Users" value={s.users.total} sub="All roles" />
-                <StatCard icon={UserCheck} label="Buyers" value={s.users.buyers} />
-                <StatCard icon={Leaf} label="Sellers" value={s.users.sellers} />
-                <StatCard icon={UserCog} label="Experts" value={s.users.experts} />
-                <StatCard icon={IndianRupee} label="Revenue" value={`₹${s.orders.revenue.toFixed(2)}`} />
-              </div>
-
-              {/* Status Cards */}
-              <div className="grid gap-6 md:grid-cols-3 mb-12">
-                <MiniStat icon={AlertCircle} label="Pending Orders" value={s.orders.pending} color="bg-amber-50 border-amber-200 text-amber-700" />
-                <MiniStat icon={CheckCircle2} label="Confirmed Orders" value={s.orders.confirmed} color="bg-emerald-50 border-emerald-200 text-emerald-700" />
-                <MiniStat icon={ClipboardList} label="Open Tickets" value={s.tickets.open} color="bg-sky-50 border-sky-200 text-sky-700" sub={`${s.tickets.resolved} resolved`} />
-              </div>
-
-              <Section title="Recent Buyers" icon={UserCheck}>
-                <UserTable users={recentBuyers} />
-              </Section>
-
-              <Section title="Recent Sellers" icon={Leaf}>
-                <UserTable users={recentSellers} />
-              </Section>
-
-              <Section title="Recent Experts" icon={UserCog}>
-                <UserTable users={recentExperts} showExpertise />
-              </Section>
-
-              <Section title="Recent Admins" icon={UserCog}>
-                <UserTable users={recentAdmins} />
-              </Section>
-
-              <Section title="Recent Products (Newest First)" icon={Package}>
-                <ProductGrid products={recentProducts} />
-              </Section>
-
-              <Section title="Recent Orders" icon={ShoppingBag}>
-                <OrderTable orders={recentOrders} />
-              </Section>
-            </>
-          )
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Reusable Components ---------- */
-
-function StatCard({ icon: Icon, label, value, sub }) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col gap-2 hover:shadow-md transition">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+          <p className="text-sm text-gray-500 mt-1">Live data from database • Auto-refreshes every 30s</p>
         </div>
-        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-gray-600" />
-        </div>
+        <button
+          onClick={() => { setRefreshing(true); loadDashboard(false); }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 font-medium text-sm transition shadow-sm"
+        >
+          <RefreshCcw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
       </div>
-      {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{error}</div>
+      )}
+
+      {loading && !s ? (
+        <div className="py-32 text-center text-gray-500">
+          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          Loading dashboard...
+        </div>
+      ) : s && (
+        <>
+          {/* KPI Cards */}
+          <div className="grid gap-5 grid-cols-2 md:grid-cols-4">
+            <KpiCard icon={Users} label="Total Users" value={s.users.total} color="bg-blue-500" sub={`${s.users.buyers} buyers`} />
+            <KpiCard icon={Leaf} label="Sellers" value={s.users.sellers} color="bg-green-500" />
+            <KpiCard icon={Package} label="Products" value={s.products.total} color="bg-purple-500" />
+            <KpiCard icon={IndianRupee} label="Revenue" value={`₹${s.orders.revenue.toFixed(0)}`} color="bg-orange-500" sub="Admin commission" />
+          </div>
+
+          {/* Order Status Cards */}
+          <div className="grid gap-5 grid-cols-1 md:grid-cols-3">
+            <StatusCard icon={ShoppingBag} label="Total Orders" value={s.orders.total} bg="bg-indigo-50" border="border-indigo-200" text="text-indigo-700" />
+            <StatusCard icon={AlertCircle} label="Pending Orders" value={s.orders.pending} bg="bg-amber-50" border="border-amber-200" text="text-amber-700" />
+            <StatusCard icon={CheckCircle2} label="Confirmed Orders" value={s.orders.confirmed} bg="bg-emerald-50" border="border-emerald-200" text="text-emerald-700" />
+          </div>
+
+          {/* Tickets & Users stats */}
+          <div className="grid gap-5 grid-cols-2 md:grid-cols-4">
+            <MiniCard label="Open Tickets" value={s.tickets.open} color="text-red-600" />
+            <MiniCard label="Resolved Tickets" value={s.tickets.resolved} color="text-green-600" />
+            <MiniCard label="Experts" value={s.users.experts} color="text-purple-600" />
+            <MiniCard label="Admins" value={s.users.admins} color="text-blue-600" />
+          </div>
+
+          {/* Recent Products */}
+          <Section title="Recently Added Products" icon={Package}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {recentProducts.length === 0 ? (
+                <p className="col-span-full text-center text-gray-400 py-8">No products yet</p>
+              ) : recentProducts.map((p) => (
+                <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition group">
+                  <div className="h-36 overflow-hidden bg-gray-50">
+                    <img
+                      src={p.image?.startsWith("http") ? p.image : `/images/${p.image}`}
+                      alt={p.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      onError={(e) => (e.target.src = "/images/fallback.png")}
+                    />
+                  </div>
+                  <div className="p-3">
+                    <h4 className="font-semibold text-sm line-clamp-1">{p.name}</h4>
+                    <p className="text-green-600 font-bold text-sm">₹{p.price}</p>
+                    <p className="text-xs text-gray-400">Stock: {p.quantity}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* Recent Orders */}
+          <Section title="Recent Orders" icon={ShoppingBag}>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th className="px-5 py-3 text-left">Order ID</th>
+                    <th className="px-5 py-3 text-left">Customer</th>
+                    <th className="px-5 py-3 text-left">Amount</th>
+                    <th className="px-5 py-3 text-left">Status</th>
+                    <th className="px-5 py-3 text-left">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrders.length === 0 ? (
+                    <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">No orders yet</td></tr>
+                  ) : recentOrders.map((o) => (
+                    <tr key={o._id} className="border-t border-gray-50 hover:bg-gray-50">
+                      <td className="px-5 py-3 font-mono text-xs text-gray-500">{o._id.slice(-8).toUpperCase()}</td>
+                      <td className="px-5 py-3 font-medium">{o.userId?.username || "—"}</td>
+                      <td className="px-5 py-3 font-semibold text-green-700">₹{o.totalAmount}</td>
+                      <td className="px-5 py-3">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${o.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : o.status === "cancelled" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                          {o.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-xs text-gray-400">{new Date(o.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+
+          {/* Recent Users */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Section title="Recent Buyers" icon={UserCheck}>
+              <MiniUserTable users={recentBuyers} />
+            </Section>
+            <Section title="Recent Sellers" icon={Leaf}>
+              <MiniUserTable users={recentSellers} />
+            </Section>
+          </div>
+
+          <Section title="Recent Experts" icon={UserCog}>
+            <MiniUserTable users={recentExperts} showExpertise />
+          </Section>
+        </>
+      )}
     </div>
   );
 }
 
-function MiniStat({ icon: Icon, label, value, sub, color }) {
+function KpiCard({ icon: Icon, label, value, color, sub }) {
   return (
-    <div className={`rounded-xl border p-4 flex items-center gap-4 ${color}`}>
-      <div className="w-10 h-10 rounded-lg bg-white/70 flex items-center justify-center">
-        <Icon className="w-5 h-5" />
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+      <div className={`w-12 h-12 ${color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+        <Icon className="w-6 h-6 text-white" />
       </div>
       <div>
-        <p className="text-xs uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-semibold">{value}</p>
-        {sub && <p className="text-xs opacity-80 mt-0.5">{sub}</p>}
+        <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-bold text-gray-800 mt-0.5">{value}</p>
+        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
       </div>
+    </div>
+  );
+}
+
+function StatusCard({ icon: Icon, label, value, bg, border, text }) {
+  return (
+    <div className={`${bg} ${border} border rounded-xl p-4 flex items-center gap-4`}>
+      <Icon className={`w-8 h-8 ${text}`} />
+      <div>
+        <p className={`text-xs uppercase tracking-wide ${text} opacity-75`}>{label}</p>
+        <p className={`text-2xl font-bold ${text}`}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function MiniCard({ label, value, color }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      <p className="text-xs text-gray-500 mt-1">{label}</p>
     </div>
   );
 }
 
 function Section({ title, icon: Icon, children }) {
   return (
-    <div className="mb-12">
+    <div>
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
-          <Icon className="w-5 h-5 text-gray-700" />
+        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+          <Icon className="w-4 h-4 text-gray-600" />
         </div>
-        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
       </div>
       {children}
     </div>
   );
 }
 
-function UserTable({ users, showExpertise = false }) {
+function MiniUserTable({ users, showExpertise = false }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <table className="min-w-full text-sm">
-        <thead className="bg-gray-50">
+        <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
           <tr>
-            <th className="px-5 py-3 text-left">Username</th>
-            <th className="px-5 py-3 text-left">Email</th>
-            <th className="px-5 py-3 text-left">Mobile</th>
-            {showExpertise && <th className="px-5 py-3 text-left">Expertise</th>}
-            <th className="px-5 py-3 text-left">Joined</th>
+            <th className="px-4 py-3 text-left">Username</th>
+            <th className="px-4 py-3 text-left">Email</th>
+            {showExpertise && <th className="px-4 py-3 text-left">Expertise</th>}
+            <th className="px-4 py-3 text-left">Joined</th>
           </tr>
         </thead>
         <tbody>
           {users.length === 0 ? (
-            <tr><td colSpan={showExpertise ? 5 : 4} className="px-5 py-8 text-center text-gray-500">No records yet</td></tr>
-          ) : (
-            users.map((u) => (
-              <tr key={u._id} className="border-t border-gray-100 hover:bg-gray-50">
-                <td className="px-5 py-3 font-medium">{u.username}</td>
-                <td className="px-5 py-3">{u.email}</td>
-                <td className="px-5 py-3 text-xs font-mono">{u.mobile}</td>
-                {showExpertise && <td className="px-5 py-3">{u.expertise || "General"}</td>}
-                <td className="px-5 py-3 text-xs text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ProductGrid({ products }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      {products.length === 0 ? (
-        <p className="col-span-full text-center text-gray-500 py-8">No products yet</p>
-      ) : (
-        products.map((p) => (
-          <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
-            <img src={p.image?.startsWith("/") ? p.image : `/images/${p.image}`} alt={p.name} className="w-full h-40 object-cover" onError={(e) => (e.target.src = "/images/fallback.png")} />
-            <div className="p-4">
-              <h4 className="font-semibold line-clamp-1">{p.name}</h4>
-              <p className="text-green-600 font-bold">₹{p.price}</p>
-              <p className="text-xs text-gray-500">Stock: {p.quantity}</p>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-function OrderTable({ orders }) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <table className="min-w-full text-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-5 py-3 text-left">Order ID</th>
-            <th className="px-5 py-3 text-left">Customer</th>
-            <th className="px-5 py-3 text-left">Amount</th>
-            <th className="px-5 py-3 text-left">Status</th>
-            <th className="px-5 py-3 text-left">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.length === 0 ? (
-            <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-500">No orders yet</td></tr>
-          ) : (
-            orders.map((o) => (
-              <tr key={o._id} className="border-t border-gray-100 hover:bg-gray-50">
-                <td className="px-5 py-3 font-mono text-xs">{o._id.slice(-8)}</td>
-                <td className="px-5 py-3">{o.userId?.username || "—"}</td>
-                <td className="px-5 py-3 font-semibold">₹{o.totalAmount}</td>
-                <td className="px-5 py-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${o.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                    {o.status}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-xs text-gray-500">{new Date(o.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))
-          )}
+            <tr><td colSpan={showExpertise ? 4 : 3} className="px-4 py-6 text-center text-gray-400">No records yet</td></tr>
+          ) : users.map((u) => (
+            <tr key={u._id} className="border-t border-gray-50 hover:bg-gray-50">
+              <td className="px-4 py-3 font-medium">{u.username}</td>
+              <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
+              {showExpertise && <td className="px-4 py-3 text-xs">{u.expertise || "General"}</td>}
+              <td className="px-4 py-3 text-xs text-gray-400">{new Date(u.createdAt).toLocaleDateString()}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

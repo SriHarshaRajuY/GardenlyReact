@@ -18,11 +18,22 @@ const userSchema = new mongoose.Schema(
       default: "General",
     },
 
+    // === FOR EMAIL VERIFICATION ===
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationOtp: { type: String },
+    emailVerificationOtpExpiresAt: { type: Date },
+
+    // === FOR 2FA ===
+    twoFactorOtp: { type: String },
+    twoFactorOtpExpiresAt: { type: Date },
+
     // === FOR PASSWORD RESET OTP ===
     resetOtp: { type: String },
     resetOtpExpiresAt: { type: Date },
   },
   { timestamps: true }
 );
+
+userSchema.index({ role: 1 });
 
 export default mongoose.model("User", userSchema);

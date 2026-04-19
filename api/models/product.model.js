@@ -14,4 +14,9 @@ const productSchema = new mongoose.Schema({
   soldAt: { type: Date },
 });
 
+// Indexes for optimization
+productSchema.index({ category: 1, createdAt: -1 });
+productSchema.index({ name: 'text' }); // Text index for search
+productSchema.index({ seller_id: 1 });
+
 export default mongoose.model("Product", productSchema);

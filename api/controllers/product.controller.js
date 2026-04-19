@@ -1,14 +1,26 @@
 // api/controllers/product.controller.js
 import Product from "../models/product.model.js";
+import { clearCache } from "../utils/cache.js";
 
 // ---- PUBLIC ROUTES ----
 export const getRecentProducts = async (req, res, next) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit) : 12;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const total = await Product.countDocuments();
     const products = await Product.find()
       .sort({ createdAt: -1 })
+      .skip(skip)
       .limit(limit);
-    res.status(200).json(products);
+      
+    res.status(200).json({
+      products,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalProducts: total,
+    });
   } catch (err) {
     next(err);
   }
@@ -17,8 +29,22 @@ export const getRecentProducts = async (req, res, next) => {
 export const getProductsByCategory = async (req, res, next) => {
   try {
     const { category } = req.params;
-    const products = await Product.find({ category }).sort({ createdAt: -1 });
-    res.status(200).json(products);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const total = await Product.countDocuments({ category });
+    const products = await Product.find({ category })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+      
+    res.status(200).json({
+      products,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalProducts: total,
+    });
   } catch (err) {
     next(err);
   }
@@ -74,7 +100,7 @@ export const addProduct = async (req, res, next) => {
       });
     }
 
-    const imageUrl = `/images/${req.file.filename}`;
+    const imageUrl = req.file.path;
 
     const newProduct = new Product({
       name: name.trim(),
@@ -87,6 +113,9 @@ export const addProduct = async (req, res, next) => {
     });
 
     const savedProduct = await newProduct.save();
+
+    // Clear product cache
+    await clearCache("products");
 
     res.status(201).json({
       success: true,
@@ -154,6 +183,9 @@ export const updateProduct = async (req, res, next) => {
         .json({ success: false, message: "Product not found" });
     }
 
+    // Clear product cache
+    await clearCache("products");
+
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
@@ -176,6 +208,9 @@ export const deleteProduct = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Product not found" });
     }
+
+    // Clear product cache
+    await clearCache("products");
 
     res.status(200).json({
       success: true,

@@ -8,15 +8,9 @@ import {
   resolveTicket,
 } from "../controllers/ticket.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js";
-import multer from "multer";
+import upload from "../upload.js";
 
 const router = express.Router();
-
-// Store ticket attachment in memory (base64)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
 
 // Buyer: Submit ticket
 router.post(

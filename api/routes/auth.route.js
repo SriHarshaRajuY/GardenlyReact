@@ -5,13 +5,17 @@ import {
   forgotPassword,
   resetPassword,
   googleSignin,
+  verifyEmail,
+  verify2FA,
 } from "../controllers/auth.controller.js";
 import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
 router.post("/signup", signup);
+router.post("/verify-email", verifyEmail);
 router.post("/signin", signin);
+router.post("/verify-2fa", verify2FA);
 router.post("/google", googleSignin);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);

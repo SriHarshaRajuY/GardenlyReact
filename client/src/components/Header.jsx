@@ -66,6 +66,14 @@ export default function Header() {
           </Link>
 
           <Link
+            to="/custom-requests"
+            onClick={() => isMobile && setMenuOpen(false)}
+            className="hover:text-green-600"
+          >
+            Custom Requests
+          </Link>
+
+          <Link
             to="/seller"
             onClick={() => isMobile && setMenuOpen(false)}
             className="hover:text-green-600"
@@ -94,13 +102,22 @@ export default function Header() {
         </Link>
 
         {user?.role === "buyer" && (
-          <Link
-            to="/expert-support"
-            onClick={() => isMobile && setMenuOpen(false)}
-            className="hover:text-green-600"
-          >
-            Expert Support
-          </Link>
+          <>
+            <Link
+              to="/expert-support"
+              onClick={() => isMobile && setMenuOpen(false)}
+              className="hover:text-green-600"
+            >
+              Expert Support
+            </Link>
+            <Link
+              to="/custom-requests"
+              onClick={() => isMobile && setMenuOpen(false)}
+              className="hover:text-green-600"
+            >
+              Custom Requests
+            </Link>
+          </>
         )}
 
         <Link

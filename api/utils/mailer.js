@@ -93,3 +93,47 @@ export const sendOtpMail = async (to, otp) => {
     );
   }
 };
+
+export const sendSignupVerificationMail = async (to, otp) => {
+  try {
+    const from = process.env.MAIL_FROM;
+    await transporter.sendMail({
+      from,
+      to,
+      subject: "Verify your Gardenly account",
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <h2>Account Verification</h2>
+          <p>Your verification code is: <strong style="font-size: 24px;">${otp}</strong></p>
+          <p>This code expires in 10 minutes.</p>
+        </div>
+      `,
+    });
+    return true;
+  } catch (err) {
+    console.error(err);
+    throw errorHandler(500, "Failed to send verification email");
+  }
+};
+
+export const send2FAMail = async (to, otp) => {
+  try {
+    const from = process.env.MAIL_FROM;
+    await transporter.sendMail({
+      from,
+      to,
+      subject: "Gardenly 2FA Login Code",
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <h2>Login Verification</h2>
+          <p>Your 2FA login code is: <strong style="font-size: 24px;">${otp}</strong></p>
+          <p>This code expires in 10 minutes.</p>
+        </div>
+      `,
+    });
+    return true;
+  } catch (err) {
+    console.error(err);
+    throw errorHandler(500, "Failed to send 2FA email");
+  }
+};
