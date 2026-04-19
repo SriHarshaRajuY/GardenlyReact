@@ -17,11 +17,13 @@ const buildAuthResponse = (res, user) => {
 
   const { password: _, ...userWithoutPassword } = user._doc;
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   return res
     .cookie("access_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProduction,           // HTTPS only in production
+      sameSite: isProduction ? "none" : "lax", // "none" required for cross-domain (Render+Vercel)
       maxAge: 7 * 24 * 60 * 60 * 1000,
     })
     .status(200)

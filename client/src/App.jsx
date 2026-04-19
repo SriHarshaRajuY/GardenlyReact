@@ -1,7 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
-import AuthProvider from "./context/AuthProvider";
-import CartProvider from "./context/CartProvider";
 import { SocketProvider } from "./context/SocketContext";
 
 /* Public pages */
@@ -61,26 +59,22 @@ function PublicLayout() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <CartProvider>
-          <SocketProvider>
-            <Routes>
-              {/* ADMIN PANEL */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="products" element={<AdminProducts />} />
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="tickets" element={<AdminTickets />} />
-              </Route>
+      <SocketProvider>
+        <Routes>
+          {/* ADMIN PANEL */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="tickets" element={<AdminTickets />} />
+          </Route>
 
-              {/* PUBLIC WEBSITE */}
-              <Route path="/*" element={<PublicLayout />} />
-            </Routes>
-          </SocketProvider>
-        </CartProvider>
-      </AuthProvider>
+          {/* PUBLIC WEBSITE */}
+          <Route path="/*" element={<PublicLayout />} />
+        </Routes>
+      </SocketProvider>
     </BrowserRouter>
   );
-}
+}
