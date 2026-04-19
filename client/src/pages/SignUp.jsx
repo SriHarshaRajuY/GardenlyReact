@@ -1,7 +1,8 @@
 // src/pages/SignUp.jsx
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaUserTag, FaEnvelope, FaPhone, FaHome, FaCheckCircle } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
 const InputDiv = ({ icon, label, children, isFocused, hasValue }) => (
   <div className="relative grid grid-cols-[7%_93%] my-6 border-b-2 border-[#d9d9d9]">
@@ -25,6 +26,7 @@ const InputDiv = ({ icon, label, children, isFocused, hasValue }) => (
 );
 
 export default function SignUp() {
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     username: "", password: "", email: "", mobile: "", role: "", expertise: ""
@@ -37,6 +39,99 @@ export default function SignUp() {
 
   const handleFocus = (field) => setFocused(prev => ({ ...prev, [field]: true }));
   const handleBlur = (field) => setFocused(prev => ({ ...prev, [field]: false }));
+
+  const googleBtnRef = useRef(null);
+  const roleRef = useRef("");
+
+  useEffect(() => {
+    roleRef.current = form.role;
+  }, [form.role]);
+
+  const handlePostLoginNavigation = (loggedInUserRole) => {
+    const role = (loggedInUserRole || "").toLowerCase();
+    switch (role) {
+      case "expert":
+        navigate("/expert-dashboard");
+        break;
+      case "seller":
+        navigate("/seller");
+        break;
+      case "buyer":
+        navigate("/");
+        break;
+      case "admin":
+        navigate("/admin/dashboard");
+        break;
+      default:
+        navigate("/");
+    }
+  };
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || !googleBtnRef.current) return;
+    let cancelled = false;
+
+    const initializeGoogle = () => {
+      if (cancelled || !window.google?.accounts?.id) return;
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          try {
+            setError("");
+            const res = await fetch("/api/auth/google", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                credential: response.credential,
+                role: roleRef.current || "Buyer",
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              setError(data.message || "Google sign up failed");
+              return;
+            }
+            if (data.require2FA) {
+              // Google login typically bypasses 2FA in this specific backend flow,
+              // but we check just in case. Since we don't have a 2FA UI state in SignUp, 
+              // we can just redirect to signin to handle it, or show error.
+              setError("Please sign in to complete 2FA verification.");
+              navigate("/signin");
+            } else {
+              login(data.token);
+              handlePostLoginNavigation(data.user.role);
+            }
+          } catch {
+            setError("Google sign up failed");
+          }
+        },
+      });
+
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: "outline",
+        size: "large",
+        text: "signup_with",
+        shape: "pill",
+        width: 320,
+      });
+    };
+
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+      return () => { cancelled = true; };
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogle;
+    document.body.appendChild(script);
+
+    return () => { cancelled = true; };
+  }, [login, navigate]);
 
   const validate = () => {
     if (!/^[a-zA-Z0-9_-]{3,20}$/.test(form.username)) return "Invalid username (3-20 chars, letters, numbers, _, -)";
@@ -187,6 +282,11 @@ export default function SignUp() {
               <button disabled={loading} className="w-full h-12 mt-6 rounded-3xl bg-gradient-to-r from-[#32be8f] to-[#38d39f] text-white text-lg uppercase font-medium hover:opacity-90 transition disabled:opacity-50">
                 {loading ? "Registering..." : "Register"}
               </button>
+
+              <div className="my-4 text-center text-sm text-gray-500">or</div>
+              <div className="flex justify-center">
+                <div ref={googleBtnRef} />
+              </div>
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp} className="w-[360px] max-w-full">
