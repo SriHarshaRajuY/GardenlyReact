@@ -14,10 +14,14 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+vi.mock('./../context/AuthContext', () => ({
+  useAuth: () => ({ login: vi.fn() })
+}));
+
 describe('SignUp Page Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
+    globalThis.fetch = vi.fn();
   });
 
   const renderComponent = () => {

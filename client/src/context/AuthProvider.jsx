@@ -51,7 +51,10 @@ export default function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch {}
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+
     setUser(null);
   };
 
