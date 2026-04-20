@@ -182,9 +182,9 @@ export default function ExpertDashboard() {
                         }`}>
                           {ticket.status === "Open" ? "Pending" : "Resolved"}
                         </span>
-                        {ticket.urgency && ticket.urgency.includes("12h") && (
-                          <span className="px-4 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold animate-pulse">
-                            High Urgency
+                        {ticket.urgency && (
+                          <span className={`px-4 py-1 rounded-full text-sm font-bold ${ticket.urgency.includes("12h") ? "bg-red-100 text-red-700 animate-pulse" : "bg-blue-100 text-blue-700"}`}>
+                            {ticket.urgency.includes("12h") ? "High Urgency" : "Normal Urgency"}
                           </span>
                         )}
                       </div>
@@ -229,9 +229,9 @@ export default function ExpertDashboard() {
                         }`}>
                           {ticket.status}
                         </span>
-                        {ticket.urgency && ticket.urgency.includes("12h") && (
-                          <span className="px-4 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold animate-pulse">
-                            High Urgency
+                        {ticket.urgency && (
+                          <span className={`px-4 py-1 rounded-full text-sm font-bold ${ticket.urgency.includes("12h") ? "bg-red-100 text-red-700 animate-pulse" : "bg-blue-100 text-blue-700"}`}>
+                            {ticket.urgency.includes("12h") ? "High Urgency" : "Normal Urgency"}
                           </span>
                         )}
                       </div>

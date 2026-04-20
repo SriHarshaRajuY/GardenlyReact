@@ -51,6 +51,16 @@ export default function Header() {
         </>
       );
     }
+    
+    if (user?.role === "expert") {
+      return (
+        <>
+          <Link to="/expert-dashboard" onClick={() => isMobile && setMenuOpen(false)} className="hover:text-green-600 transition font-medium">Dashboard</Link>
+          <Link to="/blog" onClick={() => isMobile && setMenuOpen(false)} className="hover:text-green-600 transition font-medium">Blogs</Link>
+          <button onClick={() => { handleLogout(); if (isMobile) setMenuOpen(false); }} className="hover:text-red-500 transition font-medium">Logout</button>
+        </>
+      );
+    }
 
     return (
       <>
