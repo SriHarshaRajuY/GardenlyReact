@@ -26,7 +26,7 @@ export default function Pots() {
         const withRating = items.map(p => ({
           ...p,
           rating: Math.floor(Math.random() * 2) + 4,
-          image: p.image || "/images/fallback-pot.jpg"
+          image: p.image || "/images/fallback.png"
         }));
         
         setProducts(withRating);

@@ -266,7 +266,7 @@ export default function Cart() {
                 {cartItems.map((item, idx) => (
                   <div key={item.product?._id || idx} className="flex items-center justify-between border-b dark:border-gray-700 pb-6">
                     <div className="flex items-center gap-4">
-                      <img src={item.product?.image || "/images/fallback-plant.jpg"} className="w-20 h-20 rounded-xl object-cover" alt="" />
+                      <img src={item.product?.image || "/images/fallback.png"} className="w-20 h-20 rounded-xl object-cover" alt="" />
                       <div>
                         <h2 className="font-bold text-lg">{item.product?.name || "Product"}</h2>
                         <p className="text-green-600 font-semibold">₹{item.product?.price ?? 0}</p>
