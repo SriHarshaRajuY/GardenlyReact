@@ -52,6 +52,10 @@ app.use(
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+import { createSwaggerRouter } from "./config/swagger.js";
+
+app.use("/api-docs", createSwaggerRouter());
+
 app.use("/api/tickets", ticketRoute);
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
