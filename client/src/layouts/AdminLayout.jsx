@@ -3,7 +3,8 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect } from "react";
 import {
   LayoutDashboard, Users, Package, ShoppingCart,
-  Ticket, LogOut, Leaf
+  Ticket, LogOut, Leaf, BookOpen, Users2,
+  MessageSquare, FileQuestion
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -23,6 +24,10 @@ export default function AdminLayout() {
     { icon: Package, label: "Products", to: "/admin/products" },
     { icon: ShoppingCart, label: "Orders", to: "/admin/orders" },
     { icon: Ticket, label: "Tickets", to: "/admin/tickets" },
+    { icon: BookOpen, label: "Blogs", to: "/admin/blogs" },
+    { icon: Users2, label: "Communities", to: "/admin/communities" },
+    { icon: MessageSquare, label: "Posts", to: "/admin/posts" },
+    { icon: FileQuestion, label: "Custom Requests", to: "/admin/custom-requests" },
   ];
 
   return (

@@ -2,6 +2,10 @@ import User from "../models/user.model.js";
 import Product from "../models/product.model.js";
 import Order from "../models/order.model.js";
 import Ticket from "../models/ticket.model.js";
+import Blog from "../models/blog.model.js";
+import Community from "../models/community.model.js";
+import CommunityPost from "../models/communityPost.model.js";
+import CustomRequest from "../models/customRequest.model.js";
 import { errorHandler } from "../utils/error.js";
 
 /* ================= ADMIN DASHBOARD ================= */
@@ -13,6 +17,7 @@ export const getAdminDashboard = async (req, res, next) => {
       ticketsTotal, ticketsOpen, ticketsResolved,
       revenueAgg, recentOrders, recentProducts,
       recentBuyers, recentSellers, recentExperts, recentAdmins,
+      totalBlogs, totalCommunities, totalPosts, totalCustomRequests
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: "Buyer" }),
@@ -37,6 +42,10 @@ export const getAdminDashboard = async (req, res, next) => {
       User.find({ role: "Seller" }).sort({ createdAt: -1 }).limit(5).select("username email mobile createdAt"),
       User.find({ role: "Expert" }).sort({ createdAt: -1 }).limit(5).select("username email mobile expertise createdAt"),
       User.find({ role: "Admin" }).sort({ createdAt: -1 }).limit(5).select("username email mobile createdAt"),
+      Blog.countDocuments(),
+      Community.countDocuments(),
+      CommunityPost.countDocuments(),
+      CustomRequest.countDocuments(),
     ]);
 
     const totalRevenue = revenueAgg[0]?.total || 0;
@@ -48,6 +57,10 @@ export const getAdminDashboard = async (req, res, next) => {
         products: { total: totalProducts },
         orders: { total: totalOrders, pending: pendingOrders, confirmed: confirmedOrders, cancelled: cancelledOrders, revenue: totalRevenue },
         tickets: { total: ticketsTotal, open: ticketsOpen, resolved: ticketsResolved },
+        blogs: { total: totalBlogs },
+        communities: { total: totalCommunities },
+        posts: { total: totalPosts },
+        customRequests: { total: totalCustomRequests },
       },
       recentOrders, recentProducts, recentBuyers, recentSellers, recentExperts, recentAdmins,
     });
@@ -136,5 +149,96 @@ export const resolveTicket = async (req, res, next) => {
     res.json({ success: true, message: "Ticket resolved", ticket });
   } catch (err) {
     next(errorHandler(500, "Failed to resolve ticket"));
+  }
+};
+
+/* ================= GET ALL BLOGS ================= */
+export const getAllBlogs = async (req, res, next) => {
+  try {
+    const blogs = await Blog.find({}).sort({ createdAt: -1 });
+    res.json({ success: true, count: blogs.length, blogs });
+  } catch (err) {
+    next(errorHandler(500, "Failed to fetch blogs"));
+  }
+};
+
+/* ================= DELETE BLOG ================= */
+export const deleteBlog = async (req, res, next) => {
+  try {
+    const blog = await Blog.findByIdAndDelete(req.params.id);
+    if (!blog) return next(errorHandler(404, "Blog not found"));
+    res.json({ success: true, message: "Blog deleted successfully" });
+  } catch (err) {
+    next(errorHandler(500, "Failed to delete blog"));
+  }
+};
+
+/* ================= GET ALL COMMUNITIES ================= */
+export const getAllCommunities = async (req, res, next) => {
+  try {
+    const communities = await Community.find({}).populate("adminId", "username email").sort({ createdAt: -1 });
+    res.json({ success: true, count: communities.length, communities });
+  } catch (err) {
+    next(errorHandler(500, "Failed to fetch communities"));
+  }
+};
+
+/* ================= DELETE COMMUNITY ================= */
+export const deleteCommunity = async (req, res, next) => {
+  try {
+    const community = await Community.findByIdAndDelete(req.params.id);
+    if (!community) return next(errorHandler(404, "Community not found"));
+    // Also delete all posts associated with this community
+    await CommunityPost.deleteMany({ communityId: req.params.id });
+    res.json({ success: true, message: "Community and its posts deleted successfully" });
+  } catch (err) {
+    next(errorHandler(500, "Failed to delete community"));
+  }
+};
+
+/* ================= GET ALL POSTS ================= */
+export const getAllPosts = async (req, res, next) => {
+  try {
+    const posts = await CommunityPost.find({})
+      .populate("communityId", "name")
+      .populate("userId", "username email")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, count: posts.length, posts });
+  } catch (err) {
+    next(errorHandler(500, "Failed to fetch posts"));
+  }
+};
+
+/* ================= DELETE POST ================= */
+export const deletePost = async (req, res, next) => {
+  try {
+    const post = await CommunityPost.findByIdAndDelete(req.params.id);
+    if (!post) return next(errorHandler(404, "Post not found"));
+    res.json({ success: true, message: "Post deleted successfully" });
+  } catch (err) {
+    next(errorHandler(500, "Failed to delete post"));
+  }
+};
+
+/* ================= GET ALL CUSTOM REQUESTS ================= */
+export const getAllCustomRequests = async (req, res, next) => {
+  try {
+    const requests = await CustomRequest.find({})
+      .populate("buyer_id", "username email")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, count: requests.length, requests });
+  } catch (err) {
+    next(errorHandler(500, "Failed to fetch custom requests"));
+  }
+};
+
+/* ================= DELETE CUSTOM REQUEST ================= */
+export const deleteCustomRequest = async (req, res, next) => {
+  try {
+    const request = await CustomRequest.findByIdAndDelete(req.params.id);
+    if (!request) return next(errorHandler(404, "Custom request not found"));
+    res.json({ success: true, message: "Custom request deleted successfully" });
+  } catch (err) {
+    next(errorHandler(500, "Failed to delete custom request"));
   }
 };

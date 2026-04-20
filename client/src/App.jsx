@@ -27,6 +27,10 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminProducts from "./pages/AdminProducts";
 import AdminOrders from "./pages/AdminOrders";
 import AdminTickets from "./pages/AdminTickets";
+import AdminBlogs from "./pages/AdminBlogs";
+import AdminCommunities from "./pages/AdminCommunities";
+import AdminCommunityPosts from "./pages/AdminCommunityPosts";
+import AdminCustomRequests from "./pages/AdminCustomRequests";
 
 import Footer from "./components/Footer";
 
@@ -72,6 +76,10 @@ export default function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="tickets" element={<AdminTickets />} />
+            <Route path="blogs" element={<AdminBlogs />} />
+            <Route path="communities" element={<AdminCommunities />} />
+            <Route path="posts" element={<AdminCommunityPosts />} />
+            <Route path="custom-requests" element={<AdminCustomRequests />} />
           </Route>
 
           {/* PUBLIC WEBSITE */}

@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   Users, ShoppingBag, IndianRupee, Package, AlertCircle,
   CheckCircle2, ClipboardList, RefreshCcw, UserCheck, UserCog, Leaf,
-  TrendingUp, BarChart3
+  TrendingUp, BarChart3, BookOpen, Users2, MessageSquare, FileQuestion
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -93,6 +93,14 @@ export default function AdminDashboard() {
             <KpiCard icon={Leaf} label="Sellers" value={s.users.sellers} color="bg-green-500" />
             <KpiCard icon={Package} label="Products" value={s.products.total} color="bg-purple-500" />
             <KpiCard icon={IndianRupee} label="Revenue" value={`₹${s.orders.revenue.toFixed(0)}`} color="bg-orange-500" sub="Admin commission" />
+          </div>
+
+          {/* New Model Cards */}
+          <div className="grid gap-5 grid-cols-2 md:grid-cols-4">
+            <KpiCard icon={BookOpen} label="Total Blogs" value={s.blogs.total} color="bg-cyan-500" />
+            <KpiCard icon={Users2} label="Communities" value={s.communities.total} color="bg-emerald-500" />
+            <KpiCard icon={MessageSquare} label="Comm. Posts" value={s.posts.total} color="bg-indigo-500" />
+            <KpiCard icon={FileQuestion} label="Custom Req." value={s.customRequests.total} color="bg-rose-500" />
           </div>
 
           {/* Order Status Cards */}
