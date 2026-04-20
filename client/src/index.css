@@ -46,20 +46,25 @@ section, .product-card, .category-circle {
 .swiper-button-next,
 .swiper-button-prev {
   color: #16a34a !important; /* Tailwind green-600 */
-  background: rgba(255, 255, 255, 0.7);
-  padding: 24px 16px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8) !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
 }
 .swiper-button-next:hover,
 .swiper-button-prev:hover {
-  background: rgba(255, 255, 255, 1);
+  background: rgba(255, 255, 255, 1) !important;
   color: #15803d !important; /* Tailwind green-700 */
+  transform: scale(1.1);
 }
 .swiper-button-next::after,
 .swiper-button-prev::after {
   font-size: 20px !important;
-  font-weight: bold;
+  font-weight: 900 !important;
 }
 .swiper-pagination-bullet {
   background: rgba(255, 255, 255, 0.8) !important;
