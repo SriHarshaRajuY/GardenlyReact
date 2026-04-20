@@ -174,13 +174,20 @@ export default function ExpertDashboard() {
                         </h3>
                         <p className="text-xl text-green-700 font-medium mt-3">From: {ticket.requester}</p>
                       </div>
-                      <span className={`px-8 py-4 rounded-full font-bold text-lg ${
-                        ticket.status === "Open"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-green-100 text-green-800"
-                      }`}>
-                        {ticket.status === "Open" ? "Pending" : "Resolved"}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`px-8 py-4 rounded-full font-bold text-lg ${
+                          ticket.status === "Open"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-green-100 text-green-800"
+                        }`}>
+                          {ticket.status === "Open" ? "Pending" : "Resolved"}
+                        </span>
+                        {ticket.urgency && ticket.urgency.includes("12h") && (
+                          <span className="px-4 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold animate-pulse">
+                            High Urgency
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-8 text-lg">
                       {getTypeIcon(ticket.type)}
@@ -214,13 +221,20 @@ export default function ExpertDashboard() {
                       <h3 className="text-3xl font-bold text-gray-900">
                         {ticket.subject}
                       </h3>
-                      <span className={`px-10 py-4 rounded-full font-bold text-xl ${
-                        ticket.status === "Open"
-                          ? "bg-amber-500 text-white"
-                          : "bg-green-600 text-white"
-                      }`}>
-                        {ticket.status}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`px-10 py-4 rounded-full font-bold text-xl ${
+                          ticket.status === "Open"
+                            ? "bg-amber-500 text-white"
+                            : "bg-green-600 text-white"
+                        }`}>
+                          {ticket.status}
+                        </span>
+                        {ticket.urgency && ticket.urgency.includes("12h") && (
+                          <span className="px-4 py-1 bg-red-100 text-red-700 rounded-full text-sm font-bold animate-pulse">
+                            High Urgency
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-gray-700 text-lg mb-6 line-clamp-2">{ticket.description}</p>
                     <div className="flex items-center justify-between text-green-700">
@@ -252,9 +266,10 @@ export default function ExpertDashboard() {
             <div className="bg-white rounded-3xl border-2 border-green-300 overflow-hidden">
               <div className="bg-green-600 text-white p-12">
                 <h2 className="text-4xl md:text-5xl font-bold">{selectedTicket.subject}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 text-green-100 text-lg">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-8 text-green-100 text-lg">
                   <div><strong>From:</strong> {selectedTicket.requester}</div>
                   <div><strong>Type:</strong> {selectedTicket.type.toUpperCase()}</div>
+                  <div><strong>Urgency:</strong> <span className={selectedTicket.urgency?.includes("12h") ? "text-red-300 font-bold" : ""}>{selectedTicket.urgency || "Normal (24h)"}</span></div>
                   <div><strong>Date:</strong> {format(new Date(selectedTicket.createdAt), "dd MMM yyyy")}</div>
                 </div>
               </div>

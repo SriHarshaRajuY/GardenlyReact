@@ -5,7 +5,7 @@ import { errorHandler } from "../utils/error.js";
 
 // Submit ticket (for buyers)
 export const submitTicket = async (req, res, next) => {
-  const { subject, type, description } = req.body;
+  const { subject, type, description, urgency } = req.body;
   const attachmentFile = req.file;
 
   try {
@@ -51,6 +51,7 @@ export const submitTicket = async (req, res, next) => {
       subject,
       type: normalizedType,
       description,
+      urgency: urgency || "Normal (24h)",
       expert_id: expert._id,
       attachment,
     });

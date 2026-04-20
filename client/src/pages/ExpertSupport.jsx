@@ -186,9 +186,9 @@ export default function ExpertSupport() {
                     </div>
                     <div>
                         <label className="block text-sm font-bold mb-2 ml-1">Urgency</label>
-                        <select className="w-full px-6 py-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-800 focus:ring-2 focus:ring-green-500 outline-none">
-                            <option>Normal (24h)</option>
-                            <option>High (12h)</option>
+                        <select name="urgency" className="w-full px-6 py-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-800 focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="Normal (24h)">Normal (24h)</option>
+                            <option value="High (12h)">High (12h)</option>
                         </select>
                     </div>
                 </div>

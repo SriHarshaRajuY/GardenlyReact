@@ -16,6 +16,11 @@ export default function Blog() {
   
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [commentText, setCommentText] = useState("");
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newBlog, setNewBlog] = useState({ title: "", excerpt: "", content: "", category: "Gardening" });
+  const [newBlogImage, setNewBlogImage] = useState(null);
+  const [submittingBlog, setSubmittingBlog] = useState(false);
 
   useEffect(() => {
     fetchBlogs();
@@ -71,10 +76,70 @@ export default function Blog() {
       if (res.ok) {
         const data = await res.json();
         const newComment = data.comments[data.comments.length - 1];
-        socket.emit("new_comment", { postId: selectedBlog._id, comment: newComment });
+        if (socket) {
+          socket.emit("new_comment", { postId: selectedBlog._id, comment: newComment });
+        }
+        setSelectedBlog(prev => ({
+          ...prev,
+          comments: data.comments
+        }));
         setCommentText("");
       }
     } catch (err) { console.error(err); }
+  };
+
+  const handleAddBlog = async (e) => {
+    e.preventDefault();
+    if (!newBlog.title || !newBlog.content || !newBlogImage) return alert("Please fill all fields and select an image");
+    setSubmittingBlog(true);
+    
+    try {
+      // 1. Upload Image
+      const formData = new FormData();
+      formData.append("image", newBlogImage);
+      const uploadRes = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/upload`, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success) {
+        setSubmittingBlog(false);
+        return alert("Failed to upload image");
+      }
+
+      // 2. Create Blog
+      const slug = newBlog.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+      const blogData = {
+        ...newBlog,
+        slug,
+        image: uploadData.url,
+        author: user.username,
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      };
+
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/blogs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(blogData),
+        credentials: "include"
+      });
+      
+      if (res.ok) {
+        alert("Blog published successfully!");
+        setShowAddModal(false);
+        setNewBlog({ title: "", excerpt: "", content: "", category: "Gardening" });
+        setNewBlogImage(null);
+        fetchBlogs();
+      } else {
+        alert("Failed to publish blog");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error publishing blog");
+    } finally {
+      setSubmittingBlog(false);
+    }
   };
 
   const categories = ["All", ...new Set(blogsList.map((b) => b.category).filter(Boolean))];
@@ -179,6 +244,14 @@ export default function Blog() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
            </div>
+           {(user?.role === "admin" || user?.role === "expert") && (
+             <button 
+               onClick={() => setShowAddModal(true)}
+               className="mt-8 bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300"
+             >
+               + Create New Blog
+             </button>
+           )}
         </div>
       </section>
 
@@ -210,6 +283,48 @@ export default function Blog() {
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {/* Add Blog Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto pt-24">
+            <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-3xl p-10 relative my-auto">
+              <button onClick={() => setShowAddModal(false)} className="absolute top-6 right-8 text-3xl text-gray-400 hover:text-red-500">&times;</button>
+              <h2 className="text-4xl font-black mb-8 text-green-800 dark:text-green-400">Publish New Blog</h2>
+              
+              <form onSubmit={handleAddBlog} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold mb-2">Title</label>
+                  <input required value={newBlog.title} onChange={e => setNewBlog({...newBlog, title: e.target.value})} className="w-full px-6 py-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-800 outline-none focus:border-green-500" placeholder="Catchy title..." />
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold mb-2">Category</label>
+                    <input required value={newBlog.category} onChange={e => setNewBlog({...newBlog, category: e.target.value})} className="w-full px-6 py-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-800 outline-none focus:border-green-500" placeholder="e.g. Indoor Plants" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold mb-2">Cover Image</label>
+                    <input required type="file" accept="image/*" onChange={e => setNewBlogImage(e.target.files[0])} className="w-full px-6 py-3.5 rounded-2xl border dark:border-gray-700 dark:bg-gray-800 outline-none focus:border-green-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold mb-2">Short Excerpt</label>
+                  <textarea required value={newBlog.excerpt} onChange={e => setNewBlog({...newBlog, excerpt: e.target.value})} rows={2} className="w-full px-6 py-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-800 outline-none focus:border-green-500 resize-none" placeholder="A brief summary for the feed..." />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold mb-2">Full Content</label>
+                  <textarea required value={newBlog.content} onChange={e => setNewBlog({...newBlog, content: e.target.value})} rows={8} className="w-full px-6 py-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-800 outline-none focus:border-green-500 resize-none" placeholder="Write your expert advice here..." />
+                </div>
+
+                <button disabled={submittingBlog} className="w-full bg-green-600 text-white font-black py-5 rounded-2xl text-xl hover:bg-green-700 transition disabled:opacity-50">
+                  {submittingBlog ? "Publishing..." : "Publish Blog"}
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </section>

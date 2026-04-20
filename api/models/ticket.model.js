@@ -8,6 +8,7 @@ const ticketSchema = new mongoose.Schema(
     // 'general', 'technical', 'billing'
     type: { type: String, required: true },
     description: { type: String, required: true },
+    urgency: { type: String, default: "Normal (24h)" },
     status: { type: String, default: "Open" }, // 'Open' | 'Resolved'
     expert_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     attachment: { type: String }, // base64 data URL
