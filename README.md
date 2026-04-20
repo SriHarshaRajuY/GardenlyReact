@@ -26,7 +26,7 @@ This project was built focusing on **Enterprise Architecture**, prioritizing per
 
 ## ✨ Features
 
-- **Multi-Role System (B2B & B2C):** Dedicated dashboards and permissions for `Buyers`, `Sellers`, `Experts`, and `Admins`.
+- **Multi-Role System (B2B & B2C):** Dedicated dashboards and permissions for `Buyers`, `Sellers`, `Experts`, and `Admin`.
 - **Lightning Fast Search:** Integrated **Apache Solr** for highly relevant, typo-tolerant, enterprise-level product searching.
 - **Real-Time Community:** Built-in forums and chat functionality powered by **Socket.io**.
 - **Performance Optimized:** API response caching implemented using **Redis**, reducing load times by ~78%.
