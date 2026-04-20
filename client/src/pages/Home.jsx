@@ -128,7 +128,7 @@ export default function Home() {
                 <img
                   src={cat.img}
                   alt={cat.name}
-                  className="w-24 h-24 object-contain"
+                  className="w-full h-full object-cover"
                   onError={(e) => (e.target.src = "/images/fallback.png")}
                 />
               </div>

@@ -41,3 +41,34 @@ section, .product-card, .category-circle {
 .animate-shine { animation: shine 3s infinite; }
 .animate-slideDown { animation: slideDown 0.3s ease; }
 .animate-fadeIn { animation: fadeIn 0.3s ease; }
+
+/* Swiper Slider Overrides */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #16a34a !important; /* Tailwind green-600 */
+  background: rgba(255, 255, 255, 0.7);
+  padding: 24px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: rgba(255, 255, 255, 1);
+  color: #15803d !important; /* Tailwind green-700 */
+}
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 20px !important;
+  font-weight: bold;
+}
+.swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.8) !important;
+  opacity: 1 !important;
+  width: 10px !important;
+  height: 10px !important;
+  transition: all 0.3s ease;
+}
+.swiper-pagination-bullet-active {
+  background: #16a34a !important;
+  transform: scale(1.3);
+}

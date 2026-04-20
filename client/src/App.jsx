@@ -28,11 +28,13 @@ import AdminProducts from "./pages/AdminProducts";
 import AdminOrders from "./pages/AdminOrders";
 import AdminTickets from "./pages/AdminTickets";
 
+import Footer from "./components/Footer";
+
 function PublicLayout() {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <div className="pt-16">
+      <main className="pt-16 flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/plants" element={<Plants />} />
@@ -51,8 +53,9 @@ function PublicLayout() {
           <Route path="/search" element={<SearchResults />} />
           <Route path="/custom-requests" element={<CustomRequests />} />
         </Routes>
-      </div>
-    </>
+      </main>
+      <Footer />
+    </div>
   );
 }
 
