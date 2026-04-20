@@ -1,6 +1,6 @@
 // api/controllers/product.controller.js
 import Product from "../models/product.model.js";
-import { searchSolr } from "../utils/solr.js";
+import { searchSolr, indexProduct, deleteFromSolr } from "../utils/solr.js";
 import { errorHandler } from "../utils/error.js";
 import { clearCache } from "../utils/cache.js";
 
@@ -64,23 +64,43 @@ export const searchProducts = async (req, res, next) => {
     }
 
     // 🚀 Exact Enterprise Search using the Apache Solr Platform (WebSolr)
-    const solrResults = await searchSolr(q);
+    let solrResults = [];
+    try {
+      solrResults = await searchSolr(q);
+    } catch (err) {
+      console.error("Solr search error:", err.message);
+    }
     
-    // Extract IDs from Solr results
-    const productIds = solrResults.map(doc => doc.id);
+    let products = [];
+    if (solrResults && solrResults.length > 0) {
+      // Extract IDs from Solr results
+      const productIds = solrResults.map(doc => doc.id);
 
-    // Fetch full product details from MongoDB using Solr's ranked results
-    const products = await Product.find({
-      _id: { $in: productIds }
-    });
+      // Fetch full product details from MongoDB using Solr's ranked results
+      const dbProducts = await Product.find({
+        _id: { $in: productIds }
+      });
 
-    // Sort products based on Solr's relevance order
-    const sortedProducts = productIds.map(id => products.find(p => p._id.toString() === id)).filter(p => p);
+      // Sort products based on Solr's relevance order
+      products = productIds
+        .map(id => dbProducts.find(p => p._id.toString() === id))
+        .filter(p => p);
+    }
+
+    // 🔄 Fallback to MongoDB Text Search if Solr returns nothing or fails
+    if (products.length === 0) {
+      console.log(`Solr returned 0 results for "${q}", falling back to MongoDB text search.`);
+      products = await Product.find({
+        $text: { $search: q }
+      })
+      .sort({ score: { $meta: "textScore" } }) // Sort by text relevance score
+      .limit(30);
+    }
 
     res.status(200).json({
       success: true,
-      count: sortedProducts.length,
-      products: sortedProducts,
+      count: products.length,
+      products: products,
     });
   } catch (err) {
     next(err);
@@ -119,6 +139,13 @@ export const addProduct = async (req, res, next) => {
     });
 
     const savedProduct = await newProduct.save();
+
+    // 🚀 Index in Solr for instant search availability
+    try {
+      await indexProduct(savedProduct);
+    } catch (err) {
+      console.error("Failed to index new product in Solr:", err.message);
+    }
 
     // Clear product cache
     await clearCache("products");
@@ -189,6 +216,13 @@ export const updateProduct = async (req, res, next) => {
         .json({ success: false, message: "Product not found" });
     }
 
+    // 🚀 Update Solr Index
+    try {
+      await indexProduct(updatedProduct);
+    } catch (err) {
+      console.error("Failed to update product in Solr:", err.message);
+    }
+
     // Clear product cache
     await clearCache("products");
 
@@ -213,6 +247,13 @@ export const deleteProduct = async (req, res, next) => {
       return res
         .status(404)
         .json({ success: false, message: "Product not found" });
+    }
+
+    // 🚀 Remove from Solr Index
+    try {
+      await deleteFromSolr(req.params.id);
+    } catch (err) {
+      console.error("Failed to delete product from Solr:", err.message);
     }
 
     // Clear product cache
