@@ -57,6 +57,17 @@ import { createSwaggerRouter } from "./config/swagger.js";
 
 app.use("/api-docs", createSwaggerRouter());
 
+app.get("/api/redis-health", async (req, res) => {
+  const { getRedisClient } = await import("./utils/cache.js");
+  const client = getRedisClient();
+  try {
+    const ping = await client.ping();
+    res.json({ success: true, status: "Connected", ping });
+  } catch (err) {
+    res.status(500).json({ success: false, status: "Disconnected", error: err.message });
+  }
+});
+
 app.use("/api/tickets", ticketRoute);
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);

@@ -18,7 +18,7 @@ export default function About() {
             About <span className="text-green-600">Gardenly</span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Gardenly is your premium destination for everything green. We are more than just a marketplace; 
+            Gardenly is your premium destination for everything green. We are more than just a marketplace;
             we are a ecosystem designed to foster a love for nature and provide expert guidance for your gardening journey.
           </p>
         </div>
@@ -27,16 +27,16 @@ export default function About() {
         <div className="grid md:grid-cols-2 gap-12 items-center mb-32">
           <div className="relative">
             <div className="absolute -top-4 -left-4 w-72 h-72 bg-green-200 dark:bg-green-900/30 rounded-full blur-3xl opacity-50"></div>
-            <img 
-              src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
-              alt="Gardening" 
+            <img
+              src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+              alt="Gardening"
               className="rounded-2xl shadow-2xl relative z-10 hover:scale-[1.02] transition-transform duration-500"
             />
           </div>
           <div>
             <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Our Mission</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-              Our mission is to empower individuals to create their own green spaces, regardless of their living situation. 
+              Our mission is to empower individuals to create their own green spaces, regardless of their living situation.
               We believe that gardening should be accessible, enjoyable, and rewarding for everyone.
             </p>
             <div className="grid grid-cols-2 gap-6">

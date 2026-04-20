@@ -24,9 +24,9 @@ router.get("/search", cacheMiddleware("products:search", 600), searchProducts); 
 
 // seller only
 router.post("/", verifyToken, requireSeller, upload.single("image"), addProduct);
-router.get("/seller", verifyToken, requireSeller, getSellerProducts);
-router.get("/top-sales", verifyToken, requireSeller, getTopSales);
-router.get("/recent-sales", verifyToken, requireSeller, getRecentSales);
+router.get("/seller", verifyToken, requireSeller, cacheMiddleware("seller_products", 300), getSellerProducts);
+router.get("/top-sales", verifyToken, requireSeller, cacheMiddleware("top_sales", 600), getTopSales);
+router.get("/recent-sales", verifyToken, requireSeller, cacheMiddleware("recent_sales", 300), getRecentSales);
 router.put("/:id", verifyToken, requireSeller, updateProduct);
 router.delete("/:id", verifyToken, requireSeller, deleteProduct);
 

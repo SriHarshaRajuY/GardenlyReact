@@ -8,6 +8,7 @@ import {
   submitProposal,
   acceptProposal,
 } from "../controllers/customRequest.controller.js";
+import { cacheMiddleware } from "../utils/cache.js";
 
 const router = express.Router();
 
@@ -22,11 +23,11 @@ const isSeller = (req, res, next) => {
 
 // Buyer routes
 router.post("/", verifyToken, createRequest);
-router.get("/my-requests", verifyToken, getBuyerRequests);
+router.get("/my-requests", verifyToken, cacheMiddleware("custom_requests", 300), getBuyerRequests);
 router.put("/:id/proposals/:proposalId/accept", verifyToken, acceptProposal);
 
 // Seller routes
-router.get("/open", verifyToken, isSeller, getAllOpenRequests);
+router.get("/open", verifyToken, isSeller, cacheMiddleware("open_requests", 300), getAllOpenRequests);
 router.post("/:id/proposals", verifyToken, isSeller, submitProposal);
 
 export default router;

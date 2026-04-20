@@ -8,13 +8,14 @@ import {
   checkout,
 } from "../controllers/cart.controller.js";
 import { verifyToken, requireBuyer } from "../middleware/verifyToken.js";
+import { cacheMiddleware } from "../utils/cache.js";
 
 const router = express.Router();
 
 // all cart routes require a logged-in buyer
 router.use(verifyToken, requireBuyer);
 
-router.get("/", getCart);
+router.get("/", cacheMiddleware("cart", 60), getCart);
 router.post("/add", addToCart);
 router.put("/update", updateCartItem);
 router.delete("/remove/:productId", removeFromCart);
