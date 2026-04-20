@@ -31,9 +31,42 @@ jest.unstable_mockModule('../models/ticket.model.js', () => ({
   }
 }));
 
+jest.unstable_mockModule('../models/blog.model.js', () => ({
+  default: {
+    countDocuments: jest.fn(),
+    find: jest.fn().mockReturnThis(),
+    findByIdAndDelete: jest.fn()
+  }
+}));
+
+jest.unstable_mockModule('../models/community.model.js', () => ({
+  default: {
+    countDocuments: jest.fn(),
+    find: jest.fn().mockReturnThis(),
+    findByIdAndDelete: jest.fn()
+  }
+}));
+
+jest.unstable_mockModule('../models/communityPost.model.js', () => ({
+  default: {
+    countDocuments: jest.fn(),
+    find: jest.fn().mockReturnThis(),
+    findByIdAndDelete: jest.fn(),
+    deleteMany: jest.fn()
+  }
+}));
+
+jest.unstable_mockModule('../models/customRequest.model.js', () => ({
+  default: {
+    countDocuments: jest.fn(),
+    find: jest.fn().mockReturnThis(),
+    findByIdAndDelete: jest.fn()
+  }
+}));
+
 describe('Admin Controller Unit Tests', () => {
   let req, res, next;
-  let adminController, User, Product, Order;
+  let adminController, User, Product, Order, Ticket, Blog, Community, CommunityPost, CustomRequest;
 
   beforeAll(async () => {
     adminController = await import('../controllers/admin.controller.js');
@@ -41,6 +74,10 @@ describe('Admin Controller Unit Tests', () => {
     Product = (await import('../models/product.model.js')).default;
     Order = (await import('../models/order.model.js')).default;
     Ticket = (await import('../models/ticket.model.js')).default;
+    Blog = (await import('../models/blog.model.js')).default;
+    Community = (await import('../models/community.model.js')).default;
+    CommunityPost = (await import('../models/communityPost.model.js')).default;
+    CustomRequest = (await import('../models/customRequest.model.js')).default;
   });
 
   beforeEach(() => {
@@ -56,6 +93,10 @@ describe('Admin Controller Unit Tests', () => {
       Product.countDocuments.mockResolvedValue(10);
       Order.countDocuments.mockResolvedValue(10);
       Ticket.countDocuments.mockResolvedValue(10);
+      Blog.countDocuments.mockResolvedValue(10);
+      Community.countDocuments.mockResolvedValue(10);
+      CommunityPost.countDocuments.mockResolvedValue(10);
+      CustomRequest.countDocuments.mockResolvedValue(10);
       
       Order.aggregate.mockResolvedValue([{ total: 1000 }]);
       
