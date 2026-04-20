@@ -12,7 +12,9 @@ jest.unstable_mockModule('../models/product.model.js', () => {
 
 jest.unstable_mockModule('../utils/solr.js', () => {
   return {
-    searchSolr: jest.fn()
+    searchSolr: jest.fn(),
+    indexProduct: jest.fn(),
+    deleteFromSolr: jest.fn()
   };
 });
 

@@ -36,15 +36,21 @@ export const cacheMiddleware = (keyPrefix, expiration = 3600) => {
     }
 
     try {
-      const cacheKey = `${keyPrefix}:${req.originalUrl}`;
+      // Append user ID to cache key if user is authenticated (to avoid leaking private data)
+      const userSuffix = req.user && req.user.id ? `:user:${req.user.id}` : '';
+      const cacheKey = `${keyPrefix}:${req.originalUrl}${userSuffix}`;
+      
       const cachedData = await redisClient.get(cacheKey);
 
       if (cachedData) {
-        console.log(`Cache hit for key: ${cacheKey}`);
+        console.log(`🟢 REDIS CACHE HIT for key: ${cacheKey}`);
+        res.setHeader('X-Redis-Cache', 'HIT');
         return res.status(200).json(JSON.parse(cachedData));
       }
 
-      console.log(`Cache miss for key: ${cacheKey}`);
+      console.log(`🔴 REDIS CACHE MISS for key: ${cacheKey}`);
+      res.setHeader('X-Redis-Cache', 'MISS');
+      
       // Override res.json to intercept the response and cache it
       const originalJson = res.json.bind(res);
       res.json = (body) => {

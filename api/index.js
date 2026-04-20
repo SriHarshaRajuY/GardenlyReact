@@ -46,6 +46,7 @@ app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
     credentials: true,
+    exposedHeaders: ["X-Redis-Cache"],
   })
 );
 
