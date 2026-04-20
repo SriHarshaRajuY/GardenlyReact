@@ -34,12 +34,12 @@ export default function About() {
             />
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Our Mission</h2>
+            {/* <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">Our Mission</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
               Our mission is to empower individuals to create their own green spaces, regardless of their living situation.
               We believe that gardening should be accessible, enjoyable, and rewarding for everyone.
-            </p>
-            {/* <div className="grid grid-cols-2 gap-6">
+            </p> */}
+            <div className="grid grid-cols-2 gap-6">
               <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="text-3xl font-bold text-green-600 mb-2">50k+</div>
                 <div className="text-sm text-gray-500">Happy Gardeners</div>
@@ -48,7 +48,7 @@ export default function About() {
                 <div className="text-3xl font-bold text-green-600 mb-2">10k+</div>
                 <div className="text-sm text-gray-500">Verified Plants</div>
               </div>
-            </div> */}
+            </div>
           </div>
         </div>
 
