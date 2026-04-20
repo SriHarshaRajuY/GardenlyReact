@@ -36,7 +36,8 @@ export default function CustomRequests() {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const url = user.role === "seller" ? "/api/custom-requests/open" : "/api/custom-requests/my-requests";
+      const baseUrl = (import.meta.env.VITE_BACKEND_URL || '').trim();
+      const url = user.role === "seller" ? `${baseUrl}/api/custom-requests/open` : `${baseUrl}/api/custom-requests/my-requests`;
       const res = await fetch(url, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
