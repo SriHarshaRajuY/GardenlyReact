@@ -75,10 +75,25 @@ export const clearCache = async (keyPrefix) => {
   if (!isRedisConnected) return;
 
   try {
-    const keys = await redisClient.keys(`${keyPrefix}:*`);
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-      console.log(`Cleared cache for keys starting with: ${keyPrefix}`);
+    let cursor = "0";
+    let totalCleared = 0;
+    
+    do {
+      const reply = await redisClient.scan(cursor, {
+        MATCH: `${keyPrefix}:*`,
+        COUNT: 100,
+      });
+      cursor = reply.cursor;
+      const keys = reply.keys;
+
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+        totalCleared += keys.length;
+      }
+    } while (cursor !== "0");
+
+    if (totalCleared > 0) {
+      console.log(`Cleared ${totalCleared} cache keys starting with: ${keyPrefix}`);
     }
   } catch (err) {
     console.error("Redis clearCache error:", err);

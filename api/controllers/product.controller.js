@@ -91,11 +91,7 @@ export const searchProducts = async (req, res, next) => {
     if (products.length === 0) {
       console.log(`Solr returned 0 results for "${q}", falling back to MongoDB text search.`);
       products = await Product.find({
-        $or: [
-          { name: { $regex: q, $options: 'i' } },
-          { category: { $regex: q, $options: 'i' } },
-          { description: { $regex: q, $options: 'i' } }
-        ]
+        $text: { $search: q }
       })
       .limit(30);
     }

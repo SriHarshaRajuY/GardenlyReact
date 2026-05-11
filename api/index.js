@@ -9,6 +9,7 @@ import helmet from "helmet";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import logger, { errorLogger } from "./middleware/logger.js";
+import rateLimit from "express-rate-limit";
 import ticketRoute from "./routes/ticket.route.js";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
@@ -29,6 +30,15 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const app = express();
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again after 15 minutes",
+});
+app.use("/api/auth", limiter); // Apply to auth routes specifically
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {

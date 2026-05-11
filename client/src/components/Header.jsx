@@ -108,8 +108,8 @@ export default function Header() {
       <div className="flex justify-between items-center max-w-7xl mx-auto px-6 py-4">
         
         {/* Logo */}
-        <Link to="/" className="flex items-center text-green-700 dark:text-green-400 text-2xl font-black tracking-tighter">
-          <FaLeaf className="mr-2 rotate-12" />
+        <Link to="/" className="flex items-center text-green-700 dark:text-green-400 text-2xl font-black tracking-tighter" aria-label="Gardenly Home">
+          <FaLeaf className="mr-2 rotate-12" aria-hidden="true" />
           Gardenly
         </Link>
 
@@ -119,13 +119,14 @@ export default function Header() {
             <input
               type="text"
               placeholder="Search seeds, plants..."
+              aria-label="Search seeds, plants..."
               className="bg-transparent outline-none text-sm w-full dark:text-white placeholder:text-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchKey}
             />
-            <button onClick={handleSearch}>
-              <FaSearch className="text-gray-400 group-focus-within:text-green-600 transition" />
+            <button onClick={handleSearch} aria-label="Submit search">
+              <FaSearch className="text-gray-400 group-focus-within:text-green-600 transition" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -133,18 +134,18 @@ export default function Header() {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
           <NavLinks />
-          <button onClick={toggleDarkMode} className="text-xl text-gray-400 hover:text-yellow-500 transition">
-            {darkMode ? <RiSunLine /> : <RiMoonLine />}
+          <button onClick={toggleDarkMode} className="text-xl text-gray-400 hover:text-yellow-500 transition" aria-label="Toggle dark mode">
+            {darkMode ? <RiSunLine aria-hidden="true" /> : <RiMoonLine aria-hidden="true" />}
           </button>
         </nav>
 
         {/* Mobile Actions */}
         <div className="md:hidden flex items-center gap-4">
-           <button onClick={toggleDarkMode} className="text-xl text-gray-400">
-            {darkMode ? <RiSunLine /> : <RiMoonLine />}
+           <button onClick={toggleDarkMode} className="text-xl text-gray-400" aria-label="Toggle dark mode">
+            {darkMode ? <RiSunLine aria-hidden="true" /> : <RiMoonLine aria-hidden="true" />}
           </button>
-          <button className="text-2xl text-green-700" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <FaTimes /> : <FaBars />}
+          <button className="text-2xl text-green-700" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+            {menuOpen ? <FaTimes aria-hidden="true" /> : <FaBars aria-hidden="true" />}
           </button>
         </div>
       </div>

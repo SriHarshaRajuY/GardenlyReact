@@ -57,7 +57,7 @@ export const signup = async (req, res, next) => {
       finalExpertise = expertise;
     }
 
-    const existing = await User.findOne({ $or: [{ username }, { email }, { mobile }] });
+    const existing = await User.findOne({ $or: [{ username: String(username) }, { email: String(email) }, { mobile: String(mobile) }] });
     if (existing) return next(errorHandler(400, "User with this username/email/mobile already exists"));
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -91,7 +91,7 @@ export const signup = async (req, res, next) => {
 export const verifyEmail = async (req, res, next) => {
   const { email, otp } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: String(email) });
     if (!user) return next(errorHandler(404, "User not found"));
     if (user.isEmailVerified) return res.status(200).json({ success: true, message: "Already verified" });
 
@@ -116,7 +116,7 @@ export const signin = async (req, res, next) => {
   try {
     if (!username || !password || !role) return next(errorHandler(400, "Username, password, and role are required"));
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: String(username) });
     if (!user) return next(errorHandler(404, "User not found"));
 
     const isValidPassword = bcrypt.compareSync(password, user.password);
@@ -155,7 +155,7 @@ export const signin = async (req, res, next) => {
 export const verify2FA = async (req, res, next) => {
   const { email, otp } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: String(email) });
     if (!user) return next(errorHandler(404, "User not found"));
     
     if (user.twoFactorOtp !== otp) return next(errorHandler(400, "Invalid 2FA code"));
@@ -188,7 +188,7 @@ export const googleSignin = async (req, res, next) => {
     const email = payload?.email?.toLowerCase();
     if (!email) return next(errorHandler(400, "Google account email is missing"));
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: String(email).toLowerCase() });
 
     if (!user) {
       const safeRole = ["Buyer", "Seller", "Admin", "Expert"].includes(role) ? role : "Buyer";
@@ -227,7 +227,7 @@ export const forgotPassword = async (req, res, next) => {
   const { email } = req.body;
   try {
     if (!email) return next(errorHandler(400, "Email is required"));
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: String(email) });
     if (!user) return next(errorHandler(404, "No account found with this email"));
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();

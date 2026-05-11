@@ -1,16 +1,20 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import Community from "./models/community.model.js";
-import User from "./models/user.model.js";
+import Community from "../models/community.model.js";
+import User from "../models/user.model.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const seedCommunities = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, { dbName: "gardenly" });
     console.log("Connected to MongoDB for seeding");
 
-    // 1. Create World Community if it doesn't exist
     let worldComm = await Community.findOne({ name: "World Community" });
     if (!worldComm) {
       worldComm = new Community({
@@ -21,11 +25,8 @@ const seedCommunities = async () => {
       });
       await worldComm.save();
       console.log("Created World Community");
-    } else {
-      console.log("World Community already exists");
     }
 
-    // 2. Add some themed communities
     const themes = [
       {
         name: "Monstera Lovers",
@@ -55,7 +56,6 @@ const seedCommunities = async () => {
       }
     }
 
-    // 3. (Optional) Auto-join all existing users to World Community
     console.log("Syncing existing users to World Community...");
     const users = await User.find({});
     for (const user of users) {
