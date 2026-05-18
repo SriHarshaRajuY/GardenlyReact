@@ -10,9 +10,13 @@ export default function AuthProvider({ children }) {
   // On mount, verify session by calling the server (since cookie is httpOnly)
   useEffect(() => {
     const restoreSession = async () => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 2500);
+
       try {
         const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/user/me", {
           credentials: "include", // sends the httpOnly cookie
+          signal: controller.signal,
         });
         if (res.ok) {
           const data = await res.json();
@@ -21,6 +25,8 @@ export default function AuthProvider({ children }) {
             id: u._id,
             username: u.username,
             role: u.role?.toLowerCase() ?? "buyer",
+            email: u.email || "",
+            mobile: u.mobile || "",
           });
         } else {
           setUser(null);
@@ -28,6 +34,7 @@ export default function AuthProvider({ children }) {
       } catch {
         setUser(null);
       } finally {
+        window.clearTimeout(timeoutId);
         setLoading(false);
       }
     };
@@ -35,13 +42,26 @@ export default function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
-  const login = (token) => {
+  const login = (token, userData) => {
+    if (userData) {
+      setUser({
+        id: userData._id || userData.id,
+        username: userData.username,
+        role: userData.role?.toLowerCase() ?? "buyer",
+        email: userData.email || "",
+        mobile: userData.mobile || "",
+      });
+      return;
+    }
+
     try {
       const decoded = jwtDecode(token);
       setUser({
         id: decoded.id,
         username: decoded.username,
         role: decoded.role?.toLowerCase() ?? "buyer",
+        email: "",
+        mobile: "",
       });
     } catch (err) {
       console.error("Invalid token on login", err);

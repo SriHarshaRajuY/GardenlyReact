@@ -1,15 +1,25 @@
 // server/models/product.model.js
 import mongoose from "mongoose";
 
+export const PRODUCT_CATEGORIES = ["Plants", "Seeds", "Pots"];
+
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
-  price: { type: Number, required: true },
-  category: { type: String, default: "General" },
+  price: { type: Number, required: true, min: 0 },
+  category: { type: String, enum: PRODUCT_CATEGORIES, required: true },
   image: { type: String },
   seller_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  quantity: { type: Number, default: 0 },
-  sold: { type: Number, default: 0 },
+  quantity: {
+    type: Number,
+    default: 0,
+    min: 0,
+    validate: {
+      validator: Number.isInteger,
+      message: "Quantity must be a whole number",
+    },
+  },
+  sold: { type: Number, default: 0, min: 0 },
   createdAt: { type: Date, default: Date.now },
   soldAt: { type: Date },
 });

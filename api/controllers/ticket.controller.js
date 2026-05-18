@@ -2,6 +2,15 @@
 import Ticket from "../models/ticket.model.js";
 import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
+import { clearCache } from "../utils/cache.js";
+
+const clearTicketCaches = async () => {
+  await Promise.all([
+    clearCache("user_tickets"),
+    clearCache("expert_tickets"),
+    clearCache("ticket"),
+  ]);
+};
 
 // Submit ticket (for buyers)
 export const submitTicket = async (req, res, next) => {
@@ -9,26 +18,26 @@ export const submitTicket = async (req, res, next) => {
   const attachmentFile = req.file;
 
   try {
-    if (!subject || !type || !description) {
+    const cleanSubject = subject?.trim();
+    const cleanDescription = description?.trim();
+    const cleanType = type?.trim().toLowerCase();
+    const cleanUrgency = urgency?.trim();
+
+    if (!cleanSubject || !cleanType || !cleanDescription) {
       return next(
         errorHandler(400, "Subject, type, and description required")
       );
     }
 
-    // Normalize type (from frontend select)
-    const normalizedType = type.toLowerCase(); // 'general' | 'technical' | 'billing'
-
-    // Map ticket.type → expert.expertise in DB
     const expertiseMap = {
       general: "General",
       technical: "Technical",
       billing: "Billing",
     };
 
-    const expertise = expertiseMap[normalizedType];
+    const expertise = expertiseMap[cleanType];
     if (!expertise) return next(errorHandler(400, "Invalid type"));
 
-    // Find an expert with matching expertise
     const expert = await User.findOne({ role: "Expert", expertise });
 
     if (!expert) {
@@ -40,23 +49,18 @@ export const submitTicket = async (req, res, next) => {
       );
     }
 
-    // Handle attachment (if any) → store Cloudinary URL
-    let attachment = null;
-    if (attachmentFile) {
-      attachment = attachmentFile.path;
-    }
-
     const ticket = new Ticket({
-      requester: req.user.username, // from JWT
-      subject,
-      type: normalizedType,
-      description,
-      urgency: urgency || "Normal (24h)",
+      requester: req.user.username,
+      subject: cleanSubject,
+      type: cleanType,
+      description: cleanDescription,
+      urgency: cleanUrgency || "Normal (24h)",
       expert_id: expert._id,
-      attachment,
+      attachment: attachmentFile?.path || null,
     });
 
     await ticket.save();
+    await clearTicketCaches();
 
     res.status(201).json({
       success: true,
@@ -103,12 +107,14 @@ export const getTicket = async (req, res, next) => {
     );
     if (!ticket) return next(errorHandler(404, "Ticket not found"));
 
-    // Permission: admin, expert, or the buyer who requested
-    if (
-      req.user.role !== "admin" &&
-      req.user.role !== "expert" &&
-      ticket.requester !== req.user.username
-    ) {
+    const assignedExpertId =
+      ticket.expert_id?._id?.toString?.() || ticket.expert_id?.toString?.();
+    const isAdmin = req.user.role === "admin";
+    const isRequester = ticket.requester === req.user.username;
+    const isAssignedExpert =
+      req.user.role === "expert" && assignedExpertId === req.user.id;
+
+    if (!isAdmin && !isRequester && !isAssignedExpert) {
       return next(errorHandler(403, "Access denied"));
     }
 
@@ -123,11 +129,14 @@ export const resolveTicket = async (req, res, next) => {
   const { resolution } = req.body;
 
   try {
-    if (!resolution) return next(errorHandler(400, "Resolution required"));
+    const cleanResolution = resolution?.trim();
+    if (!cleanResolution) {
+      return next(errorHandler(400, "Resolution required"));
+    }
 
     const ticket = await Ticket.findOneAndUpdate(
       { _id: req.params.id, expert_id: req.user.id },
-      { resolution, status: "Resolved", resolved_at: new Date() },
+      { resolution: cleanResolution, status: "Resolved", resolved_at: new Date() },
       { new: true }
     );
 
@@ -137,6 +146,7 @@ export const resolveTicket = async (req, res, next) => {
       );
     }
 
+    await clearTicketCaches();
     res.json({ success: true, message: "Resolved", ticket });
   } catch (err) {
     next(err);

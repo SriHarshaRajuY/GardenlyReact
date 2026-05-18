@@ -1,138 +1,166 @@
-<div align="center">
-  <img src="https://img.icons8.com/?size=100&id=103424&format=png&color=16A34A" alt="Gardenly Logo" width="80" height="80">
-  <h1 align="center">Gardenly</h1>
-  <p align="center">
-    <strong>Bring Nature Closer to Home 🌿</strong>
-    <br />
-    An Enterprise-Grade B2B & B2C MERN E-Commerce Platform
-  </p>
+# Gardenly
 
-  <p align="center">
-    <a href="#features">Features</a> •
-    <a href="#tech-stack">Tech Stack</a> •
-    <a href="#architecture-highlights">Architecture</a> •
-    <a href="#quick-start">Quick Start</a> •
-    <a href="#api-documentation">API Docs</a>
-  </p>
-</div>
+Gardenly is a full-stack MERN marketplace for plants and gardening products. It includes buyer checkout, seller product management, community posts, blogs, custom buyer requests, expert support tickets, admin controls, Redis-backed caching, Solr product search, Cloudinary uploads, and Razorpay test-mode payment verification.
 
----
+## Tech Stack
 
-## 📖 About The Project
+- Backend: Node.js, Express, MongoDB, Mongoose, Socket.IO
+- Frontend: React, Vite, Tailwind CSS
+- Auth: JWT in httpOnly cookies, Google sign-in support
+- Storage and integrations: Cloudinary, Redis, Solr, Nodemailer, Razorpay
+- Testing: Jest, Supertest, Vitest, React Testing Library
 
-**Gardenly** is a comprehensive, high-performance web application designed for gardening enthusiasts, commercial sellers, and botanical experts. It bridges the gap between buyers looking for premium plants/seeds and sellers wanting to expand their reach, while also providing a real-time community hub and expert ticketing system.
+## Repository Structure
 
-This project was built focusing on **Enterprise Architecture**, prioritizing performance optimization, caching, microservice-like integration, and beautiful UX.
-
-## ✨ Features
-
-- **Multi-Role System (B2B & B2C):** Dedicated dashboards and permissions for `Buyers`, `Sellers`, `Experts`, and `Admin`.
-- **Lightning Fast Search:** Integrated **Apache Solr** for highly relevant, typo-tolerant, enterprise-level product searching.
-- **Real-Time Community:** Built-in forums and chat functionality powered by **Socket.io**.
-- **Performance Optimized:** API response caching implemented using **Redis**, reducing load times by ~78%.
-- **Secure Authentication:** Cookie-based JWT authentication paired with secure **Google OAuth** login.
-- **Custom Requests:** A dynamic marketplace where buyers can post custom requirements and sellers can bid/submit proposals.
-- **Expert Support System:** An integrated ticketing system allowing users to get help directly from assigned gardening experts.
-- **Cloud Media Storage:** Direct integration with **Cloudinary** for lightning-fast, optimized image delivery.
-- **Beautiful UI/UX:** Fully responsive, premium design with Dark/Light mode, built with **Tailwind CSS**.
-
-## 🛠 Tech Stack
-
-**Frontend:**
-- React.js (Vite)
-- Redux Toolkit & Context API (State Management)
-- Tailwind CSS (Styling)
-- React Router DOM (Routing)
-- Swiper.js (Touch Sliders)
-- Google Identity Services
-
-**Backend:**
-- Node.js & Express.js
-- MongoDB & Mongoose (Database & ORM)
-- Redis (In-memory caching via Upstash)
-- Apache Solr (Search Engine via WebSolr)
-- Socket.io (WebSockets)
-- Swagger / OpenAPI (API Documentation)
-- JSON Web Tokens (JWT)
-
-**DevOps & Infrastructure:**
-- Docker & Docker Compose
-- GitHub Actions (CI/CD Pipeline)
-- Vercel (Frontend Deployment)
-- Render/Railway (Backend Deployment)
-
-## 🏗 Architecture Highlights
-
-- **Database Optimization:** Strategic indexing on high-traffic fields (`username`, `role`, `category`) resulting in `IXSCAN` operations over expensive `COLLSCAN`s.
-- **Caching Layer:** Custom Express middleware intercepting read-heavy routes to serve cached payloads from Redis.
-- **Containerization:** Separate Dockerfiles for client and backend, with a unified `docker-compose.yml` for isolated local development.
-- **Test-Driven:** Comprehensive unit testing using Jest/Vitest for critical controllers and logic.
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js (v16+)
-- MongoDB instance (Local or Atlas)
-- Redis instance (Local or Upstash)
-- Docker (Optional, for containerized run)
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/SriHarshaRajuY/GardenlyReact.git
-cd GardenlyReact
+```text
+api/                 Express API, models, controllers, routes, middleware
+client/              React/Vite frontend
+client/src/          Frontend pages, components, context, Redux, utilities
+tests/               Backend integration and unit tests
+.env.example         Backend environment template
+client/.env.example  Frontend environment template
 ```
 
-### 2. Environment Variables
-Create a `.env` file in the root directory. Use `.env.example` as a template and fill in your credentials for:
-- `MONGO_URI`
-- `REDIS_URL`
-- `VITE_GOOGLE_CLIENT_ID`
-- `CLOUD_NAME`, `CLOUD_API_KEY`, `CLOUD_API_SECRET`
+## Prerequisites
 
-### 3. Run Locally (Standard)
+- Node.js 20 or newer
+- MongoDB connection string
+- Redis instance
+- Solr core for product search
+- Cloudinary account
+- Email provider credentials for OTP and notifications
+- Razorpay test credentials for simulated/test payments
 
-**Backend:**
+## Environment Variables
+
+Create a backend `.env` file from `.env.example`.
+
 ```bash
-cd api
-npm install
-npm start
+cp .env.example .env
 ```
 
-**Frontend:**
+Required backend variables:
+
+```text
+MONGO_URI
+PORT
+NODE_ENV
+CLIENT_ORIGIN
+JWT_SECRET
+GOOGLE_CLIENT_ID
+EMAIL_HOST
+EMAIL_PORT
+EMAIL_SECURE
+EMAIL_USER
+EMAIL_PASS
+MAIL_FROM
+CLOUD_NAME
+CLOUD_API_KEY
+CLOUD_API_SECRET
+REDIS_URL
+SOLR_URL
+RAZORPAY_KEY_ID
+RAZORPAY_KEY_SECRET
+```
+
+Create a frontend env file from `client/.env.example`.
+
 ```bash
-cd client
+cp client/.env.example client/.env
+```
+
+Required frontend variables:
+
+```text
+VITE_BACKEND_URL
+VITE_GOOGLE_CLIENT_ID
+VITE_RAZORPAY_KEY_ID
+```
+
+Do not commit real `.env` files. Rotate any credential that has already been shared outside a trusted secret manager.
+
+## Installation
+
+Install backend dependencies from the repository root.
+
+```bash
 npm install
+```
+
+Install frontend dependencies.
+
+```bash
+npm install --prefix client
+```
+
+## Running Locally
+
+Start the backend API.
+
+```bash
 npm run dev
 ```
 
-### 4. Run via Docker
+Start the frontend in a second terminal.
+
 ```bash
-docker-compose up --build
+npm run client:dev
 ```
-*Frontend will be available at `http://localhost:5173` and Backend at `http://localhost:3000`.*
 
-## 📚 API Documentation
-
-Gardenly uses **Swagger UI** for interactive API documentation. 
-Once the backend server is running, navigate to:
+Default local URLs:
 
 ```text
-http://localhost:3000/api-docs
+Backend:  http://localhost:3000
+Frontend: http://localhost:5173
+API Docs: http://localhost:3000/api-docs
 ```
-Here you can explore all endpoints, required payloads, and test requests directly from the browser.
 
-## 🧪 Testing
+## Testing and Quality Checks
 
-To run the automated test suite and view coverage:
+Run backend tests.
+
 ```bash
 npm test
 ```
 
-## 📄 License
+Run frontend tests.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+```bash
+npm run client:test
+```
 
----
-<div align="center">
-  <i>Developed with ❤️ by the Gardenly Team</i>
-</div>
+Run frontend linting.
+
+```bash
+npm run client:lint
+```
+
+Build the frontend.
+
+```bash
+npm run client:build
+```
+
+## Main Features
+
+- Buyer signup, sign-in, Google auth, email verification, cart, checkout, orders, custom requests, and expert support tickets
+- Seller product management, order visibility, sales summaries, and custom request proposals
+- Expert dashboard for assigned support tickets and resolutions
+- Admin dashboards for users, products, orders, tickets, blogs, community content, and custom requests
+- Blog and community modules with moderated admin write access
+- Product search through Solr and application caching through Redis
+
+## Security Notes
+
+- Public signup supports Buyer, Seller, and Expert roles only. Admin users must be created through a trusted backend or database process.
+- Razorpay order amounts are calculated on the server from the authenticated cart. Payment confirmation requires Razorpay signature verification.
+- State-changing routes use cookie authentication plus CSRF protection for production cross-site cookie deployments.
+- Generic file uploads are authenticated and rate-limited.
+
+## Deployment Notes
+
+- Set `NODE_ENV=production` on the backend.
+- Set `CLIENT_ORIGIN` to the deployed frontend origin.
+- Set `VITE_BACKEND_URL` to the deployed backend origin before building the frontend.
+- Use Razorpay test keys unless you intentionally want live payment behavior.
+- Confirm Redis, Solr, Cloudinary, email, MongoDB, and Razorpay credentials are available in the deployment environment.

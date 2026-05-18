@@ -5,7 +5,6 @@ import {
   addToCart,
   updateCartItem,
   removeFromCart,
-  checkout,
 } from "../controllers/cart.controller.js";
 import { verifyToken, requireBuyer } from "../middleware/verifyToken.js";
 import { cacheMiddleware } from "../utils/cache.js";
@@ -19,7 +18,6 @@ router.get("/", cacheMiddleware("cart", 60), getCart);
 router.post("/add", addToCart);
 router.put("/update", updateCartItem);
 router.delete("/remove/:productId", removeFromCart);
-router.post("/checkout", checkout);
 
 export default router;
 

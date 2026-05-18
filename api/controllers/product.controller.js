@@ -1,8 +1,58 @@
 // api/controllers/product.controller.js
 import Product from "../models/product.model.js";
+import Cart from "../models/cart.model.js";
 import { searchSolr, indexProduct, deleteFromSolr } from "../utils/solr.js";
 import { errorHandler } from "../utils/error.js";
 import { clearCache } from "../utils/cache.js";
+
+const PRODUCT_CATEGORIES = ["Plants", "Seeds", "Pots"];
+
+const clearProductCaches = async () => {
+  await Promise.all([
+    clearCache("products"),
+    clearCache("products:category"),
+    clearCache("products:search"),
+    clearCache("seller_products"),
+    clearCache("top_sales"),
+    clearCache("recent_sales"),
+    clearCache("cart"),
+  ]);
+};
+
+const validateProductPayload = ({ name, category, price, quantity }, { partial = false } = {}) => {
+  const update = {};
+
+  if (!partial || name !== undefined) {
+    if (!String(name || "").trim()) return { error: "Product name is required" };
+    update.name = String(name).trim();
+  }
+
+  if (!partial || category !== undefined) {
+    const normalizedCategory = String(category || "").trim();
+    if (!PRODUCT_CATEGORIES.includes(normalizedCategory)) {
+      return { error: `Category must be one of: ${PRODUCT_CATEGORIES.join(", ")}` };
+    }
+    update.category = normalizedCategory;
+  }
+
+  if (!partial || price !== undefined) {
+    const parsedPrice = Number(price);
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      return { error: "Price must be greater than 0" };
+    }
+    update.price = parsedPrice;
+  }
+
+  if (!partial || quantity !== undefined) {
+    const parsedQuantity = Number(quantity);
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
+      return { error: "Quantity must be a whole number of 0 or more" };
+    }
+    update.quantity = parsedQuantity;
+  }
+
+  return { update };
+};
 
 // ---- PUBLIC ROUTES ----
 export const getRecentProducts = async (req, res, next) => {
@@ -111,12 +161,15 @@ export const addProduct = async (req, res, next) => {
   try {
     const { name, description, category, price, quantity } = req.body;
 
-    if (!name || !category || !price || !quantity) {
+    if (!name || !category || price === undefined || price === "" || quantity === undefined || quantity === "") {
       return res.status(400).json({
         success: false,
         message: "Name, category, price and quantity are required",
       });
     }
+
+    const { error, update } = validateProductPayload({ name, category, price, quantity });
+    if (error) return next(errorHandler(400, error));
 
     if (!req.file) {
       return res.status(400).json({
@@ -128,11 +181,11 @@ export const addProduct = async (req, res, next) => {
     const imageUrl = req.file.path;
 
     const newProduct = new Product({
-      name: name.trim(),
+      name: update.name,
       description: description?.trim() || "",
-      category: category.trim(),
-      price: parseFloat(price),
-      quantity: parseInt(quantity),
+      category: update.category,
+      price: update.price,
+      quantity: update.quantity,
       image: imageUrl,
       seller_id: req.user.id,
     });
@@ -146,8 +199,7 @@ export const addProduct = async (req, res, next) => {
       console.error("Failed to index new product in Solr:", err.message);
     }
 
-    // Clear product cache
-    await clearCache("products");
+    await clearProductCaches();
 
     res.status(201).json({
       success: true,
@@ -196,16 +248,20 @@ export const getRecentSales = async (req, res, next) => {
 export const updateProduct = async (req, res, next) => {
   try {
     const { name, description, category, price, quantity } = req.body;
+    const { error, update } = validateProductPayload(
+      { name, category, price, quantity },
+      { partial: true }
+    );
+
+    if (error) return next(errorHandler(400, error));
+    if (description !== undefined) update.description = description?.trim() || "";
+    if (Object.keys(update).length === 0) {
+      return next(errorHandler(400, "No product fields provided"));
+    }
 
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: req.params.id, seller_id: req.user.id },
-      {
-        name: name?.trim(),
-        description: description?.trim(),
-        category: category?.trim(),
-        price: parseFloat(price),
-        quantity: parseInt(quantity),
-      },
+      { $set: update },
       { new: true, runValidators: true }
     );
 
@@ -222,8 +278,7 @@ export const updateProduct = async (req, res, next) => {
       console.error("Failed to update product in Solr:", err.message);
     }
 
-    // Clear product cache
-    await clearCache("products");
+    await clearProductCaches();
 
     res.status(200).json({
       success: true,
@@ -255,8 +310,11 @@ export const deleteProduct = async (req, res, next) => {
       console.error("Failed to delete product from Solr:", err.message);
     }
 
-    // Clear product cache
-    await clearCache("products");
+    await Cart.updateMany(
+      { "items.product": req.params.id },
+      { $pull: { items: { product: req.params.id } } }
+    );
+    await clearProductCaches();
 
     res.status(200).json({
       success: true,

@@ -244,7 +244,7 @@ export default function Blog() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
            </div>
-           {(user?.role === "admin" || user?.role === "expert") && (
+           {user?.role === "admin" && (
              <button 
                onClick={() => setShowAddModal(true)}
                className="mt-8 bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300"

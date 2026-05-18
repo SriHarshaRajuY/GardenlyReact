@@ -6,10 +6,12 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import helmet from "helmet";
+import crypto from "crypto";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import logger, { errorLogger } from "./middleware/logger.js";
 import rateLimit from "express-rate-limit";
+import { verifyToken } from "./middleware/verifyToken.js";
 import ticketRoute from "./routes/ticket.route.js";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
@@ -30,6 +32,24 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const app = express();
+const isProduction = process.env.NODE_ENV === "production";
+
+const csrfCookieOptions = {
+  httpOnly: false,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const csrfExemptPaths = new Set([
+  "/api/auth/signup",
+  "/api/auth/signin",
+  "/api/auth/google",
+  "/api/auth/verify-email",
+  "/api/auth/verify-2fa",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+]);
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -59,6 +79,31 @@ app.use(
     exposedHeaders: ["X-Redis-Cache"],
   })
 );
+
+app.use((req, res, next) => {
+  let csrfToken = req.cookies?.csrf_token;
+  if (!csrfToken) {
+    csrfToken = crypto.randomBytes(32).toString("hex");
+    res.cookie("csrf_token", csrfToken, csrfCookieOptions);
+  }
+  next();
+});
+
+app.use((req, res, next) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+  if (csrfExemptPaths.has(req.path)) return next();
+
+  const csrfCookie = req.cookies?.csrf_token;
+  const csrfHeader = req.get("x-csrf-token");
+  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    return res.status(403).json({
+      success: false,
+      message: "Invalid CSRF token",
+    });
+  }
+
+  next();
+});
 
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -92,7 +137,7 @@ app.use("/api/community", communityRoute);
 
 
 // Generic Image Upload (Cloudinary)
-app.post("/api/upload", upload.single("image"), (req, res) => {
+app.post("/api/upload", verifyToken, limiter, upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
   res.status(200).json({ success: true, url: req.file.path });
 });

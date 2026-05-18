@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createElement, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -200,7 +200,7 @@ function KpiCard({ icon: Icon, label, value, color, sub }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
       <div className={`w-12 h-12 ${color} rounded-xl flex items-center justify-center flex-shrink-0`}>
-        <Icon className="w-6 h-6 text-white" />
+        {createElement(Icon, { className: "w-6 h-6 text-white" })}
       </div>
       <div>
         <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
@@ -214,7 +214,7 @@ function KpiCard({ icon: Icon, label, value, color, sub }) {
 function StatusCard({ icon: Icon, label, value, bg, border, text }) {
   return (
     <div className={`${bg} ${border} border rounded-xl p-4 flex items-center gap-4`}>
-      <Icon className={`w-8 h-8 ${text}`} />
+      {createElement(Icon, { className: `w-8 h-8 ${text}` })}
       <div>
         <p className={`text-xs uppercase tracking-wide ${text} opacity-75`}>{label}</p>
         <p className={`text-2xl font-bold ${text}`}>{value}</p>
@@ -237,7 +237,7 @@ function Section({ title, icon: Icon, children }) {
     <div>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-          <Icon className="w-4 h-4 text-gray-600" />
+          {createElement(Icon, { className: "w-4 h-4 text-gray-600" })}
         </div>
         <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
       </div>

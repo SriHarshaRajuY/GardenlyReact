@@ -105,27 +105,6 @@ export default function CartProvider({ children }) {
     }
   };
 
-  // ------- CHECKOUT (old flow, unused with OTP but kept) -------
-  const checkout = async () => {
-    try {
-      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/cart/checkout", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (res.ok) {
-        await res.json();
-        setCart({ items: [] });
-        alert("Payment successful! Thank you for your purchase.");
-      } else {
-        const err = await res.json();
-        alert(err.message || "Checkout failed");
-      }
-    } catch (err) {
-      console.error("checkout error:", err);
-      alert("Error during checkout");
-    }
-  };
-
   return (
     <CartContext.Provider
       value={{
@@ -133,7 +112,6 @@ export default function CartProvider({ children }) {
         addToCart,
         updateQuantity,
         removeFromCart,
-        checkout,
         fetchCart,
       }}
     >

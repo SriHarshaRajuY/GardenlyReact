@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
+import { useAuth } from "../context/AuthContext";
 import {
   Upload,
   CheckCircle,
@@ -17,12 +18,15 @@ import {
 } from "lucide-react";
 
 export default function ExpertSupport() {
+  const { user } = useAuth();
+  const isBuyer = user?.role === "buyer";
   const [view, setView] = useState("home");
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
+    if (!isBuyer) return;
     setLoading(true);
     try {
       const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/tickets/user", { credentials: "include" });
@@ -30,19 +34,20 @@ export default function ExpertSupport() {
         const data = await res.json();
         setTickets(data);
       }
-    } catch (err) {
+    } catch {
       console.log("No tickets yet");
     } finally {
       setLoading(false);
     }
-  };
+  }, [isBuyer]);
 
   useEffect(() => {
-    if (view === "tickets") fetchTickets();
-  }, [view]);
+    if (view === "tickets" && isBuyer) fetchTickets();
+  }, [view, isBuyer, fetchTickets]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isBuyer) return;
     setLoading(true);
     const formData = new FormData(e.target);
     try {
@@ -61,7 +66,7 @@ export default function ExpertSupport() {
       } else {
         alert(result.message || "Something went wrong");
       }
-    } catch (err) {
+    } catch {
       alert("Network error. Try again.");
     } finally {
       setLoading(false);
@@ -87,6 +92,30 @@ export default function ExpertSupport() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#f8faf7] dark:bg-gray-950 pt-20 flex items-center justify-center px-6">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border dark:border-gray-800 p-10 text-center shadow-xl max-w-md">
+          <ShieldCheck className="w-14 h-14 text-green-600 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Authentication Required</h1>
+          <p className="text-gray-500 mt-3">Please sign in as a buyer to create and view support tickets.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isBuyer) {
+    return (
+      <div className="min-h-screen bg-[#f8faf7] dark:bg-gray-950 pt-20 flex items-center justify-center px-6">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border dark:border-gray-800 p-10 text-center shadow-xl max-w-md">
+          <ShieldCheck className="w-14 h-14 text-green-600 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Buyer Access Required</h1>
+          <p className="text-gray-500 mt-3">Expert support tickets are available from buyer accounts.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8faf7] dark:bg-gray-950 pt-20">

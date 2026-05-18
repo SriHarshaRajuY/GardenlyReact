@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useEffect } from "react";
+import { createElement, useEffect } from "react";
 import {
   LayoutDashboard, Users, Package, ShoppingCart,
   Ticket, LogOut, Leaf, BookOpen, Users2,
@@ -55,7 +55,7 @@ export default function AdminLayout() {
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"}`
               }
             >
-              <Icon size={18} />
+              {createElement(Icon, { size: 18 })}
               {label}
             </NavLink>
           ))}

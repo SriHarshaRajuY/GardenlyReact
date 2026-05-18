@@ -10,7 +10,6 @@ export default function Seller() {
   const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
-  const [topSales, setTopSales] = useState([]);
 
   const [modalProduct, setModalProduct] = useState(null);
   const [name, setName] = useState("");
@@ -22,6 +21,7 @@ export default function Seller() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   // only seller allowed
   useEffect(() => {
@@ -40,19 +40,13 @@ export default function Seller() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [allRes, topRes] = await Promise.all([
-        fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products/seller", { credentials: "include" }),
-        fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products/top-sales", { credentials: "include" }),
-      ]);
+      const allRes = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products/seller", { credentials: "include" });
 
       let all = [];
-      let top = [];
 
       if (allRes.ok) all = await allRes.json();
-      if (topRes.ok) top = await topRes.json();
 
       setProducts(all);
-      setTopSales(top);
     } catch (e) {
       console.error(e);
     } finally {
@@ -92,52 +86,120 @@ export default function Seller() {
     setImage(file);
   };
 
-  /* ================= ADD PRODUCT ================= */
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setCategory("");
+    setPrice("");
+    setQuantity("");
+    setImage(null);
+    setEditingProduct(null);
+  };
+
+  const openAddForm = () => {
+    resetForm();
+    setShowAddForm(true);
+  };
+
+  const startEdit = (product) => {
+    setModalProduct(null);
+    setEditingProduct(product);
+    setName(product.name || "");
+    setDescription(product.description || "");
+    setCategory(product.category || "");
+    setPrice(String(product.price ?? ""));
+    setQuantity(String(product.quantity ?? ""));
+    setImage(null);
+    setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteProduct = async (product) => {
+    if (!product?._id || !window.confirm(`Delete "${product.name}"?`)) return;
+
+    try {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/products/${product._id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.message || "Failed to delete product");
+        return;
+      }
+
+      setProducts((prev) => prev.filter((p) => p._id !== product._id));
+      setModalProduct(null);
+    } catch {
+      alert("Network error while deleting product");
+    }
+  };
+
+  /* ================= ADD / EDIT PRODUCT ================= */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
 
-    if (!name || !image || !category || !price || !quantity) {
+    if (!name || !category || !price || quantity === "") {
       alert("All fields required");
       return;
     }
 
     setSubmitting(true);
 
-    const compressed = await compressImage(image);
-    const fd = new FormData();
-    const blob = await fetch(compressed).then((r) => r.blob());
-
-    fd.append("image", blob, image.name);
-    fd.append("name", name.trim());
-    fd.append("description", description.trim());
-    fd.append("category", category.trim());
-    fd.append("price", parseFloat(price));
-    fd.append("quantity", parseInt(quantity));
-
     try {
-      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products", {
-        method: "POST",
-        body: fd,
-        credentials: "include",
-      });
+      let res;
+      if (editingProduct) {
+        res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/products/${editingProduct._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            description: description.trim(),
+            category: category.trim(),
+            price: Number(price),
+            quantity: Number(quantity),
+          }),
+          credentials: "include",
+        });
+      } else {
+        if (!image) {
+          alert("Product image is required");
+          setSubmitting(false);
+          return;
+        }
+
+        const compressed = await compressImage(image);
+        const fd = new FormData();
+        const blob = await fetch(compressed).then((r) => r.blob());
+
+        fd.append("image", blob, image.name);
+        fd.append("name", name.trim());
+        fd.append("description", description.trim());
+        fd.append("category", category.trim());
+        fd.append("price", Number(price));
+        fd.append("quantity", Number(quantity));
+
+        res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products", {
+          method: "POST",
+          body: fd,
+          credentials: "include",
+        });
+      }
 
       const data = await res.json();
 
       if (res.ok && data.success) {
-        alert("Product added!");
-        setName("");
-        setDescription("");
-        setCategory("");
-        setPrice("");
-        setQuantity("");
-        setImage(null);
+        alert(editingProduct ? "Product updated!" : "Product added!");
+        resetForm();
         setShowAddForm(false);
         fetchAll();
       } else {
         alert(data.message || "Failed");
       }
+    } catch {
+      alert("Network error while saving product");
     } finally {
       setSubmitting(false);
     }
@@ -202,8 +264,15 @@ export default function Seller() {
         {/* CONTROLS */}
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Inventory Management</h2>
-          <button 
-            onClick={() => setShowAddForm(!showAddForm)}
+          <button
+            onClick={() => {
+              if (showAddForm) {
+                setShowAddForm(false);
+                resetForm();
+              } else {
+                openAddForm();
+              }
+            }}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-full font-medium transition-all shadow-sm hover:shadow active:scale-95"
           >
             {showAddForm ? "Cancel" : <><PlusCircle size={20} /> Add New Product</>}
@@ -213,7 +282,9 @@ export default function Seller() {
         {/* ADD PRODUCT FORM */}
         {showAddForm && (
           <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 mb-12 animate-in fade-in slide-in-from-top-4 duration-300">
-            <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white border-b pb-4 dark:border-gray-700">Product Details</h3>
+            <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white border-b pb-4 dark:border-gray-700">
+              {editingProduct ? "Edit Product" : "Product Details"}
+            </h3>
             
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
@@ -265,7 +336,9 @@ export default function Seller() {
                   <label className="flex items-center justify-center w-full p-4 bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
                     <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400 group-hover:text-green-600 transition-colors">
                       {image ? <ImageIcon size={24} className="text-green-500" /> : <UploadCloud size={24} />}
-                      <span className="font-medium">{image ? image.name : "Click to upload an image"}</span>
+                      <span className="font-medium">
+                        {image ? image.name : editingProduct ? "Image stays unchanged" : "Click to upload an image"}
+                      </span>
                     </div>
                     <input type="file" onChange={handleImageChange} className="hidden" accept="image/*" />
                   </label>
@@ -275,7 +348,7 @@ export default function Seller() {
 
             <div className="mt-8 flex justify-end">
               <button type="submit" disabled={submitting} className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex items-center gap-2">
-                {submitting ? "Uploading..." : "Publish Product"}
+                {submitting ? "Saving..." : editingProduct ? "Save Changes" : "Publish Product"}
               </button>
             </div>
           </form>
@@ -293,7 +366,7 @@ export default function Seller() {
                 <Package size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
                 <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Your inventory is empty</h3>
                 <p className="text-gray-500 mb-6">Start adding products to see them here.</p>
-                <button onClick={() => setShowAddForm(true)} className="bg-green-600 text-white px-6 py-2 rounded-full font-medium">Add First Product</button>
+                <button onClick={openAddForm} className="bg-green-600 text-white px-6 py-2 rounded-full font-medium">Add First Product</button>
               </div>
             ) : (
               Object.entries(byCategory).map(([cat, list]) => (
@@ -314,6 +387,8 @@ export default function Seller() {
                         key={p._id}
                         product={p}
                         onOpenDetail={setModalProduct}
+                        onEdit={startEdit}
+                        onDelete={handleDeleteProduct}
                       />
                     ))}
                   </div>
@@ -327,6 +402,8 @@ export default function Seller() {
           <ProductDetail
             product={modalProduct}
             onClose={() => setModalProduct(null)}
+            onEdit={startEdit}
+            onDelete={handleDeleteProduct}
           />
         )}
       </div>

@@ -1,6 +1,8 @@
 // src/pages/ExpertDashboard.jsx
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Leaf,
   Bug,
@@ -13,12 +15,16 @@ import {
 } from "lucide-react";
 
 export default function ExpertDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const isExpert = user?.role === "expert";
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [view, setView] = useState("dashboard");
   const [loading, setLoading] = useState(false);
 
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
+    if (!isExpert) return;
     setLoading(true);
     try {
       const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/tickets/expert", {
@@ -28,16 +34,26 @@ export default function ExpertDashboard() {
         const data = await res.json();
         setTickets(data);
       }
-    } catch (err) {
+    } catch {
       console.error("Failed to load tickets");
     } finally {
       setLoading(false);
     }
-  };
+  }, [isExpert]);
 
   useEffect(() => {
+    if (!user) {
+      navigate("/signin");
+      return;
+    }
+
+    if (!isExpert) {
+      navigate("/");
+      return;
+    }
+
     fetchTickets();
-  }, []);
+  }, [fetchTickets, isExpert, navigate, user]);
 
   const viewTicket = (ticket) => {
     setSelectedTicket(ticket);
@@ -65,7 +81,7 @@ export default function ExpertDashboard() {
       } else {
         alert("Failed to resolve ticket");
       }
-    } catch (err) {
+    } catch {
       alert("Network error");
     }
   };
@@ -89,6 +105,8 @@ export default function ExpertDashboard() {
       t.status === "Resolved" &&
       new Date(t.resolved_at).toDateString() === new Date().toDateString()
   ).length;
+
+  if (!isExpert) return null;
 
   return (
     <div className="min-h-screen bg-white pt-20">

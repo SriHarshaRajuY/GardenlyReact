@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext"; // NEW IMPORT
 import { FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 
-export default function ProductDetail({ product, onClose }) {
+export default function ProductDetail({ product, onClose, onEdit, onDelete }) {
   const { user } = useAuth();
   const { addToCart } = useCart(); // NEW
   const isSeller = user?.role === "seller";
@@ -23,15 +23,13 @@ export default function ProductDetail({ product, onClose }) {
     : "/images/placeholder.png";
 
   const handleEdit = () => {
+    onEdit?.(product);
     onClose();
-    // Trigger edit from parent if passed
   };
 
   const handleDelete = () => {
-    if (confirm("Delete this product?")) {
-      // Trigger delete from parent if passed
-      onClose();
-    }
+    onDelete?.(product);
+    onClose();
   };
 
   return (
@@ -51,22 +49,26 @@ export default function ProductDetail({ product, onClose }) {
           <FaTimes />
         </button>
 
-        {isSeller && (
+        {isSeller && (onEdit || onDelete) && (
           <div className="absolute top-4 left-4 flex gap-2">
-            <button
-              onClick={handleEdit}
-              className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600"
-              title="Edit Product"
-            >
-              <FaEdit />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
-              title="Delete Product"
-            >
-              <FaTrash />
-            </button>
+            {onEdit && (
+              <button
+                onClick={handleEdit}
+                className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600"
+                title="Edit Product"
+              >
+                <FaEdit />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+                title="Delete Product"
+              >
+                <FaTrash />
+              </button>
+            )}
           </div>
         )}
 
@@ -98,12 +100,15 @@ export default function ProductDetail({ product, onClose }) {
               ₹{product.price.toFixed(2)}
             </div>
 
-            <button 
-              onClick={() => addToCart(product._id)} // MODIFIED
-              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-all w-full mb-4"
-            >
-              Add to Cart
-            </button>
+            {!isSeller && (
+              <button
+                onClick={() => addToCart(product._id)}
+                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-all w-full mb-4 disabled:opacity-50"
+                disabled={product.quantity <= 0}
+              >
+                {product.quantity > 0 ? "Add to Cart" : "Out of Stock"}
+              </button>
+            )}
 
             {/* Additional seller info */}
             {isSeller && (

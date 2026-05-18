@@ -40,7 +40,7 @@ export default function SearchResults() {
         } else {
           setResults(data.products || []);
         }
-      } catch (err) {
+      } catch {
         setError("Network error while searching");
         setResults([]);
       } finally {

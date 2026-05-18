@@ -133,13 +133,15 @@ export default function ProductCard({
           </div>
         )}
 
-        <button
-          onClick={handleAddToCart}
-          className="mt-4 bg-green-700 text-white text-sm px-4 py-2 rounded-md hover:bg-green-800 transition-all w-full disabled:opacity-50"
-          disabled={product.quantity <= 0}
-        >
-          {product.quantity > 0 ? "Add To Cart" : "Out of Stock"}
-        </button>
+        {!isSeller && (
+          <button
+            onClick={handleAddToCart}
+            className="mt-4 bg-green-700 text-white text-sm px-4 py-2 rounded-md hover:bg-green-800 transition-all w-full disabled:opacity-50"
+            disabled={product.quantity <= 0}
+          >
+            {product.quantity > 0 ? "Add To Cart" : "Out of Stock"}
+          </button>
+        )}
       </div>
     </div>
   );

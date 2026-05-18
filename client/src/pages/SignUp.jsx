@@ -1,5 +1,5 @@
 // src/pages/SignUp.jsx
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaUserTag, FaEnvelope, FaPhone, FaHome, FaCheckCircle } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
@@ -47,7 +47,7 @@ export default function SignUp() {
     roleRef.current = form.role;
   }, [form.role]);
 
-  const handlePostLoginNavigation = (loggedInUserRole) => {
+  const handlePostLoginNavigation = useCallback((loggedInUserRole) => {
     const role = (loggedInUserRole || "").toLowerCase();
     switch (role) {
       case "expert":
@@ -65,7 +65,7 @@ export default function SignUp() {
       default:
         navigate("/");
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
@@ -100,7 +100,7 @@ export default function SignUp() {
               setError("Please sign in to complete 2FA verification.");
               navigate("/signin");
             } else {
-              login(data.token);
+              login(data.token, data.user);
               handlePostLoginNavigation(data.user.role);
             }
           } catch {
@@ -131,7 +131,7 @@ export default function SignUp() {
     document.body.appendChild(script);
 
     return () => { cancelled = true; };
-  }, [login, navigate]);
+  }, [handlePostLoginNavigation, login, navigate]);
 
   const validate = () => {
     if (!/^[a-zA-Z0-9_-]{3,20}$/.test(form.username)) return "Invalid username (3-20 chars, letters, numbers, _, -)";

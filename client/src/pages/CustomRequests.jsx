@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { 
   PackageOpen, 
@@ -15,6 +15,9 @@ import {
 
 export default function CustomRequests() {
   const { user } = useAuth();
+  const isBuyer = user?.role === "buyer";
+  const isSeller = user?.role === "seller";
+  const canUseCustomRequests = isBuyer || isSeller;
   
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,17 +30,17 @@ export default function CustomRequests() {
   const [proposalMessage, setProposalMessage] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchRequests();
-    }
-  }, [user]);
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     setLoading(true);
+    if (!canUseCustomRequests) {
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const baseUrl = (import.meta.env.VITE_BACKEND_URL || '').trim();
-      const url = user.role === "seller" ? `${baseUrl}/api/custom-requests/open` : `${baseUrl}/api/custom-requests/my-requests`;
+      const url = isSeller ? `${baseUrl}/api/custom-requests/open` : `${baseUrl}/api/custom-requests/my-requests`;
       const res = await fetch(url, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
@@ -48,15 +51,41 @@ export default function CustomRequests() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [canUseCustomRequests, isSeller]);
+
+  useEffect(() => {
+    if (user) {
+      fetchRequests();
+    }
+  }, [user, fetchRequests]);
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
+    if (!isBuyer) return;
+
+    const cleanTitle = title.trim();
+    const cleanDescription = description.trim();
+    const parsedBudget = budget === "" ? 0 : Number(budget);
+
+    if (!cleanTitle || !cleanDescription) {
+      alert("Please enter a title and description.");
+      return;
+    }
+
+    if (!Number.isFinite(parsedBudget) || parsedBudget < 0) {
+      alert("Budget must be a non-negative number.");
+      return;
+    }
+
     try {
       const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/custom-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, budget: Number(budget) }),
+        body: JSON.stringify({
+          title: cleanTitle,
+          description: cleanDescription,
+          budget: parsedBudget,
+        }),
         credentials: "include"
       });
       if (res.ok) {
@@ -75,12 +104,21 @@ export default function CustomRequests() {
 
   const handleSubmitProposal = async (e) => {
     e.preventDefault();
-    if (!selectedRequest) return;
+    if (!isSeller || !selectedRequest) return;
+
+    const cleanMessage = proposalMessage.trim();
+    const price = Number(proposalPrice);
+
+    if (!cleanMessage || !Number.isFinite(price) || price <= 0) {
+      alert("Please enter a valid proposal message and price.");
+      return;
+    }
+
     try {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/custom-requests/${selectedRequest}/proposals`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ price: Number(proposalPrice), message: proposalMessage }),
+        body: JSON.stringify({ price, message: cleanMessage }),
         credentials: "include"
       });
       const data = await res.json();
@@ -99,6 +137,7 @@ export default function CustomRequests() {
   };
 
   const handleAcceptProposal = async (requestId, proposalId) => {
+    if (!isBuyer) return;
     if (!window.confirm("Accepting this proposal will confirm the deal and share contact details via email. Proceed?")) return;
     try {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/custom-requests/${requestId}/proposals/${proposalId}/accept`, {
@@ -126,6 +165,18 @@ export default function CustomRequests() {
     );
   }
 
+  if (!canUseCustomRequests) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="text-center p-12 bg-white dark:bg-gray-900 rounded-3xl shadow-xl">
+          <PackageOpen size={64} className="mx-auto text-gray-300 mb-4" />
+          <h2 className="text-2xl font-bold">Custom Requests Unavailable</h2>
+          <p className="text-gray-500 mt-2">Custom requests are available to buyers and sellers.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#fcfdfc] dark:bg-gray-950 pt-24 pb-20">
       <div className="max-w-6xl mx-auto px-6">
@@ -139,11 +190,11 @@ export default function CustomRequests() {
             <div>
               <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">Custom Market</h1>
               <p className="text-gray-500 dark:text-gray-400 font-medium">
-                {user.role === "seller" ? "Bid on exclusive buyer requirements." : "Get quotes for your unique plant needs."}
+                {isSeller ? "Bid on exclusive buyer requirements." : "Get quotes for your unique plant needs."}
               </p>
             </div>
           </div>
-          {user.role !== "seller" && (
+          {isBuyer && (
             <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-full border border-green-100 dark:border-green-800">
                <Sparkles className="text-green-600 w-5 h-5" />
                <span className="text-green-700 dark:text-green-400 text-sm font-bold">Personalized Sourcing</span>
@@ -155,7 +206,7 @@ export default function CustomRequests() {
           
           {/* Sidebar / Post Form */}
           <div className="lg:col-span-1">
-            {user.role !== "seller" ? (
+            {isBuyer ? (
               <div className="bg-white dark:bg-gray-900 p-8 rounded-[2rem] shadow-xl shadow-gray-100 dark:shadow-none border border-gray-100 dark:border-gray-800 sticky top-28">
                 <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <PlusCircle className="text-green-600" size={24} /> Post Requirement
@@ -166,7 +217,7 @@ export default function CustomRequests() {
                     <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Rare Philodendron" className="w-full p-4 border dark:border-gray-700 dark:bg-gray-800 rounded-2xl focus:ring-2 focus:ring-green-500 outline-none transition" />
                   </div>
                   <div>
-                    <label className="block text-xs font-black uppercase text-gray-400 mb-1.5 ml-1">Budget (₹)</label>
+                    <label className="block text-xs font-black uppercase text-gray-400 mb-1.5 ml-1">Budget (Rs.)</label>
                     <div className="relative">
                       <IndianRupee className="absolute left-4 top-4 text-gray-400" size={18} />
                       <input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="1000" className="w-full p-4 pl-12 border dark:border-gray-700 dark:bg-gray-800 rounded-2xl focus:ring-2 focus:ring-green-500 outline-none transition" />
@@ -197,7 +248,7 @@ export default function CustomRequests() {
           <div className="lg:col-span-2 space-y-8">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                {user.role === "seller" ? "Available Opportunities" : "My Active Requests"}
+                {isSeller ? "Available Opportunities" : "My Active Requests"}
               </h2>
               <button onClick={fetchRequests} className="text-sm font-bold text-green-600 hover:text-green-700">Refresh Feed</button>
             </div>
@@ -231,7 +282,7 @@ export default function CustomRequests() {
                           </div>
                         </div>
                       </div>
-                      {user.role === "seller" && req.status === "Open" && selectedRequest !== req._id && (
+                      {isSeller && req.status === "Open" && selectedRequest !== req._id && (
                         <button onClick={() => setSelectedRequest(req._id)} className="bg-gray-900 text-white dark:bg-green-600 px-5 py-2 rounded-xl text-sm font-bold hover:scale-105 transition">
                           Bid Now
                         </button>
@@ -254,7 +305,7 @@ export default function CustomRequests() {
                               <input type="text" required value={proposalMessage} onChange={(e) => setProposalMessage(e.target.value)} placeholder="What can you offer?" className="w-full p-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-900 outline-none focus:ring-2 focus:ring-green-600" />
                             </div>
                             <div>
-                              <input type="number" required value={proposalPrice} onChange={(e) => setProposalPrice(e.target.value)} placeholder="₹ Price" className="w-full p-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-900 outline-none focus:ring-2 focus:ring-green-600" />
+                              <input type="number" required value={proposalPrice} onChange={(e) => setProposalPrice(e.target.value)} placeholder="Rs. Price" className="w-full p-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-900 outline-none focus:ring-2 focus:ring-green-600" />
                             </div>
                           </div>
                           <div className="flex gap-3 justify-end">
@@ -266,7 +317,7 @@ export default function CustomRequests() {
                     )}
 
                     {/* Proposals List for Buyer */}
-                    {user.role !== "seller" && req.proposals && req.proposals.length > 0 && (
+                    {isBuyer && req.proposals && req.proposals.length > 0 && (
                       <div className="mt-4">
                         <div className="flex items-center gap-2 mb-4">
                            <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
@@ -286,7 +337,7 @@ export default function CustomRequests() {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-                                  <div className="text-green-600 font-black text-xl">₹{p.price}</div>
+                                  <div className="text-green-600 font-black text-xl">Rs. {p.price}</div>
                                   {p.status === "Pending" && req.status === "Open" ? (
                                     <button onClick={() => handleAcceptProposal(req._id, p._id)} className="bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-black hover:bg-green-700 hover:scale-105 transition shadow-lg shadow-green-100 dark:shadow-none flex items-center gap-2">
                                       Accept <ChevronRight size={16} />

@@ -49,7 +49,7 @@ export default function Cart() {
     setBilling((prev) => ({ ...prev, [name]: value }));
   };
 
-  const cartItems = cart?.items || [];
+  const cartItems = useMemo(() => cart?.items || [], [cart]);
 
   const total = useMemo(
     () =>
@@ -94,6 +94,12 @@ export default function Cart() {
       return;
     }
 
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID?.trim();
+    if (!razorpayKey) {
+      alert("Razorpay is not configured. Add VITE_RAZORPAY_KEY_ID in client/.env.");
+      return;
+    }
+
     const res = await loadRazorpay();
     if (!res) {
       alert("Razorpay SDK failed to load. Are you online?");
@@ -106,30 +112,35 @@ export default function Cart() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ amount: total }),
+        body: JSON.stringify({ ...billing }),
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) throw new Error(orderData.message);
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID?.trim() || "rzp_test_placeholder",
-        amount: orderData.order.amount,
+        key: razorpayKey,
+        amount: orderData.razorpayOrder.amount,
         currency: "INR",
         name: "Gardenly",
         description: "Plant Purchase",
-        order_id: orderData.order.id,
+        order_id: orderData.razorpayOrder.id,
         handler: async (response) => {
           const verifyRes = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/orders/verify-razorpay-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify(response),
+            body: JSON.stringify({ orderId: orderData.orderId, ...response }),
           });
+          const verifyData = await verifyRes.json().catch(() => ({}));
           if (verifyRes.ok) {
-            alert("Payment successful! Placing your order...");
-            await finalizeOrder(response.razorpay_payment_id);
+            alert("Payment successful! Order placed.");
+            setShowBilling(false);
+            setStep("form");
+            setOrderId(null);
+            setOtp("");
+            await fetchCart();
           } else {
-            alert("Payment verification failed");
+            alert(verifyData.message || "Payment verification failed");
           }
         },
         prefill: {
@@ -147,34 +158,6 @@ export default function Cart() {
       alert("Payment failed: " + err.message);
     } finally {
       setVerifying(false);
-    }
-  };
-
-  const finalizeOrder = async (paymentId) => {
-    try {
-      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/orders/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ...billing, address2: billing.address2 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      const finalRes = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/orders/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ orderId: data.orderId, otp: "PAYMENT_DONE", paymentId }),
-      });
-      if (finalRes.ok) {
-        alert("Order placed successfully!");
-        setShowBilling(false);
-        setStep("form");
-        await fetchCart();
-      }
-    } catch (err) {
-      alert("Order finalization failed: " + err.message);
     }
   };
 
@@ -198,7 +181,7 @@ export default function Cart() {
       setOrderId(data.orderId);
       setStep("otp");
       alert("OTP sent to your email");
-    } catch (err) {
+    } catch {
       alert("Network error");
     } finally {
       setSendingOtp(false);
@@ -221,7 +204,7 @@ export default function Cart() {
       setStep("form");
       setShowBilling(false);
       await fetchCart();
-    } catch (err) {
+    } catch {
       alert("Network error");
     } finally {
       setVerifying(false);
@@ -311,7 +294,7 @@ export default function Cart() {
                 <button type="button" onClick={() => setShowBilling(false)} className="text-gray-500 font-bold hover:text-gray-700">Cancel</button>
                 <div className="flex gap-4">
                   <button type="submit" disabled={sendingOtp} className="bg-amber-500 text-white px-6 py-3 rounded-full font-bold hover:bg-amber-600 transition flex items-center gap-2">
-                    {sendingOtp ? "Sending..." : "Cash on Delivery (OTP)"}
+                    {sendingOtp ? "Sending..." : "Place Order with OTP"}
                   </button>
                   <button type="button" onClick={handleRazorpayPayment} disabled={verifying} className="bg-green-600 text-white px-6 py-3 rounded-full font-bold hover:bg-green-700 transition flex items-center gap-2">
                     <FaCreditCard /> Pay with Razorpay

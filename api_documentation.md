@@ -1,123 +1,94 @@
-# Gardenly REST API Documentation (Complete Reference)
+# Gardenly REST API Reference
 
-This document provides a complete reference for all RESTful web services provided by the Gardenly platform.
+Base URL: `http://localhost:3000/api`
 
-## Base URL
-`http://localhost:3000/api`
+API documentation is also available from the running backend at `/api-docs`.
 
-## 1. Authentication & User Profile (B2C/B2B Core)
-Common endpoints for identity management.
+## Authentication and User Profile
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| POST | `/auth/signup` | Create a new account (Buyer, Seller, Admin, or Expert). |
-| POST | `/auth/signin` | Login to the platform. |
-| POST | `/auth/google` | Google OAuth integration. |
-| POST | `/auth/forgot-password` | Request password reset OTP. |
+| POST | `/auth/signup` | Create a public account as Buyer, Seller, or Expert. |
+| POST | `/auth/signin` | Sign in with username, password, and role. |
+| POST | `/auth/google` | Sign in or create a public account through Google. |
+| POST | `/auth/verify-email` | Verify a signup email OTP. |
+| POST | `/auth/forgot-password` | Request a password reset OTP. |
 | POST | `/auth/reset-password` | Reset password using OTP. |
-| POST | `/auth/logout` | Logout (clears session cookie). |
-| GET | `/auth/check` | Verify session authentication status. |
-| GET | `/user/me` | Get current logged-in user profile details. |
+| POST | `/auth/logout` | Clear the authenticated session cookie. |
+| GET | `/auth/check` | Check cookie authentication status. |
+| GET | `/user/me` | Get the current authenticated user profile. |
 
----
-
-## 2. B2C Services (Business-to-Consumer)
-Designed for Buyers to browse, shop, and manage requests.
-
-### Product Browsing & Search
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/products` | Get recent products (Paginated & Cached). |
-| GET | `/products/category/:category` | Get products by specific category (Cached). |
-| GET | `/products/search?q=...` | **Optimized Search:** Weighted relevance scoring across Name, Category, and Description. |
-
-### Shopping Cart & Ordering
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/cart` | View current shopping cart. |
-| POST | `/cart/add` | Add product to cart. |
-| PUT | `/cart/update` | Update item quantity in cart. |
-| DELETE | `/cart/remove/:productId` | Remove item from cart. |
-| POST | `/cart/checkout` | Initiate checkout process. |
-| POST | `/orders/send-otp` | Send verification OTP for order confirmation. |
-| POST | `/orders/verify-otp` | Finalize order after OTP verification. |
-
-### Custom Service Requests
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| POST | `/custom-requests` | Submit a new custom service/product request. |
-| GET | `/custom-requests/my-requests` | View all custom requests submitted by the user. |
-| PUT | `/custom-requests/:id/proposals/:pId/accept` | Accept a seller's proposal for a custom request. |
-
-### Support Tickets
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| POST | `/tickets/submit` | Submit a new support ticket (with attachment). |
-| GET | `/tickets/user` | View tickets submitted by the current user. |
-| GET | `/tickets/:id` | View detailed status of a specific ticket. |
-
----
-
-## 3. B2B Services (Business-to-Business)
-Designed for Sellers, Experts, and Delivery personnel.
-
-### Seller Inventory & Sales Management
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| POST | `/products` | Add a new product to the platform (Multipart/Image). |
-| PUT | `/products/:id` | Update existing product details. |
-| DELETE | `/products/:id` | Remove a product from the inventory. |
-| GET | `/products/seller` | View all products listed by the seller. |
-| GET | `/products/top-sales` | View best-selling products for the business. |
-| GET | `/products/recent-sales` | View latest sales activity. |
-| GET | `/seller/orders` | Manage orders placed for the seller's products. |
-| GET | `/seller/summary` | View business performance analytics (Revenue, Orders). |
-
-### Seller Lead Generation (Custom Requests)
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/custom-requests/open` | View all open buyer requests in the marketplace. |
-| POST | `/custom-requests/:id/proposals` | Submit a business proposal to fulfill a buyer's request. |
-
-### Expert Support Services
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/tickets/expert` | View support tickets assigned for expert resolution. |
-| POST | `/tickets/:id/resolve` | Provide expert resolution to a buyer's ticket. |
-
-### Delivery Logistics
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/delivery/agents` | View available delivery agents (Manager view). |
-| GET | `/delivery/stats` | View agent performance statistics. |
-
----
-
-## 4. Administrative Services (Platform-Level B2B)
-Full control endpoints for platform administrators.
+## Products
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/admin/dashboard` | Platform-wide health and business metrics. |
-| GET | `/admin/users` | List and manage all platform users (Buyers, Sellers, etc). |
-| DELETE | `/admin/users/:id` | Suspend or remove a user account. |
-| GET | `/admin/products` | Platform-wide inventory audit. |
-| DELETE | `/admin/products/:id` | Remove a product for policy violations. |
-| GET | `/admin/orders` | Monitor all platform transactions. |
-| GET | `/admin/tickets` | Manage all support activity. |
-| PATCH | `/admin/tickets/:id/resolve` | Administrative resolution of support issues. |
+| GET | `/products` | Get paginated recent products. |
+| GET | `/products/category/:category` | Get products by category. |
+| GET | `/products/search?q=...` | Search products using Solr relevance scoring. |
+| POST | `/products` | Add a product as a seller. |
+| PUT | `/products/:id` | Update a seller-owned product. |
+| DELETE | `/products/:id` | Delete a seller-owned product. |
+| GET | `/products/seller` | Get products owned by the current seller. |
+| GET | `/products/top-sales` | Get seller top-sales analytics. |
+| GET | `/products/recent-sales` | Get seller recent-sales analytics. |
 
----
+## Cart and Orders
 
-## 5. System & Testing
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| POST | `/test/send-test-email` | Verify SMTP configuration and email delivery. |
+| GET | `/cart` | Get the current buyer cart. |
+| POST | `/cart/add` | Add a product to the cart. |
+| PUT | `/cart/update` | Update item quantity. |
+| DELETE | `/cart/remove/:productId` | Remove an item from the cart. |
+| POST | `/orders/send-otp` | Create an OTP-backed order confirmation flow. |
+| POST | `/orders/verify-otp` | Confirm an OTP-backed order. |
+| POST | `/orders/create-razorpay-order` | Create a Razorpay test-mode order from the authenticated cart. |
+| POST | `/orders/verify-razorpay-payment` | Verify Razorpay payment signature and confirm the order. |
 
----
+## Custom Requests
 
-## Technical Specifications
-- **Format:** All requests and responses use `application/json` (except file uploads which use `multipart/form-data`).
-- **Security:** Statefull JWT authentication via HTTP-Only Cookies (`access_token`).
-- **Optimization:** High-traffic B2C endpoints are cached using **Redis** (78%+ speed improvement).
-- **Search:** Advanced Weighted Relevance scoring for optimized user search experience.
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/custom-requests` | Create a buyer custom request. |
+| GET | `/custom-requests/my-requests` | Get the current buyer's custom requests. |
+| GET | `/custom-requests/open` | Get open custom requests as a seller. |
+| POST | `/custom-requests/:id/proposals` | Submit a seller proposal. |
+| PUT | `/custom-requests/:id/proposals/:proposalId/accept` | Accept one proposal as the buyer. |
+
+## Support Tickets
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/tickets/submit` | Submit a buyer support ticket with optional image attachment. |
+| GET | `/tickets/user` | Get tickets submitted by the current buyer. |
+| GET | `/tickets/expert` | Get tickets assigned to the current expert. |
+| GET | `/tickets/:id` | Get a ticket as the requester, assigned expert, or admin. |
+| POST | `/tickets/:id/resolve` | Resolve an assigned ticket as an expert. |
+
+## Seller
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/seller/orders` | Get orders containing the seller's products. |
+| GET | `/seller/summary` | Get seller business summary metrics. |
+
+## Admin
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/admin/dashboard` | Get platform dashboard metrics. |
+| GET | `/admin/users` | List all users. |
+| DELETE | `/admin/users/:id` | Delete a user and related records. |
+| GET | `/admin/products` | List all products. |
+| DELETE | `/admin/products/:id` | Delete a product and related cart/search records. |
+| GET | `/admin/orders` | List all orders. |
+| GET | `/admin/tickets` | List all tickets. |
+| PATCH | `/admin/tickets/:id/resolve` | Resolve a ticket as admin. |
+
+## Notes
+
+- Authentication uses an httpOnly `access_token` cookie.
+- Production cross-site cookie deployments require CSRF headers on state-changing requests.
+- File upload endpoints require authentication.
+- Public signup cannot create admin users.
+- Product writes are restricted to sellers and product categories are validated server-side.

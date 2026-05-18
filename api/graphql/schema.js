@@ -14,6 +14,12 @@ export const schema = buildSchema(`
     Expert
   }
 
+  enum PublicUserRole {
+    Buyer
+    Seller
+    Expert
+  }
+
   enum TicketType {
     general
     technical
@@ -27,17 +33,11 @@ export const schema = buildSchema(`
 
   enum OrderStatus {
     pending_otp
+    pending_payment
     confirmed
-    cancelled
-  }
-
-  enum DeliveryStatus {
-    unassigned
-    assigned
-    picked_up
-    in_transit
+    shipped
     delivered
-    failed
+    cancelled
   }
 
   type PaginationInfo {
@@ -53,7 +53,7 @@ export const schema = buildSchema(`
     id: ID!
     username: String!
     email: String!
-    role: UserRole!
+    role: PublicUserRole!
     mobile: String
     expertise: String
     createdAt: DateTime
@@ -117,7 +117,6 @@ export const schema = buildSchema(`
     totalAmount: Float!
     totalAdminCommission: Float
     status: OrderStatus!
-    deliveryStatus: DeliveryStatus
     billing: BillingAddress
     createdAt: DateTime
     updatedAt: DateTime
@@ -209,7 +208,7 @@ export const schema = buildSchema(`
 
   input GoogleSigninInput {
     credential: String!
-    role: UserRole = Buyer
+    role: PublicUserRole = Buyer
   }
 
   input ProductFilterInput {
@@ -309,8 +308,6 @@ export const schema = buildSchema(`
     addToCart(input: CartItemInput!): Cart
     updateCartItem(input: CartItemInput!): Cart
     removeFromCart(productId: ID!): Cart
-    checkout: GenericResponse!
-
     sendOrderOtp(input: SendOrderOtpInput!): GenericResponse!
     verifyOrderOtp(input: VerifyOrderOtpInput!): GenericResponse!
 
@@ -386,8 +383,6 @@ export const rootValue = {
   addToCart: () => null,
   updateCartItem: () => null,
   removeFromCart: () => null,
-  checkout: () => ({ success: true, message: "Checkout placeholder" }),
-
   sendOrderOtp: () => ({ success: true, message: "OTP placeholder" }),
   verifyOrderOtp: () => ({ success: true, message: "Verify OTP placeholder" }),
 

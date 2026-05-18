@@ -18,7 +18,14 @@ dist-ssr/
 # Environment variables
 **/.env
 .env.*.local
-.env.example
+!.env.example
+!**/.env.example
+
+# Generated reports and runtime uploads
+coverage/
+client/coverage/
+api/uploads/
+api/logs/
 
 # Editor directories and files
 .vscode/*
@@ -33,4 +40,4 @@ dist-ssr/
 *.sln
 *.sw?
 .env
-api/testconnection.js
+api/testconnection.js

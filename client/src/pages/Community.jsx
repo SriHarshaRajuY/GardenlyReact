@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { 
   Camera, Heart, MessageCircle, Send, Plus, X, Sprout, 
   User, Clock, Hash, Globe, Filter, MoreVertical, 
@@ -27,9 +27,32 @@ export default function Community() {
   const [newComm, setNewComm] = useState({ name: "", description: "", category: "General", image: "" });
   const [commentText, setCommentText] = useState({});
 
+  const fetchCommunities = useCallback(async () => {
+    try {
+      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/community", { credentials: "include" });
+      const data = await res.json();
+      if (data.success) {
+        setCommunities({ joined: data.joined, suggested: data.suggested });
+        setActiveComm((current) =>
+          current || data.joined.find(c => c.name === "World Community") || data.joined[0] || null
+        );
+      }
+    } catch (err) { console.error(err); }
+  }, []);
+
+  const fetchPosts = useCallback(async (communityId) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/community/posts?communityId=${communityId}`, { credentials: "include" });
+      const data = await res.json();
+      if (data.success) setPosts(data.posts);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  }, []);
+
   useEffect(() => {
     fetchCommunities();
-  }, []);
+  }, [fetchCommunities]);
 
   useEffect(() => {
     if (activeComm) {
@@ -38,7 +61,7 @@ export default function Community() {
         socket.emit("join_post", activeComm._id); // Reusing 'join_post' as 'join_room'
       }
     }
-  }, [activeComm, socket]);
+  }, [activeComm, fetchPosts, socket]);
 
   useEffect(() => {
     if (socket) {
@@ -71,29 +94,6 @@ export default function Community() {
       };
     }
   }, [socket, activeComm]);
-
-  const fetchCommunities = async () => {
-    try {
-      const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/community", { credentials: "include" });
-      const data = await res.json();
-      if (data.success) {
-        setCommunities({ joined: data.joined, suggested: data.suggested });
-        if (data.joined.length > 0 && !activeComm) {
-          setActiveComm(data.joined.find(c => c.name === "World Community") || data.joined[0]);
-        }
-      }
-    } catch (err) { console.error(err); }
-  };
-
-  const fetchPosts = async (communityId) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/community/posts?communityId=${communityId}`, { credentials: "include" });
-      const data = await res.json();
-      if (data.success) setPosts(data.posts);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
 
   const handleJoin = async (id) => {
     try {

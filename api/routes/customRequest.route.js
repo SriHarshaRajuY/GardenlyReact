@@ -1,6 +1,9 @@
 import express from "express";
-import { verifyToken } from "../middleware/verifyToken.js";
-import { requireSeller } from "../middleware/verifyToken.js"; // Assume this exists or we verify inside
+import {
+  verifyToken,
+  requireBuyer,
+  requireSeller,
+} from "../middleware/verifyToken.js";
 import {
   createRequest,
   getBuyerRequests,
@@ -12,22 +15,30 @@ import { cacheMiddleware } from "../utils/cache.js";
 
 const router = express.Router();
 
-// Role check middleware inline if not exist
-const isSeller = (req, res, next) => {
-  if (req.user && req.user.role === "seller") {
-    next();
-  } else {
-    res.status(403).json({ success: false, message: "Only sellers can perform this action" });
-  }
-};
-
 // Buyer routes
-router.post("/", verifyToken, createRequest);
-router.get("/my-requests", verifyToken, cacheMiddleware("custom_requests", 300), getBuyerRequests);
-router.put("/:id/proposals/:proposalId/accept", verifyToken, acceptProposal);
+router.post("/", verifyToken, requireBuyer, createRequest);
+router.get(
+  "/my-requests",
+  verifyToken,
+  requireBuyer,
+  cacheMiddleware("custom_requests", 300),
+  getBuyerRequests
+);
+router.put(
+  "/:id/proposals/:proposalId/accept",
+  verifyToken,
+  requireBuyer,
+  acceptProposal
+);
 
 // Seller routes
-router.get("/open", verifyToken, isSeller, cacheMiddleware("open_requests", 300), getAllOpenRequests);
-router.post("/:id/proposals", verifyToken, isSeller, submitProposal);
+router.get(
+  "/open",
+  verifyToken,
+  requireSeller,
+  cacheMiddleware("open_requests", 300),
+  getAllOpenRequests
+);
+router.post("/:id/proposals", verifyToken, requireSeller, submitProposal);
 
 export default router;

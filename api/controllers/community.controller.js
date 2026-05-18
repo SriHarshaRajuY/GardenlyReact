@@ -2,6 +2,15 @@ import Community from "../models/community.model.js";
 import CommunityPost from "../models/communityPost.model.js";
 import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
+import { clearCache } from "../utils/cache.js";
+
+const clearCommunityCaches = async () => {
+  await Promise.all([
+    clearCache("communities"),
+    clearCache("posts"),
+    clearCache("user_profile"),
+  ]);
+};
 
 // --- Communities ---
 
@@ -20,6 +29,7 @@ export const createCommunity = async (req, res, next) => {
 
     // Add to user's joined list
     await User.findByIdAndUpdate(req.user.id, { $addToSet: { joinedCommunities: newCommunity._id } });
+    await clearCommunityCaches();
 
     res.status(201).json({ success: true, community: newCommunity });
   } catch (err) {
@@ -34,6 +44,7 @@ export const joinCommunity = async (req, res, next) => {
 
     await Community.findByIdAndUpdate(req.params.id, { $addToSet: { members: req.user.id } });
     await User.findByIdAndUpdate(req.user.id, { $addToSet: { joinedCommunities: req.params.id } });
+    await clearCommunityCaches();
 
     res.status(200).json({ success: true, message: "Joined successfully" });
   } catch (err) {
@@ -49,6 +60,7 @@ export const leaveCommunity = async (req, res, next) => {
 
     await Community.findByIdAndUpdate(req.params.id, { $pull: { members: req.user.id } });
     await User.findByIdAndUpdate(req.user.id, { $pull: { joinedCommunities: req.params.id } });
+    await clearCommunityCaches();
 
     res.status(200).json({ success: true, message: "Left successfully" });
   } catch (err) {
@@ -80,6 +92,7 @@ export const createPost = async (req, res, next) => {
       mediaType: mediaType || "none",
     });
     await newPost.save();
+    await clearCommunityCaches();
     res.status(201).json({ success: true, post: newPost });
   } catch (err) {
     next(err);
@@ -109,6 +122,7 @@ export const likePost = async (req, res, next) => {
     }
 
     await post.save();
+    await clearCommunityCaches();
     res.status(200).json({ success: true, likes: post.likes });
   } catch (err) {
     next(err);
@@ -119,15 +133,17 @@ export const commentOnPost = async (req, res, next) => {
   try {
     const post = await CommunityPost.findById(req.params.id);
     if (!post) return next(errorHandler(404, "Post not found"));
+    if (!req.body.text?.trim()) return next(errorHandler(400, "Comment text is required"));
 
     const comment = {
       userId: req.user.id,
       username: req.user.username || "Anonymous",
-      text: req.body.text,
+      text: req.body.text.trim(),
     };
 
     post.comments.push(comment);
     await post.save();
+    await clearCommunityCaches();
     res.status(201).json({ success: true, comments: post.comments });
   } catch (err) {
     next(err);
@@ -146,6 +162,7 @@ export const deletePost = async (req, res, next) => {
     }
 
     await CommunityPost.findByIdAndDelete(req.params.id);
+    await clearCommunityCaches();
     res.status(200).json({ success: true, message: "Post deleted" });
   } catch (err) {
     next(err);

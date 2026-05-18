@@ -10,14 +10,17 @@ const customRequestSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
     description: {
       type: String,
       required: true,
+      trim: true,
     },
     budget: {
       type: Number,
       default: 0,
+      min: 0,
     },
     status: {
       type: String,
@@ -30,8 +33,8 @@ const customRequestSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
         },
-        price: Number,
-        message: String,
+        price: { type: Number, min: 0, required: true },
+        message: { type: String, trim: true, required: true },
         status: {
           type: String,
           enum: ["Pending", "Accepted", "Rejected"],

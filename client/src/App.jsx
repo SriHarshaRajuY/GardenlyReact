@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { SocketProvider } from "./context/SocketContext";
+import SocketProvider from "./context/SocketProvider";
 
 /* Loading Component */
 const LoadingSpinner = () => (

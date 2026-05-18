@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SignIn from './SignIn';
 import * as AuthContext from '../context/AuthContext';
@@ -52,8 +52,6 @@ describe('SignIn Page Component', () => {
     // Find inputs by their type or role since they don't have placeholders
     const inputs = screen.getAllByRole('textbox');
     const usernameInput = inputs[0]; 
-    const passwordInput = screen.getByLabelText ? screen.queryByLabelText('Password') : null;
-    
     fireEvent.change(usernameInput, { target: { value: 'testuser' } });
     expect(usernameInput.value).toBe('testuser');
   });

@@ -3,13 +3,21 @@ import mongoose from "mongoose";
 
 const ticketSchema = new mongoose.Schema(
   {
-    requester: { type: String, required: true }, // buyer username
-    subject: { type: String, required: true },
+    requester: { type: String, required: true, trim: true }, // buyer username
+    subject: { type: String, required: true, trim: true },
     // 'general', 'technical', 'billing'
-    type: { type: String, required: true },
-    description: { type: String, required: true },
-    urgency: { type: String, default: "Normal (24h)" },
-    status: { type: String, default: "Open" }, // 'Open' | 'Resolved'
+    type: {
+      type: String,
+      enum: ["general", "technical", "billing"],
+      required: true,
+    },
+    description: { type: String, required: true, trim: true },
+    urgency: {
+      type: String,
+      enum: ["Normal (24h)", "High (12h)"],
+      default: "Normal (24h)",
+    },
+    status: { type: String, enum: ["Open", "Resolved"], default: "Open" },
     expert_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     attachment: { type: String }, // base64 data URL
     resolution: { type: String },

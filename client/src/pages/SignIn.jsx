@@ -1,5 +1,5 @@
 // src/pages/SignIn.jsx
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaLock, FaUserTag, FaHome, FaEnvelope, FaShieldAlt } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
@@ -39,6 +39,7 @@ export default function SignIn() {
   const navigate = useNavigate();
   const googleBtnRef = useRef(null);
   const roleRef = useRef("");
+  const apiBase = (import.meta.env.VITE_BACKEND_URL || "").trim();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -67,7 +68,7 @@ export default function SignIn() {
     roleRef.current = role;
   }, [role]);
 
-  const handlePostLoginNavigation = (loggedInUserRole) => {
+  const handlePostLoginNavigation = useCallback((loggedInUserRole) => {
     const role = (loggedInUserRole || "").toLowerCase();
     switch (role) {
       case "expert":
@@ -85,7 +86,7 @@ export default function SignIn() {
       default:
         navigate("/");
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
@@ -99,13 +100,18 @@ export default function SignIn() {
         callback: async (response) => {
           try {
             setError("");
+            if (!roleRef.current || roleRef.current === "Admin") {
+              setError("Select Buyer, Seller, or Expert before using Google sign in.");
+              return;
+            }
+
             const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/auth/google", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",
               body: JSON.stringify({
                 credential: response.credential,
-                role: roleRef.current || "Buyer",
+                role: roleRef.current,
               }),
             });
             const data = await res.json();
@@ -117,7 +123,7 @@ export default function SignIn() {
               setTempEmail(data.email);
               setAuthStep("VERIFY_2FA");
             } else {
-              login(data.token);
+              login(data.token, data.user);
               handlePostLoginNavigation(data.user.role);
             }
           } catch {
@@ -148,7 +154,7 @@ export default function SignIn() {
     document.body.appendChild(script);
 
     return () => { cancelled = true; };
-  }, [login, navigate]);
+  }, [handlePostLoginNavigation, login]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -181,7 +187,7 @@ export default function SignIn() {
         return;
       }
 
-      login(data.token);
+      login(data.token, data.user);
       handlePostLoginNavigation(data.user.role);
     } catch {
       setError("Server error");
@@ -193,7 +199,7 @@ export default function SignIn() {
     setError("");
     if (!otp) return setError("Please enter the OTP");
 
-    const endpoint = authStep === "VERIFY_EMAIL" ? "/api/auth/verify-email" : "/api/auth/verify-2fa";
+    const endpoint = `${apiBase}${authStep === "VERIFY_EMAIL" ? "/api/auth/verify-email" : "/api/auth/verify-2fa"}`;
     
     try {
       const res = await fetch(endpoint, {
@@ -211,7 +217,7 @@ export default function SignIn() {
         setAuthStep("LOGIN");
         setOtp("");
       } else {
-        login(data.token);
+        login(data.token, data.user);
         handlePostLoginNavigation(data.user.role);
       }
     } catch {

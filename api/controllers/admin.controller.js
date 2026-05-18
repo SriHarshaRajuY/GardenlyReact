@@ -6,7 +6,32 @@ import Blog from "../models/blog.model.js";
 import Community from "../models/community.model.js";
 import CommunityPost from "../models/communityPost.model.js";
 import CustomRequest from "../models/customRequest.model.js";
+import Cart from "../models/cart.model.js";
 import { errorHandler } from "../utils/error.js";
+import { clearCache } from "../utils/cache.js";
+import { deleteFromSolr } from "../utils/solr.js";
+
+const clearDataCaches = async () => {
+  await Promise.all([
+    clearCache("user_profile"),
+    clearCache("cart"),
+    clearCache("products"),
+    clearCache("products:category"),
+    clearCache("products:search"),
+    clearCache("seller_products"),
+    clearCache("top_sales"),
+    clearCache("recent_sales"),
+    clearCache("blogs"),
+    clearCache("blog"),
+    clearCache("communities"),
+    clearCache("posts"),
+    clearCache("custom_requests"),
+    clearCache("open_requests"),
+    clearCache("user_tickets"),
+    clearCache("expert_tickets"),
+    clearCache("ticket"),
+  ]);
+};
 
 /* ================= ADMIN DASHBOARD ================= */
 export const getAdminDashboard = async (req, res, next) => {
@@ -26,7 +51,7 @@ export const getAdminDashboard = async (req, res, next) => {
       User.countDocuments({ role: "Admin" }),
       Product.countDocuments(),
       Order.countDocuments(),
-      Order.countDocuments({ status: "pending_otp" }),
+      Order.countDocuments({ status: { $in: ["pending_otp", "pending_payment"] } }),
       Order.countDocuments({ status: "confirmed" }),
       Order.countDocuments({ status: "cancelled" }),
       Ticket.countDocuments(),
@@ -82,8 +107,58 @@ export const getAllUsers = async (req, res, next) => {
 /* ================= DELETE USER ================= */
 export const deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) return next(errorHandler(404, "User not found"));
+
+    const sellerProducts = await Product.find({ seller_id: user._id }).select("_id");
+    const productIds = sellerProducts.map((product) => product._id);
+    const adminCommunities = await Community.find({ adminId: user._id }).select("_id");
+    const communityIds = adminCommunities.map((community) => community._id);
+
+    await Promise.all([
+      Cart.deleteOne({ user_id: user._id }),
+      productIds.length
+        ? Cart.updateMany(
+            { "items.product": { $in: productIds } },
+            { $pull: { items: { product: { $in: productIds } } } }
+          )
+        : Promise.resolve(),
+      productIds.length ? Product.deleteMany({ _id: { $in: productIds } }) : Promise.resolve(),
+      Community.updateMany(
+        { members: user._id },
+        { $pull: { members: user._id } }
+      ),
+      communityIds.length ? Community.deleteMany({ _id: { $in: communityIds } }) : Promise.resolve(),
+      communityIds.length ? CommunityPost.deleteMany({ communityId: { $in: communityIds } }) : Promise.resolve(),
+      CommunityPost.deleteMany({ userId: user._id }),
+      CommunityPost.updateMany(
+        { $or: [{ likes: user._id }, { "comments.userId": user._id }] },
+        { $pull: { likes: user._id, comments: { userId: user._id } } }
+      ),
+      Blog.updateMany(
+        { $or: [{ likes: user._id }, { "comments.userId": user._id }] },
+        { $pull: { likes: user._id, comments: { userId: user._id } } }
+      ),
+      CustomRequest.deleteMany({ buyer_id: user._id }),
+      CustomRequest.updateMany(
+        { "proposals.seller_id": user._id },
+        { $pull: { proposals: { seller_id: user._id } } }
+      ),
+      Ticket.deleteMany({
+        $or: [{ requester: user.username }, { expert_id: user._id }],
+      }),
+    ]);
+
+    await Promise.all(
+      productIds.map((productId) =>
+        deleteFromSolr(String(productId)).catch((err) =>
+          console.error("Failed to delete product from Solr:", err.message)
+        )
+      )
+    );
+
+    await User.findByIdAndDelete(user._id);
+    await clearDataCaches();
     res.json({ success: true, message: "User deleted successfully" });
   } catch (err) {
     next(errorHandler(500, "Failed to delete user"));
@@ -105,6 +180,14 @@ export const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return next(errorHandler(404, "Product not found"));
+    await Cart.updateMany(
+      { "items.product": req.params.id },
+      { $pull: { items: { product: req.params.id } } }
+    );
+    await deleteFromSolr(req.params.id).catch((err) =>
+      console.error("Failed to delete product from Solr:", err.message)
+    );
+    await clearDataCaches();
     res.json({ success: true, message: "Product deleted successfully" });
   } catch (err) {
     next(errorHandler(500, "Failed to delete product"));
@@ -146,6 +229,7 @@ export const resolveTicket = async (req, res, next) => {
       { new: true }
     );
     if (!ticket) return next(errorHandler(404, "Ticket not found"));
+    await clearDataCaches();
     res.json({ success: true, message: "Ticket resolved", ticket });
   } catch (err) {
     next(errorHandler(500, "Failed to resolve ticket"));
@@ -167,6 +251,7 @@ export const deleteBlog = async (req, res, next) => {
   try {
     const blog = await Blog.findByIdAndDelete(req.params.id);
     if (!blog) return next(errorHandler(404, "Blog not found"));
+    await clearDataCaches();
     res.json({ success: true, message: "Blog deleted successfully" });
   } catch (err) {
     next(errorHandler(500, "Failed to delete blog"));
@@ -190,6 +275,11 @@ export const deleteCommunity = async (req, res, next) => {
     if (!community) return next(errorHandler(404, "Community not found"));
     // Also delete all posts associated with this community
     await CommunityPost.deleteMany({ communityId: req.params.id });
+    await User.updateMany(
+      { joinedCommunities: req.params.id },
+      { $pull: { joinedCommunities: req.params.id } }
+    );
+    await clearDataCaches();
     res.json({ success: true, message: "Community and its posts deleted successfully" });
   } catch (err) {
     next(errorHandler(500, "Failed to delete community"));
@@ -214,6 +304,7 @@ export const deletePost = async (req, res, next) => {
   try {
     const post = await CommunityPost.findByIdAndDelete(req.params.id);
     if (!post) return next(errorHandler(404, "Post not found"));
+    await clearDataCaches();
     res.json({ success: true, message: "Post deleted successfully" });
   } catch (err) {
     next(errorHandler(500, "Failed to delete post"));
@@ -237,6 +328,7 @@ export const deleteCustomRequest = async (req, res, next) => {
   try {
     const request = await CustomRequest.findByIdAndDelete(req.params.id);
     if (!request) return next(errorHandler(404, "Custom request not found"));
+    await clearDataCaches();
     res.json({ success: true, message: "Custom request deleted successfully" });
   } catch (err) {
     next(errorHandler(500, "Failed to delete custom request"));

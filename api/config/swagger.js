@@ -70,8 +70,6 @@ const openApiSpec = {
   tags: [
     { name: "Tickets" },
     { name: "CustomRequests" },
-    { name: "Delivery" },
-    { name: "Test" },
   ],
   components: {
     securitySchemes: {
@@ -185,7 +183,7 @@ const openApiSpec = {
           username: { type: "string", default: "john_doe" },
           email: { type: "string", default: "john@example.com" },
           password: { type: "string", default: "Secure@123" },
-          role: { type: "string", enum: ["Buyer", "Seller", "Admin", "Expert"], default: "Buyer" },
+          role: { type: "string", enum: ["Buyer", "Seller", "Expert"], default: "Buyer" },
           mobile: { type: "string", default: "9876543210" },
           expertise: { type: "string", enum: ["General", "Technical", "Billing"], default: "General" },
         },
@@ -204,7 +202,7 @@ const openApiSpec = {
         required: ["credential"],
         properties: {
           credential: { type: "string", default: "google_id_token_here" },
-          role: { type: "string", enum: ["Buyer", "Seller", "Admin", "Expert"], default: "Buyer" },
+          role: { type: "string", enum: ["Buyer", "Seller", "Expert"], default: "Buyer" },
         },
       },
       ForgotPasswordRequest: {
@@ -284,19 +282,12 @@ const openApiSpec = {
           message: { type: "string", default: "I can fulfill this request within 3 days." },
         },
       },
-      TestEmailRequest: {
-        type: "object",
-        required: ["email"],
-        properties: {
-          email: { type: "string", default: "john@example.com" },
-        },
-      },
       UpdateProductRequest: {
         type: "object",
         properties: {
           name: { type: "string", default: "Updated Aloe Vera" },
           description: { type: "string", default: "Updated description" },
-          category: { type: "string", default: "Succulent" },
+          category: { type: "string", enum: ["Plants", "Seeds", "Pots"], default: "Plants" },
           price: { type: "number", default: 349 },
           quantity: { type: "integer", default: 15 },
         },
@@ -462,7 +453,7 @@ const openApiSpec = {
                 properties: {
                   name: { type: "string", default: "Aloe Vera" },
                   description: { type: "string", default: "Low maintenance indoor plant" },
-                  category: { type: "string", default: "Succulent" },
+                  category: { type: "string", enum: ["Plants", "Seeds", "Pots"], default: "Plants" },
                   price: { type: "number", default: 299 },
                   quantity: { type: "integer", default: 10 },
                   image: { type: "string", format: "binary" },
@@ -619,14 +610,6 @@ const openApiSpec = {
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
     },
-    "/api/cart/checkout": {
-      post: {
-        tags: ["Cart"],
-        summary: "Checkout (buyer only)",
-        security: [{ cookieAuth: [] }],
-        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
-      },
-    },
     "/api/orders/send-otp": {
       post: {
         tags: ["Orders"],
@@ -771,7 +754,7 @@ const openApiSpec = {
           },
         },
         responses: {
-          200: { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/Ticket" } } } },
+          201: { description: "Created", content: { "application/json": { schema: { $ref: "#/components/schemas/Ticket" } } } },
           401: { $ref: "#/components/responses/Unauthorized" },
         },
       },
@@ -829,7 +812,7 @@ const openApiSpec = {
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
     },
-    "/api/custom-requests/": {
+    "/api/custom-requests": {
       post: {
         tags: ["CustomRequests"],
         summary: "Create a custom request (Buyer)",
@@ -838,7 +821,7 @@ const openApiSpec = {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/CreateCustomRequest" } } },
         },
-        responses: { 201: { description: "Created" }, 401: { $ref: "#/components/responses/Unauthorized" } },
+        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
       },
     },
     "/api/custom-requests/my-requests": {
@@ -880,33 +863,6 @@ const openApiSpec = {
           { in: "path", name: "proposalId", required: true, schema: { type: "string" } },
         ],
         responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
-      },
-    },
-    "/api/delivery/agents": {
-      get: {
-        tags: ["Delivery"],
-        summary: "Get all delivery agents",
-        security: [{ cookieAuth: [] }],
-        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
-      },
-    },
-    "/api/delivery/stats": {
-      get: {
-        tags: ["Delivery"],
-        summary: "Get delivery agent statistics",
-        security: [{ cookieAuth: [] }],
-        responses: { 200: { description: "OK" }, 401: { $ref: "#/components/responses/Unauthorized" } },
-      },
-    },
-    "/api/test/send-test-email": {
-      post: {
-        tags: ["Test"],
-        summary: "Send test OTP email",
-        requestBody: {
-          required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/TestEmailRequest" } } },
-        },
-        responses: { 200: { description: "OK" }, 400: { description: "Email is required" } },
       },
     },
   },

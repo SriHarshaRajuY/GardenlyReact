@@ -7,6 +7,7 @@ import { errorHandler } from "../utils/error.js";
 import { sendOtpMail, sendSignupVerificationMail, send2FAMail } from "../utils/mailer.js";  
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const PUBLIC_SIGNUP_ROLES = ["Buyer", "Seller", "Expert"];
 
 const buildAuthResponse = (res, user) => {
   const token = jwt.sign(
@@ -48,7 +49,9 @@ export const signup = async (req, res, next) => {
     if (!passwordRegex.test(password)) return next(errorHandler(400, "Password must be 8+ chars with uppercase, number, special char"));
     if (!emailRegex.test(email)) return next(errorHandler(400, "Invalid email format"));
     if (!mobileRegex.test(mobile)) return next(errorHandler(400, "Mobile must be 10 digits"));
-    if (!["Buyer", "Seller", "Admin", "Expert"].includes(role)) return next(errorHandler(400, "Invalid role"));
+    if (!PUBLIC_SIGNUP_ROLES.includes(role)) {
+      return next(errorHandler(400, "Invalid public signup role"));
+    }
 
     let finalExpertise = "General";
     if (role === "Expert") {
@@ -191,7 +194,7 @@ export const googleSignin = async (req, res, next) => {
     let user = await User.findOne({ email: String(email).toLowerCase() });
 
     if (!user) {
-      const safeRole = ["Buyer", "Seller", "Admin", "Expert"].includes(role) ? role : "Buyer";
+      const safeRole = PUBLIC_SIGNUP_ROLES.includes(role) ? role : "Buyer";
       const emailPrefix = (email.split("@")[0] || "user").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 12);
       let username = `${emailPrefix || "user"}_${Math.floor(100 + Math.random() * 900)}`;
       while (await User.findOne({ username })) username = `${emailPrefix || "user"}_${Math.floor(100 + Math.random() * 900)}`;
@@ -200,20 +203,22 @@ export const googleSignin = async (req, res, next) => {
       while (await User.findOne({ mobile })) mobile = `${Math.floor(1000000000 + Math.random() * 9000000000)}`;
 
       const tempPassword = bcrypt.hashSync(`google_${Date.now()}_${Math.random()}`, 10);
-        user = await User.create({
-          username, email, password: tempPassword, role: safeRole, mobile, expertise: safeRole === "Expert" ? "General" : "General",
-          isEmailVerified: true // Google accounts are considered verified
-        });
+      user = await User.create({
+        username, email, password: tempPassword, role: safeRole, mobile, expertise: safeRole === "Expert" ? "General" : "General",
+        isEmailVerified: true // Google accounts are considered verified
+      });
 
-        // Auto-join World Community
-        try {
-          const worldComm = await Community.findOne({ name: "World Community" });
-          if (worldComm) {
-            await Community.findByIdAndUpdate(worldComm._id, { $addToSet: { members: user._id } });
-            await User.findByIdAndUpdate(user._id, { $addToSet: { joinedCommunities: worldComm._id } });
-          }
-        } catch (e) { console.error("Auto-join failed:", e); }
-      }
+      // Auto-join World Community
+      try {
+        const worldComm = await Community.findOne({ name: "World Community" });
+        if (worldComm) {
+          await Community.findByIdAndUpdate(worldComm._id, { $addToSet: { members: user._id } });
+          await User.findByIdAndUpdate(user._id, { $addToSet: { joinedCommunities: worldComm._id } });
+        }
+      } catch (e) { console.error("Auto-join failed:", e); }
+    } else if (role && user.role.toLowerCase() !== String(role).toLowerCase()) {
+      return next(errorHandler(403, "Role mismatch. Please select correct role."));
+    }
 
     // Login success directly for Google users (they are already verified by Google)
     return buildAuthResponse(res, user);
