@@ -1,13 +1,13 @@
 # Gardenly
 
-Gardenly is a full-stack MERN marketplace for plants and gardening products. It includes buyer checkout, seller product management, community posts, blogs, custom buyer requests, expert support tickets, admin controls, Redis-backed caching, Solr product search, Cloudinary uploads, and Razorpay test-mode payment verification.
+Gardenly is a full-stack MERN marketplace for plants and gardening products. It includes buyer checkout, seller product management, community posts, blogs, custom buyer requests, expert support tickets, admin controls, Redis-backed caching, Cloudinary uploads, and Razorpay test-mode payment verification.
 
 ## Tech Stack
 
 - Backend: Node.js, Express, MongoDB, Mongoose, Socket.IO
 - Frontend: React, Vite, Tailwind CSS
 - Auth: JWT in httpOnly cookies, Google sign-in support
-- Storage and integrations: Cloudinary, Redis, Solr, Nodemailer, Razorpay
+- Storage and integrations: Cloudinary, Redis, Nodemailer, Razorpay
 - Testing: Jest, Supertest, Vitest, React Testing Library
 
 ## Repository Structure
@@ -26,7 +26,7 @@ client/.env.example  Frontend environment template
 - Node.js 20 or newer
 - MongoDB connection string
 - Redis instance
-- Solr core for product search
+
 - Cloudinary account
 - Email provider credentials for OTP and notifications
 - Razorpay test credentials for simulated/test payments
@@ -63,12 +63,12 @@ CLOUD_NAME
 CLOUD_API_KEY
 CLOUD_API_SECRET
 REDIS_URL
-SOLR_URL
+
 RAZORPAY_KEY_ID
 RAZORPAY_KEY_SECRET
 ```
 
-`MONGO_URI` and `JWT_SECRET` are validated at backend startup. The remaining integration values are required for their related features: Google sign-in, OTP email, Cloudinary uploads, Redis caching, Solr search, and Razorpay payments.
+`MONGO_URI` and `JWT_SECRET` are validated at backend startup. The remaining integration values are required for their related features: Google sign-in, OTP email, Cloudinary uploads, Redis caching, and Razorpay payments.
 
 Create a frontend env file from `client/.env.example`.
 
@@ -155,7 +155,7 @@ npm run client:build
 - Expert dashboard for assigned support tickets and resolutions
 - Admin dashboards for users, products, orders, tickets, blogs, community content, and custom requests
 - Blog and community modules with moderated admin write access
-- Product search through Solr and application caching through Redis
+- Product search through MongoDB and application caching through Redis
 
 ## Security Notes
 
@@ -170,7 +170,7 @@ npm run client:build
 - Set `CLIENT_ORIGIN` to the deployed frontend origin.
 - Set `VITE_BACKEND_URL` to the deployed backend origin before building the frontend.
 - If the frontend and backend are served through the included Nginx container, leave `VITE_BACKEND_URL` empty so browser API and Socket.IO calls use the same origin.
-- The Docker Compose stack sets container-local `REDIS_URL`, `SOLR_URL`, and `CLIENT_ORIGIN` defaults for the backend service.
+- The Docker Compose stack sets container-local `REDIS_URL` and `CLIENT_ORIGIN` defaults for the backend service.
 - For a separate frontend image build, pass public Vite build args when needed:
 
 ```bash
@@ -182,5 +182,5 @@ docker build -f Dockerfile.client \
 ```
 
 - Use Razorpay test keys unless you intentionally want live payment behavior.
-- Confirm Redis, Solr, Cloudinary, email, MongoDB, and Razorpay credentials are available in the deployment environment.
+- Confirm Redis, Cloudinary, email, MongoDB, and Razorpay credentials are available in the deployment environment.
 - Ensure `/api`, `/api-docs`, `/images`, `/uploads`, and `/socket.io` are routed to the backend when deploying behind a custom reverse proxy.

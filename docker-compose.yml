@@ -10,13 +10,11 @@ services:
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379
-      SOLR_URL: http://solr:8983/solr/gardenly
       CLIENT_ORIGIN: http://localhost
     ports:
       - "3000:3000"
     depends_on:
       - redis
-      - solr
     restart: unless-stopped
     networks:
       - gardenly-network
@@ -31,20 +29,6 @@ services:
       - "6379:6379"
     networks:
       - gardenly-network
-
-  # ===========================
-  # Solr (Search)
-  # ===========================
-  solr:
-    image: solr:latest
-    container_name: gardenly_solr
-    ports:
-      - "8983:8983"
-    networks:
-      - gardenly-network
-    command:
-      - solr-precreate
-      - gardenly
 
   # ===========================
   # Frontend (Vite React + Nginx)

@@ -13,7 +13,7 @@ dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const MONGO_URI = process.env.MONGO_URI;
 const REDIS_URL = process.env.REDIS_URL;
-const SOLR_URL = process.env.SOLR_URL;
+
 
 async function testMongo() {
   console.log("🔍 Testing MongoDB...");
@@ -55,24 +55,7 @@ async function testRedis() {
   }
 }
 
-async function testSolr() {
-  console.log("\n🔍 Testing Solr...");
-  if (!SOLR_URL) {
-    console.log("⚠️ Solr: No SOLR_URL found in .env");
-    return;
-  }
-  try {
-    const response = await fetch(`${SOLR_URL}/admin/ping?wt=json`);
-    if (response.ok) {
-      const data = await response.json();
-      console.log("✅ Solr: Connected successfully. Status:", data.status);
-    } else {
-      console.error("❌ Solr: Connection failed. HTTP Status:", response.status);
-    }
-  } catch (err) {
-    console.error("❌ Solr: Connection failed.", err.message);
-  }
-}
+
 
 async function runTests() {
   console.log("========================================");
@@ -81,7 +64,7 @@ async function runTests() {
   
   await testMongo();
   await testRedis();
-  await testSolr();
+
   
   console.log("\n========================================");
   console.log("             TEST COMPLETE              ");

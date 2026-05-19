@@ -10,22 +10,15 @@ jest.unstable_mockModule('../models/product.model.js', () => {
   };
 });
 
-jest.unstable_mockModule('../utils/solr.js', () => {
-  return {
-    searchSolr: jest.fn(),
-    indexProduct: jest.fn(),
-    deleteFromSolr: jest.fn()
-  };
-});
+
 
 describe('Product Controller Unit Tests', () => {
   let req, res, next;
-  let productController, Product, solrUtil;
+  let productController, Product;
 
   beforeAll(async () => {
     productController = await import('../controllers/product.controller.js');
     Product = (await import('../models/product.model.js')).default;
-    solrUtil = await import('../utils/solr.js');
   });
 
   beforeEach(() => {
@@ -89,27 +82,27 @@ describe('Product Controller Unit Tests', () => {
       });
     });
 
-    it('should fetch from Solr and hydrate from MongoDB', async () => {
+    it('should search products using MongoDB text index', async () => {
       req.query.q = 'Aloe';
       
-      const mockSolrResults = [{ id: '1' }, { id: '2' }];
-      solrUtil.searchSolr.mockResolvedValue(mockSolrResults);
-
       const mockMongoProducts = [
         { _id: '1', name: 'Aloe Vera', toString: () => '1' },
         { _id: '2', name: 'Aloe Plant', toString: () => '2' }
       ];
       
-      Product.find.mockResolvedValue(mockMongoProducts);
+      const mockFind = {
+        limit: jest.fn().mockResolvedValue(mockMongoProducts)
+      };
+      Product.find.mockReturnValue(mockFind);
 
       await productController.searchProducts(req, res, next);
 
-      expect(solrUtil.searchSolr).toHaveBeenCalledWith('Aloe');
-      expect(Product.find).toHaveBeenCalledWith({ _id: { $in: ['1', '2'] } });
+      expect(Product.find).toHaveBeenCalledWith({ $text: { $search: 'Aloe' } });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         success: true,
-        count: 2
+        count: 2,
+        products: mockMongoProducts
       }));
     });
   });
