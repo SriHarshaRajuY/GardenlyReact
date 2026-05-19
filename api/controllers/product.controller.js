@@ -90,28 +90,6 @@ export const getProductsByCategory = async (req, res, next) => {
 
     const { page, limit, skip } = parsePagination(req.query);
 
-    const total = await Product.countDocuments({ category });
-    const products = await Product.find({ category })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    res.status(200).json({
-      products,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      totalProducts: total,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// 🔍 SEARCH PRODUCTS (NEW)
-export const searchProducts = async (req, res, next) => {
-  try {
-    const q = (req.query.q || "").trim();
-    if (!q) {
 
     const total = await Product.countDocuments({ category });
     const products = await Product.find({ category })

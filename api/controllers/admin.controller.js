@@ -9,8 +9,6 @@ import CustomRequest from "../models/customRequest.model.js";
 import Cart from "../models/cart.model.js";
 import { errorHandler } from "../utils/error.js";
 import { clearCache } from "../utils/cache.js";
-import { deleteFromSolr } from "../utils/solr.js";
-
 const clearDataCaches = async () => {
   await Promise.all([
     clearCache("user_profile"),
@@ -149,14 +147,6 @@ export const deleteUser = async (req, res, next) => {
       }),
     ]);
 
-    await Promise.all(
-      productIds.map((productId) =>
-        deleteFromSolr(String(productId)).catch((err) =>
-          console.error("Failed to delete product from Solr:", err.message)
-        )
-      )
-    );
-
     await User.findByIdAndDelete(user._id);
     await clearDataCaches();
     res.json({ success: true, message: "User deleted successfully" });
@@ -183,9 +173,6 @@ export const deleteProduct = async (req, res, next) => {
     await Cart.updateMany(
       { "items.product": req.params.id },
       { $pull: { items: { product: req.params.id } } }
-    );
-    await deleteFromSolr(req.params.id).catch((err) =>
-      console.error("Failed to delete product from Solr:", err.message)
     );
     await clearDataCaches();
     res.json({ success: true, message: "Product deleted successfully" });
