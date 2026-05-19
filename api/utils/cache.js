@@ -8,6 +8,9 @@ export const connectRedis = async () => {
   try {
     redisClient = createClient({
       url: process.env.REDIS_URL || "redis://localhost:6379",
+      socket: {
+        connectTimeoutMS: 5000
+      }
     });
 
     redisClient.on("error", (err) => {
@@ -20,7 +23,10 @@ export const connectRedis = async () => {
       isRedisConnected = true;
     });
 
-    await redisClient.connect();
+    await Promise.race([
+      redisClient.connect(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Redis connection timed out")), 5000))
+    ]);
   } catch (err) {
     console.error("Failed to connect to Redis:", err);
     isRedisConnected = false;
