@@ -35,7 +35,7 @@ export default function ExpertSupport() {
         setTickets(data);
       }
     } catch {
-      console.log("No tickets yet");
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -188,7 +188,7 @@ export default function ExpertSupport() {
                         </div>
                         <div>
                             <h4 className="font-bold">Pest Identification</h4>
-                            <p className="text-sm text-gray-500">Upload photos for instant AI-assisted pest detection (coming soon).</p>
+                            <p className="text-sm text-gray-500">Upload clear plant photos so an assigned expert can diagnose pests or disease.</p>
                         </div>
                     </div>
                 </div>

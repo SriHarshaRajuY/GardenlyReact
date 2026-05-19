@@ -1,48 +1,52 @@
 // api/utils/mailer.js
 import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 import { errorHandler } from "./error.js";
 
-// ✅ Load .env from project root (two levels up from /utils)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, "../../.env") });
+let transporter;
 
-// Read and sanitize env values
-const emailUser = process.env.EMAIL_USER?.trim();
-const emailPass = process.env.EMAIL_PASS?.trim();
+const getEmailConfig = () => {
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASS?.trim();
+  const from = process.env.MAIL_FROM || `Gardenly Support <${emailUser}>`;
 
-console.log("📧 Mailer config check:");
-console.log("  EMAIL_USER =", JSON.stringify(emailUser));
-console.log("  EMAIL_PASS exists? ", !!emailPass);
+  return { emailUser, emailPass, from };
+};
 
-if (!emailUser || !emailPass) {
-  console.error(
-    "⚠️ EMAIL_USER or EMAIL_PASS missing in environment. Mailer will fail."
-  );
-}
+const assertEmailConfigured = () => {
+  const config = getEmailConfig();
 
-// ✅ Explicit Gmail SMTP config (works with app password)
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: process.env.EMAIL_SECURE === "true", // false for 587, true for 465
-  auth: {
-    user: emailUser,
-    pass: emailPass,
-  },
-});
-
-// Optional: verify on server start
-transporter.verify((err, success) => {
-  if (err) {
-    console.error("❌ Mailer verify failed:", err);
-  } else {
-    console.log("✅ Mailer ready to send emails");
+  if (!config.emailUser || !config.emailPass) {
+    throw errorHandler(
+      500,
+      "Email configuration error. Please contact support."
+    );
   }
-});
+
+  return config;
+};
+
+const getTransporter = () => {
+  const { emailUser, emailPass } = assertEmailConfigured();
+
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || "smtp.gmail.com",
+      port: Number(process.env.EMAIL_PORT) || 587,
+      secure: process.env.EMAIL_SECURE === "true",
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+      },
+    });
+  }
+
+  return transporter;
+};
+
+export const verifyMailer = async () => {
+  await getTransporter().verify();
+  return true;
+};
 
 /**
  * Send OTP email
@@ -51,18 +55,9 @@ transporter.verify((err, success) => {
  */
 export const sendOtpMail = async (to, otp) => {
   try {
-    if (!emailUser || !emailPass) {
-      console.error("❌ Cannot send mail: EMAIL_USER or EMAIL_PASS not set");
-      throw errorHandler(
-        500,
-        "Email configuration error. Please contact support."
-      );
-    }
+    const { from } = assertEmailConfigured();
 
-    const from =
-      process.env.MAIL_FROM || `Gardenly Support <${emailUser}>`;
-
-    const info = await transporter.sendMail({
+    const info = await getTransporter().sendMail({
       from,
       to,
       subject: "Your Gardenly order OTP",
@@ -83,9 +78,10 @@ export const sendOtpMail = async (to, otp) => {
       `,
     });
 
-    console.log("✅ OTP email sent:", info.messageId);
+    console.log("OTP email sent:", info.messageId);
     return true;
   } catch (err) {
+    if (err.statusCode) throw err;
     console.error("Error sending OTP mail:", err);
     throw errorHandler(
       500,
@@ -96,8 +92,9 @@ export const sendOtpMail = async (to, otp) => {
 
 export const sendSignupVerificationMail = async (to, otp) => {
   try {
-    const from = process.env.MAIL_FROM;
-    await transporter.sendMail({
+    const { from } = assertEmailConfigured();
+
+    await getTransporter().sendMail({
       from,
       to,
       subject: "Verify your Gardenly account",
@@ -111,6 +108,7 @@ export const sendSignupVerificationMail = async (to, otp) => {
     });
     return true;
   } catch (err) {
+    if (err.statusCode) throw err;
     console.error(err);
     throw errorHandler(500, "Failed to send verification email");
   }
@@ -118,8 +116,9 @@ export const sendSignupVerificationMail = async (to, otp) => {
 
 export const send2FAMail = async (to, otp) => {
   try {
-    const from = process.env.MAIL_FROM;
-    await transporter.sendMail({
+    const { from } = assertEmailConfigured();
+
+    await getTransporter().sendMail({
       from,
       to,
       subject: "Gardenly 2FA Login Code",
@@ -133,14 +132,17 @@ export const send2FAMail = async (to, otp) => {
     });
     return true;
   } catch (err) {
+    if (err.statusCode) throw err;
     console.error(err);
     throw errorHandler(500, "Failed to send 2FA email");
   }
 };
+
 export const sendMail = async (to, subject, text) => {
   try {
-    const from = process.env.MAIL_FROM || `Gardenly Support <${emailUser}>`;
-    await transporter.sendMail({
+    const { from } = assertEmailConfigured();
+
+    await getTransporter().sendMail({
       from,
       to,
       subject,
@@ -149,6 +151,7 @@ export const sendMail = async (to, subject, text) => {
     });
     return true;
   } catch (err) {
+    if (err.statusCode) throw err;
     console.error("Error sending mail:", err);
     throw errorHandler(500, "Failed to send email.");
   }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, Trash2, Users2, Shield } from "lucide-react";
+import { getImageUrl } from "../utils/imageUrl";
 
 export default function AdminCommunities() {
   const [communities, setCommunities] = useState([]);
@@ -100,7 +101,7 @@ export default function AdminCommunities() {
                   <tr key={c._id} className="border-t border-gray-50 hover:bg-gray-50 transition">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <img src={c.image} alt="" className="w-10 h-10 rounded-full object-cover bg-gray-100 shadow-sm" />
+                        <img src={getImageUrl(c.image, `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}`)} alt={c.name} className="w-10 h-10 rounded-full object-cover bg-gray-100 shadow-sm" />
                         <span className="font-semibold text-gray-800">{c.name}</span>
                       </div>
                     </td>

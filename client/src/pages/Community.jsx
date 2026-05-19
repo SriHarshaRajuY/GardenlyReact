@@ -37,7 +37,9 @@ export default function Community() {
           current || data.joined.find(c => c.name === "World Community") || data.joined[0] || null
         );
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      setCommunities({ joined: [], suggested: [] });
+    }
   }, []);
 
   const fetchPosts = useCallback(async (communityId) => {
@@ -46,7 +48,9 @@ export default function Community() {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/community/posts?communityId=${communityId}`, { credentials: "include" });
       const data = await res.json();
       if (data.success) setPosts(data.posts);
-    } catch (err) { console.error(err); }
+    } catch {
+      setPosts([]);
+    }
     finally { setLoading(false); }
   }, []);
 
@@ -99,12 +103,14 @@ export default function Community() {
     try {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/community/join/${id}`, { method: "POST", credentials: "include" });
       if (res.ok) fetchCommunities();
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Unable to join community right now.");
+    }
   };
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
-    if (!newPost.content.trim() && !newPost.mediaUrl) return;
+    if (!activeComm || !newPost.content.trim()) return;
     try {
       const res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/community/posts", {
         method: "POST",
@@ -118,10 +124,13 @@ export default function Community() {
         setNewPost({ content: "", mediaUrl: "", mediaType: "none" });
         setShowPostModal(false);
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Unable to create post right now.");
+    }
   };
 
   const handleLike = async (postId) => {
+    if (!activeComm) return;
     try {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/community/posts/${postId}/like`, { method: "POST", credentials: "include" });
       if (res.ok) {
@@ -131,10 +140,13 @@ export default function Community() {
         // Broadcast to others
         socket?.emit("new_like", { communityId: activeComm._id, postId, likes: data.likes });
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Unable to update like right now.");
+    }
   };
 
   const handleComment = async (postId) => {
+    if (!activeComm) return;
     if (!commentText[postId]?.trim()) return;
     try {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/community/posts/${postId}/comment`, {
@@ -152,7 +164,9 @@ export default function Community() {
         socket?.emit("new_comment", { communityId: activeComm._id, postId, comment: newComment });
         setCommentText({ ...commentText, [postId]: "" });
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Unable to add comment right now.");
+    }
   };
 
 
@@ -168,7 +182,9 @@ export default function Community() {
       if (data.success) {
         setNewPost({ ...newPost, mediaUrl: data.url, mediaType: "image" });
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Image upload failed.");
+    }
     finally { setUploading(false); }
   };
 
@@ -186,7 +202,9 @@ export default function Community() {
         setShowCommModal(false);
         setNewComm({ name: "", description: "", category: "General", image: "" });
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Unable to create community right now.");
+    }
   };
 
   const handleDeletePost = async (postId) => {
@@ -194,8 +212,22 @@ export default function Community() {
     try {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/community/posts/${postId}`, { method: "DELETE", credentials: "include" });
       if (res.ok) setPosts(posts.filter(p => p._id !== postId));
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Unable to delete post right now.");
+    }
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#f0f2f5] dark:bg-gray-950 pt-24 flex items-center justify-center px-6">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border dark:border-gray-800 p-10 text-center shadow-xl max-w-md">
+          <User className="w-14 h-14 text-green-600 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Authentication Required</h1>
+          <p className="text-gray-500 mt-3">Please sign in to join communities and view posts.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-16 min-h-screen bg-[#f0f2f5] dark:bg-gray-950 flex overflow-hidden h-screen">

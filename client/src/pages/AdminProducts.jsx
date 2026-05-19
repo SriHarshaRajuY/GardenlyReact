@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, Trash2 } from "lucide-react";
+import { getImageUrl } from "../utils/imageUrl";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -93,7 +94,7 @@ export default function AdminProducts() {
             <div key={p._id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition group">
               <div className="relative h-44 overflow-hidden bg-gray-50">
                 <img
-                  src={p.image?.startsWith("http") ? p.image : `/images/${p.image}`}
+                  src={getImageUrl(p.image)}
                   alt={p.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                   onError={(e) => (e.target.src = "/images/fallback.png")}

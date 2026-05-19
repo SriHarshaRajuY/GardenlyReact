@@ -2,12 +2,15 @@ import User from "../models/user.model.js";
 import Community from "../models/community.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import { errorHandler } from "../utils/error.js";
 import { sendOtpMail, sendSignupVerificationMail, send2FAMail } from "../utils/mailer.js";  
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const PUBLIC_SIGNUP_ROLES = ["Buyer", "Seller", "Expert"];
+
+const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
 
 const buildAuthResponse = (res, user) => {
   const token = jwt.sign(
@@ -63,7 +66,7 @@ export const signup = async (req, res, next) => {
     const existing = await User.findOne({ $or: [{ username: String(username) }, { email: String(email) }, { mobile: String(mobile) }] });
     if (existing) return next(errorHandler(400, "User with this username/email/mobile already exists"));
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOtp();
     const hashedPassword = bcrypt.hashSync(password, 10);
     const user = new User({
       username, email, password: hashedPassword, role, mobile, expertise: finalExpertise,
@@ -133,7 +136,7 @@ export const signin = async (req, res, next) => {
     // (i.e. they registered through the new signup flow but never verified)
     if (!user.isEmailVerified && user.emailVerificationOtp) {
       // Re-send OTP if not verified
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = generateOtp();
       user.emailVerificationOtp = otp;
       user.emailVerificationOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
@@ -196,13 +199,13 @@ export const googleSignin = async (req, res, next) => {
     if (!user) {
       const safeRole = PUBLIC_SIGNUP_ROLES.includes(role) ? role : "Buyer";
       const emailPrefix = (email.split("@")[0] || "user").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 12);
-      let username = `${emailPrefix || "user"}_${Math.floor(100 + Math.random() * 900)}`;
-      while (await User.findOne({ username })) username = `${emailPrefix || "user"}_${Math.floor(100 + Math.random() * 900)}`;
+      let username = `${emailPrefix || "user"}_${crypto.randomInt(100, 1000)}`;
+      while (await User.findOne({ username })) username = `${emailPrefix || "user"}_${crypto.randomInt(100, 1000)}`;
 
       let mobile = `${Date.now()}`.slice(-10);
-      while (await User.findOne({ mobile })) mobile = `${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+      while (await User.findOne({ mobile })) mobile = `${crypto.randomInt(1000000000, 10000000000)}`;
 
-      const tempPassword = bcrypt.hashSync(`google_${Date.now()}_${Math.random()}`, 10);
+      const tempPassword = bcrypt.hashSync(`google_${Date.now()}_${crypto.randomBytes(16).toString("hex")}`, 10);
       user = await User.create({
         username, email, password: tempPassword, role: safeRole, mobile, expertise: safeRole === "Expert" ? "General" : "General",
         isEmailVerified: true // Google accounts are considered verified
@@ -235,7 +238,7 @@ export const forgotPassword = async (req, res, next) => {
     const user = await User.findOne({ email: String(email) });
     if (!user) return next(errorHandler(404, "No account found with this email"));
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOtp();
     const expires = new Date(Date.now() + 10 * 60 * 1000); 
 
     user.resetOtp = otp;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaLeaf, FaBars, FaTimes, FaSearch, FaShoppingCart, FaChevronDown } from "react-icons/fa";
 import { RiMoonLine, RiSunLine } from "react-icons/ri";
@@ -17,10 +17,13 @@ export default function Header() {
   );
   const [searchTerm, setSearchTerm] = useState("");
 
+  useEffect(() => {
+    document.body.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     localStorage.setItem("selected-theme", !darkMode ? "dark" : "light");
-    document.body.classList.toggle("dark", !darkMode);
   };
 
   const handleLogout = () => {

@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "nodemon api/index.js",
     "start": "node api/index.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --forceExit",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand",
     "client:dev": "npm run dev --prefix client",
     "client:build": "npm run build --prefix client",
     "client:lint": "npm run lint --prefix client",

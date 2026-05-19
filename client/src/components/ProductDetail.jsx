@@ -3,6 +3,7 @@ import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext"; // NEW IMPORT
 import { FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { FALLBACK_IMAGE, getImageUrl } from "../utils/imageUrl";
 
 export default function ProductDetail({ product, onClose, onEdit, onDelete }) {
   const { user } = useAuth();
@@ -11,16 +12,8 @@ export default function ProductDetail({ product, onClose, onEdit, onDelete }) {
 
   if (!product) return null;
 
-  // ---- FINAL IMAGE URL LOGIC ----
-  const imgSrc = product.image
-    ? product.image.startsWith("data:")
-      ? product.image
-      : product.image.startsWith("http")
-        ? product.image
-        : product.image.startsWith("/")
-          ? product.image
-          : `/images/${product.image.replace(/^\.?\/?public\/images\/?/, "")}`
-    : "/images/placeholder.png";
+  const imgSrc = getImageUrl(product.image, "/images/placeholder.png");
+  const price = Number(product.price || 0);
 
   const handleEdit = () => {
     onEdit?.(product);
@@ -77,9 +70,9 @@ export default function ProductDetail({ product, onClose, onEdit, onDelete }) {
           <div className="md:w-1/2 bg-gray-50 dark:bg-gray-700 rounded-md p-4 flex items-center justify-center">
             <img
               src={imgSrc}
-              alt={product.name}
+              alt={product.name || "Product image"}
               className="max-h-96 object-contain"
-              onError={(e) => (e.currentTarget.src = "/images/placeholder.png")}
+              onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)}
             />
           </div>
 
@@ -97,7 +90,7 @@ export default function ProductDetail({ product, onClose, onEdit, onDelete }) {
             </div>
 
             <div className="text-xl font-semibold text-green-700 dark:text-green-400 mb-4">
-              ₹{product.price.toFixed(2)}
+              ₹{price.toFixed(2)}
             </div>
 
             {!isSeller && (

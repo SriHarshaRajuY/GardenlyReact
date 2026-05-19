@@ -1,5 +1,5 @@
 // client/src/redux/store.js
-// Dummy Redux store (not used anywhere in the app yet)
+// Redux store used by tests and available for future shared client state.
 
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./features/authSlice";

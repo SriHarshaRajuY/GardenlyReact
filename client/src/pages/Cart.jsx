@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { FaPlus, FaMinus, FaTrashAlt, FaCreditCard } from "react-icons/fa";
+import { getImageUrl } from "../utils/imageUrl";
 
 export default function Cart() {
   const { cart, fetchCart, updateQuantity, removeFromCart } = useCart();
@@ -54,7 +55,7 @@ export default function Cart() {
   const total = useMemo(
     () =>
       cartItems.reduce((sum, item) => {
-        const price = item.product?.price ?? 0;
+        const price = Number(item.product?.price || 0);
         return sum + price * (item.quantity ?? 0);
       }, 0),
     [cartItems]
@@ -91,6 +92,10 @@ export default function Cart() {
     const { fullName, phone, address1, city, state, pincode } = billing;
     if (!fullName || !phone || !address1 || !city || !state || !pincode) {
       alert("Please fill all required billing fields (*)");
+      return;
+    }
+    if (!/^\d{10}$/.test(phone) || !/^\d{6}$/.test(pincode)) {
+      alert("Enter a valid 10-digit phone number and 6-digit pincode.");
       return;
     }
 
@@ -167,6 +172,7 @@ export default function Cart() {
     if (!cartItems.length) return alert("Your cart is empty");
     const { fullName, phone, address1, city, state, pincode } = billing;
     if (!fullName || !phone || !address1 || !city || !state || !pincode) return alert("Please fill all required fields");
+    if (!/^\d{10}$/.test(phone) || !/^\d{6}$/.test(pincode)) return alert("Enter a valid 10-digit phone number and 6-digit pincode.");
 
     setSendingOtp(true);
     try {
@@ -199,7 +205,8 @@ export default function Cart() {
         credentials: "include",
         body: JSON.stringify({ orderId, otp }),
       });
-      if (!res.ok) return alert("Invalid OTP");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return alert(data.message || "Invalid OTP");
       alert("Order placed successfully!");
       setStep("form");
       setShowBilling(false);
@@ -249,7 +256,7 @@ export default function Cart() {
                 {cartItems.map((item, idx) => (
                   <div key={item.product?._id || idx} className="flex items-center justify-between border-b dark:border-gray-700 pb-6">
                     <div className="flex items-center gap-4">
-                      <img src={item.product?.image || "/images/fallback.png"} className="w-20 h-20 rounded-xl object-cover" alt="" />
+                      <img src={getImageUrl(item.product?.image)} className="w-20 h-20 rounded-xl object-cover" alt={item.product?.name || "Cart product"} />
                       <div>
                         <h2 className="font-bold text-lg">{item.product?.name || "Product"}</h2>
                         <p className="text-green-600 font-semibold">₹{item.product?.price ?? 0}</p>
@@ -261,7 +268,7 @@ export default function Cart() {
                         <span className="w-6 text-center font-bold">{item.quantity}</span>
                         <button onClick={() => handleQtyChange(item, 1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><FaPlus size={12} /></button>
                       </div>
-                      <div className="text-right font-bold w-24">₹{(item.product?.price * item.quantity).toFixed(2)}</div>
+                      <div className="text-right font-bold w-24">₹{(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</div>
                       <button onClick={() => handleRemove(item)} className="text-red-400 hover:text-red-600 transition"><FaTrashAlt /></button>
                     </div>
                   </div>
@@ -281,13 +288,13 @@ export default function Cart() {
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <input name="fullName" value={billing.fullName} onChange={handleChange} placeholder="Full Name *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
-                <input name="phone" value={billing.phone} onChange={handleChange} placeholder="Phone Number *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
+                <input name="phone" value={billing.phone} onChange={handleChange} placeholder="Phone Number *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required inputMode="numeric" pattern="\\d{10}" />
                 <div className="md:col-span-2">
                   <input name="address1" value={billing.address1} onChange={handleChange} placeholder="Address Line 1 *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
                 </div>
                 <input name="city" value={billing.city} onChange={handleChange} placeholder="City *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
                 <input name="state" value={billing.state} onChange={handleChange} placeholder="State *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
-                <input name="pincode" value={billing.pincode} onChange={handleChange} placeholder="Pincode *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required />
+                <input name="pincode" value={billing.pincode} onChange={handleChange} placeholder="Pincode *" className="w-full p-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-green-500" required inputMode="numeric" pattern="\\d{6}" />
               </div>
 
               <div className="flex flex-wrap gap-4 justify-between items-center border-t pt-6">

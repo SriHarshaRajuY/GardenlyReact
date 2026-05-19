@@ -46,7 +46,8 @@ export default function Profile() {
           setSellerOrders(orderData.sales || []);
           setSummary(sumData.stats || {});
         } catch {
-          console.log("seller dashboard error");
+          setSellerOrders([]);
+          setSummary({});
         } finally {
           setLoading(false);
         }
@@ -68,7 +69,9 @@ export default function Profile() {
         setStats(data.stats);
         setOrders(data.orders || []);
       } catch {
-        console.log("buyer dashboard error");
+        setProfile(null);
+        setStats(null);
+        setOrders([]);
       } finally {
         setLoading(false);
       }

@@ -3,6 +3,7 @@ import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import { FALLBACK_IMAGE, getImageUrl } from "../utils/imageUrl";
 
 export default function ProductCard({
   product: rawProduct,
@@ -17,14 +18,7 @@ export default function ProductCard({
   const product = rawProduct || {};
   const isSeller = user?.role === "seller";
 
-  // Pick the correct base image URL
-  const imgSrc = product.image
-    ? product.image.startsWith("http")
-      ? product.image
-      : product.image.startsWith("/")
-      ? product.image
-      : `/images/${product.image}`
-    : "/fallback.png"; // from client/public/fallback.png
+  const imgSrc = getImageUrl(product.image);
 
   const handleView = () => {
     // support both prop names
@@ -63,7 +57,7 @@ export default function ProductCard({
           alt={product.name || "Product"}
           className="h-full w-full object-cover hover:scale-105 transition-transform duration-300"
           onError={(e) => {
-            e.currentTarget.src = "/fallback.png";
+            e.currentTarget.src = FALLBACK_IMAGE;
           }}
           loading="lazy"
         />

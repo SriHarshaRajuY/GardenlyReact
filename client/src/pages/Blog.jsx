@@ -33,8 +33,8 @@ export default function Blog() {
       if (data.success && data.blogs) {
         setBlogsList(data.blogs);
       }
-    } catch (err) {
-      console.error("Failed to fetch blogs:", err);
+    } catch {
+      setBlogsList([]);
     } finally {
       setLoading(false);
     }
@@ -59,8 +59,22 @@ export default function Blog() {
     if (!user) return alert("Please login to like");
     try {
       const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/blogs/${blogId}/like`, { method: "POST", credentials: "include" });
-      if (res.ok) fetchBlogs();
-    } catch (err) { console.error(err); }
+      if (res.ok) {
+        const toggleLikes = (blog) => {
+          const likes = blog.likes || [];
+          const hasLiked = likes.includes(user.id);
+          return {
+            ...blog,
+            likes: hasLiked ? likes.filter((id) => id !== user.id) : [...likes, user.id],
+          };
+        };
+
+        setBlogsList((current) => current.map((blog) => (blog._id === blogId ? toggleLikes(blog) : blog)));
+        setSelectedBlog((current) => (current?._id === blogId ? toggleLikes(current) : current));
+      }
+    } catch {
+      alert("Unable to update like right now.");
+    }
   };
 
   const handleComment = async (e) => {
@@ -77,7 +91,7 @@ export default function Blog() {
         const data = await res.json();
         const newComment = data.comments[data.comments.length - 1];
         if (socket) {
-          socket.emit("new_comment", { postId: selectedBlog._id, comment: newComment });
+          socket.emit("new_comment", { communityId: selectedBlog._id, postId: selectedBlog._id, comment: newComment });
         }
         setSelectedBlog(prev => ({
           ...prev,
@@ -85,7 +99,9 @@ export default function Blog() {
         }));
         setCommentText("");
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      alert("Unable to add comment right now.");
+    }
   };
 
   const handleAddBlog = async (e) => {
@@ -134,8 +150,7 @@ export default function Blog() {
       } else {
         alert("Failed to publish blog");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Error publishing blog");
     } finally {
       setSubmittingBlog(false);
@@ -159,7 +174,7 @@ export default function Blog() {
             <ArrowRight className="rotate-180" /> Back to Feed
           </button>
           
-          <img src={selectedBlog.image} className="w-full h-[400px] object-cover rounded-[3rem] shadow-2xl mb-10" alt="" />
+          <img src={selectedBlog.image} className="w-full h-[400px] object-cover rounded-[3rem] shadow-2xl mb-10" alt={selectedBlog.title} />
           
           <div className="flex items-center justify-between mb-6">
             <span className="bg-green-100 text-green-700 px-4 py-1 rounded-full text-xs font-black uppercase">{selectedBlog.category}</span>
@@ -262,12 +277,16 @@ export default function Blog() {
           ))}
         </div>
 
-        {loading ? <div className="text-center py-20"><Sprout className="w-12 h-12 text-green-600 animate-bounce mx-auto" /></div> : (
+        {loading ? <div className="text-center py-20"><Sprout className="w-12 h-12 text-green-600 animate-bounce mx-auto" /></div> : filteredBlogs.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 rounded-[2rem] border dark:border-gray-800 p-16 text-center text-gray-500">
+            No articles found for the selected search.
+          </div>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {filteredBlogs.map(blog => (
               <article key={blog._id} className="bg-white dark:bg-gray-900 rounded-[2.5rem] overflow-hidden border dark:border-gray-800 hover:shadow-2xl transition duration-500 flex flex-col group">
                 <div className="relative h-64 overflow-hidden">
-                  <img src={blog.image} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt="" />
+                  <img src={blog.image} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt={blog.title} />
                   <div className="absolute top-6 right-6 bg-white/90 backdrop-blur px-4 py-1 rounded-full text-[10px] font-black text-green-700">{blog.category}</div>
                 </div>
                 <div className="p-8 flex-1 flex flex-col">

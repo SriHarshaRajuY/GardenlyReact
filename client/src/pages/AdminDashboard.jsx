@@ -1,6 +1,7 @@
 import { createElement, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getImageUrl } from "../utils/imageUrl";
 import {
   Users, ShoppingBag, IndianRupee, Package, AlertCircle,
   CheckCircle2, ClipboardList, RefreshCcw, UserCheck, UserCog, Leaf,
@@ -127,7 +128,7 @@ export default function AdminDashboard() {
                 <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition group">
                   <div className="h-36 overflow-hidden bg-gray-50">
                     <img
-                      src={p.image?.startsWith("http") ? p.image : `/images/${p.image}`}
+                      src={getImageUrl(p.image)}
                       alt={p.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                       onError={(e) => (e.target.src = "/images/fallback.png")}

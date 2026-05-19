@@ -14,10 +14,53 @@ const clearBlogCaches = async () => {
   await Promise.all([clearCache("blogs"), clearCache("blog")]);
 };
 
+const slugify = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+
+const buildUniqueSlug = async (title, preferredSlug, existingId) => {
+  const base = slugify(preferredSlug || title);
+  if (!base) throw errorHandler(400, "Blog title is required");
+
+  let slug = base;
+  let suffix = 1;
+  while (
+    await Blog.exists({
+      slug,
+      ...(existingId ? { _id: { $ne: existingId } } : {}),
+    })
+  ) {
+    slug = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return slug;
+};
+
 export const createBlog = async (req, res, next) => {
   try {
     const blogData = pickBlogFields(req.body);
-    blogData.author = req.user.username || blogData.author || "Gardenly Admin";
+    blogData.title = blogData.title?.trim();
+    blogData.content = blogData.content?.trim();
+    blogData.excerpt = blogData.excerpt?.trim();
+    blogData.image = blogData.image?.trim();
+    blogData.category = blogData.category?.trim() || "Gardening";
+    blogData.author = req.user.username || blogData.author?.trim() || "Gardenly Admin";
+    blogData.date = blogData.date || new Date().toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    if (!blogData.title || !blogData.content) {
+      return next(errorHandler(400, "Blog title and content are required"));
+    }
+
+    blogData.slug = await buildUniqueSlug(blogData.title, blogData.slug);
 
     const newBlog = new Blog(blogData);
     await newBlog.save();
@@ -49,9 +92,19 @@ export const getBlogBySlug = async (req, res, next) => {
 
 export const updateBlog = async (req, res, next) => {
   try {
+    const update = pickBlogFields(req.body);
+    if (update.title !== undefined) update.title = update.title?.trim();
+    if (update.content !== undefined) update.content = update.content?.trim();
+    if (update.excerpt !== undefined) update.excerpt = update.excerpt?.trim();
+    if (update.image !== undefined) update.image = update.image?.trim();
+    if (update.category !== undefined) update.category = update.category?.trim() || "Gardening";
+    if (update.slug !== undefined || update.title !== undefined) {
+      update.slug = await buildUniqueSlug(update.title || update.slug, update.slug, req.params.id);
+    }
+
     const updatedBlog = await Blog.findByIdAndUpdate(
       req.params.id,
-      { $set: pickBlogFields(req.body) },
+      { $set: update },
       { new: true, runValidators: true }
     );
     if (!updatedBlog) return next(errorHandler(404, "Blog not found"));
@@ -77,7 +130,7 @@ export const likeBlog = async (req, res, next) => {
     const blog = await Blog.findById(req.params.id);
     if (!blog) return next(errorHandler(404, "Blog not found"));
 
-    const index = blog.likes.indexOf(req.user.id);
+    const index = blog.likes.findIndex((userId) => userId.toString() === req.user.id);
     if (index === -1) {
       blog.likes.push(req.user.id);
     } else {

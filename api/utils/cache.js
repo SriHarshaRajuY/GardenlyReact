@@ -2,6 +2,7 @@ import { createClient } from "redis";
 
 let redisClient;
 let isRedisConnected = false;
+const shouldLogCache = () => process.env.NODE_ENV !== "production";
 
 export const connectRedis = async () => {
   try {
@@ -31,7 +32,7 @@ export const getRedisClient = () => redisClient;
 export const cacheMiddleware = (keyPrefix, expiration = 3600) => {
   return async (req, res, next) => {
     if (!isRedisConnected) {
-      console.log("Redis is not connected, skipping cache for:", req.originalUrl);
+      if (shouldLogCache()) console.log("Redis is not connected, skipping cache for:", req.originalUrl);
       return next();
     }
 
@@ -43,12 +44,12 @@ export const cacheMiddleware = (keyPrefix, expiration = 3600) => {
       const cachedData = await redisClient.get(cacheKey);
 
       if (cachedData) {
-        console.log(`🟢 REDIS CACHE HIT for key: ${cacheKey}`);
+        if (shouldLogCache()) console.log(`Redis cache HIT for key: ${cacheKey}`);
         res.setHeader('X-Redis-Cache', 'HIT');
         return res.status(200).json(JSON.parse(cachedData));
       }
 
-      console.log(`🔴 REDIS CACHE MISS for key: ${cacheKey}`);
+      if (shouldLogCache()) console.log(`Redis cache MISS for key: ${cacheKey}`);
       res.setHeader('X-Redis-Cache', 'MISS');
       
       // Override res.json to intercept the response and cache it

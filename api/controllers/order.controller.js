@@ -10,9 +10,8 @@ import { clearCache } from "../utils/cache.js";
 import crypto from "crypto";
 
 
-// Helper: generate 6-digit OTP as string
-const generateOtp = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+// Helper: generate a cryptographically secure 6-digit OTP as a string.
+const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
 
 const validateBilling = ({ fullName, phone, address1, city, state, pincode }) => {
   if (!fullName || !phone || !address1 || !city || !state || !pincode) {

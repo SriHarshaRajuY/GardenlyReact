@@ -25,7 +25,12 @@ export default function Seller() {
 
   // only seller allowed
   useEffect(() => {
-    if (user && user.role !== "seller") {
+    if (!user) {
+      navigate("/signin");
+      return;
+    }
+
+    if (user.role !== "seller") {
       navigate("/");
     }
   }, [user, navigate]);
@@ -47,8 +52,8 @@ export default function Seller() {
       if (allRes.ok) all = await allRes.json();
 
       setProducts(all);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -141,8 +146,21 @@ export default function Seller() {
     e.preventDefault();
     if (submitting) return;
 
-    if (!name || !category || !price || quantity === "") {
+    const parsedPrice = Number(price);
+    const parsedQuantity = Number(quantity);
+
+    if (!name.trim() || !category || price === "" || quantity === "") {
       alert("All fields required");
+      return;
+    }
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      alert("Price must be greater than 0");
+      return;
+    }
+
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
+      alert("Quantity must be a whole number of 0 or more");
       return;
     }
 
@@ -158,8 +176,8 @@ export default function Seller() {
             name: name.trim(),
             description: description.trim(),
             category: category.trim(),
-            price: Number(price),
-            quantity: Number(quantity),
+            price: parsedPrice,
+            quantity: parsedQuantity,
           }),
           credentials: "include",
         });
@@ -178,8 +196,8 @@ export default function Seller() {
         fd.append("name", name.trim());
         fd.append("description", description.trim());
         fd.append("category", category.trim());
-        fd.append("price", Number(price));
-        fd.append("quantity", Number(quantity));
+        fd.append("price", parsedPrice);
+        fd.append("quantity", parsedQuantity);
 
         res = await fetch((import.meta.env.VITE_BACKEND_URL || '').trim() + "/api/products", {
           method: "POST",
@@ -217,6 +235,8 @@ export default function Seller() {
   const totalProducts = products.length;
   const totalSales = products.reduce((sum, p) => sum + (p.sold || 0), 0);
   const totalRevenue = products.reduce((sum, p) => sum + (p.price * (p.sold || 0)), 0);
+
+  if (!user || user.role !== "seller") return null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-24 pb-12">
@@ -311,11 +331,11 @@ export default function Seller() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (₹)</label>
-                    <input type="number" min="0" placeholder="0.00" value={price} onChange={(e)=>setPrice(e.target.value)} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all" />
+                    <input type="number" min="0.01" step="0.01" placeholder="0.00" value={price} onChange={(e)=>setPrice(e.target.value)} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
-                    <input type="number" min="1" placeholder="1" value={quantity} onChange={(e)=>setQuantity(e.target.value)} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all" />
+                    <input type="number" min="0" placeholder="1" value={quantity} onChange={(e)=>setQuantity(e.target.value)} className="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all" />
                   </div>
                 </div>
               </div>

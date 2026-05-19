@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaLeaf, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaLeaf, FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
 
 export default function Footer() {
   return (
@@ -15,12 +15,12 @@ export default function Footer() {
           <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
             Bring Nature Closer to Home. We provide the highest quality plants, seeds, and gardening accessories straight to your door.
           </p>
-          <div className="flex gap-4 pt-2">
-            <a href="#" className="text-gray-400 hover:text-green-600 transition-colors"><FaFacebook size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-green-600 transition-colors"><FaTwitter size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-green-600 transition-colors"><FaInstagram size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-green-600 transition-colors"><FaLinkedin size={20} /></a>
-          </div>
+          <a
+            href="mailto:sriharsharaju.y23@iiits.in"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-green-700 hover:text-green-800"
+          >
+            <FaEnvelope /> Contact support
+          </a>
         </div>
 
         {/* Quick Links */}
@@ -70,8 +70,8 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 text-sm text-center text-gray-500 flex flex-col md:flex-row justify-between items-center gap-4">
         <p>© {new Date().getFullYear()} Gardenly. All rights reserved.</p>
         <div className="flex gap-6">
-          <a href="#" className="hover:text-green-600 transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-green-600 transition-colors">Terms of Service</a>
+          <Link to="/privacy" className="hover:text-green-600 transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-green-600 transition-colors">Terms of Service</Link>
         </div>
       </div>
     </footer>

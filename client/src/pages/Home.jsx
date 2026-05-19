@@ -29,27 +29,8 @@ export default function Home() {
       // Handle both paginated response { products: [...] } and plain array
       setProducts(data.products || (Array.isArray(data) ? data : []));
     } catch (err) {
-      console.error(err);
       setError(err.message);
-      // Fallback data
-      setProducts([
-        {
-          _id: 1,
-          name: "Money Plant Golden",
-          category: "Plants",
-          price: 199,
-          quantity: 20,
-          image: "/images/new-products/p6.jpg",
-        },
-        {
-          _id: 2,
-          name: "Rosemary - Plant",
-          category: "Plants",
-          price: 299,
-          quantity: 12,
-          image: "/images/plantspics/p5.png",
-        },
-      ]);
+      setProducts([]);
     } finally {
       setLoading(false);
     }

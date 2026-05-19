@@ -8,6 +8,10 @@ services:
       dockerfile: Dockerfile.backend
     container_name: gardenly_api
     env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379
+      SOLR_URL: http://solr:8983/solr/gardenly
+      CLIENT_ORIGIN: http://localhost
     ports:
       - "3000:3000"
     depends_on:

@@ -54,12 +54,16 @@ const validateProductPayload = ({ name, category, price, quantity }, { partial =
   return { update };
 };
 
+const parsePagination = (query) => {
+  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(query.limit, 10) || 12, 1), 48);
+  return { page, limit, skip: (page - 1) * limit };
+};
+
 // ---- PUBLIC ROUTES ----
 export const getRecentProducts = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(req.query);
 
     const total = await Product.countDocuments();
     const products = await Product.find()
@@ -81,9 +85,11 @@ export const getRecentProducts = async (req, res, next) => {
 export const getProductsByCategory = async (req, res, next) => {
   try {
     const { category } = req.params;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
+    if (!PRODUCT_CATEGORIES.includes(category)) {
+      return next(errorHandler(400, `Category must be one of: ${PRODUCT_CATEGORIES.join(", ")}`));
+    }
+
+    const { page, limit, skip } = parsePagination(req.query);
 
     const total = await Product.countDocuments({ category });
     const products = await Product.find({ category })

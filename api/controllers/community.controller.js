@@ -3,6 +3,7 @@ import CommunityPost from "../models/communityPost.model.js";
 import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
 import { clearCache } from "../utils/cache.js";
+import mongoose from "mongoose";
 
 const clearCommunityCaches = async () => {
   await Promise.all([
@@ -12,11 +13,40 @@ const clearCommunityCaches = async () => {
   ]);
 };
 
+const COMMUNITY_CATEGORIES = ["Plants", "Seeds", "Pots", "Tips", "General"];
+
+const isMember = (community, userId) =>
+  community.members?.some((memberId) => memberId.toString() === userId);
+
+const getCommunityForMemberAction = async (communityId, userId) => {
+  if (!mongoose.Types.ObjectId.isValid(communityId)) {
+    throw errorHandler(400, "Invalid community ID");
+  }
+
+  const community = await Community.findById(communityId);
+  if (!community) throw errorHandler(404, "Community not found");
+  if (!isMember(community, userId)) {
+    throw errorHandler(403, "Join this community before interacting with posts");
+  }
+
+  return community;
+};
+
 // --- Communities ---
 
 export const createCommunity = async (req, res, next) => {
   try {
-    const { name, description, category, image } = req.body;
+    const name = req.body.name?.trim();
+    const description = req.body.description?.trim();
+    const category = COMMUNITY_CATEGORIES.includes(req.body.category)
+      ? req.body.category
+      : "General";
+    const image = req.body.image?.trim();
+
+    if (!name || !description) {
+      return next(errorHandler(400, "Community name and description are required"));
+    }
+
     const newCommunity = new Community({
       name,
       description,
@@ -39,6 +69,10 @@ export const createCommunity = async (req, res, next) => {
 
 export const joinCommunity = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return next(errorHandler(400, "Invalid community ID"));
+    }
+
     const community = await Community.findById(req.params.id);
     if (!community) return next(errorHandler(404, "Community not found"));
 
@@ -54,6 +88,10 @@ export const joinCommunity = async (req, res, next) => {
 
 export const leaveCommunity = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return next(errorHandler(400, "Invalid community ID"));
+    }
+
     const community = await Community.findById(req.params.id);
     if (!community) return next(errorHandler(404, "Community not found"));
     if (community.name === "World Community") return next(errorHandler(400, "You cannot leave the World Community"));
@@ -83,12 +121,20 @@ export const getCommunities = async (req, res, next) => {
 export const createPost = async (req, res, next) => {
   try {
     const { communityId, content, mediaUrl, mediaType } = req.body;
+    const cleanContent = content?.trim();
+
+    if (!cleanContent) {
+      return next(errorHandler(400, "Post content is required"));
+    }
+
+    await getCommunityForMemberAction(communityId, req.user.id);
+
     const newPost = new CommunityPost({
       communityId,
       userId: req.user.id,
       username: req.user.username || "Anonymous",
-      content,
-      mediaUrl,
+      content: cleanContent,
+      mediaUrl: mediaUrl?.trim(),
       mediaType: mediaType || "none",
     });
     await newPost.save();
@@ -102,6 +148,7 @@ export const createPost = async (req, res, next) => {
 export const getPosts = async (req, res, next) => {
   try {
     const { communityId } = req.query;
+    await getCommunityForMemberAction(communityId, req.user.id);
     const posts = await CommunityPost.find({ communityId }).sort({ createdAt: -1 });
     res.status(200).json({ success: true, posts });
   } catch (err) {
@@ -114,7 +161,9 @@ export const likePost = async (req, res, next) => {
     const post = await CommunityPost.findById(req.params.id);
     if (!post) return next(errorHandler(404, "Post not found"));
 
-    const index = post.likes.indexOf(req.user.id);
+    await getCommunityForMemberAction(post.communityId, req.user.id);
+
+    const index = post.likes.findIndex((userId) => userId.toString() === req.user.id);
     if (index === -1) {
       post.likes.push(req.user.id);
     } else {
@@ -133,12 +182,15 @@ export const commentOnPost = async (req, res, next) => {
   try {
     const post = await CommunityPost.findById(req.params.id);
     if (!post) return next(errorHandler(404, "Post not found"));
-    if (!req.body.text?.trim()) return next(errorHandler(400, "Comment text is required"));
+    const cleanText = req.body.text?.trim();
+    if (!cleanText) return next(errorHandler(400, "Comment text is required"));
+
+    await getCommunityForMemberAction(post.communityId, req.user.id);
 
     const comment = {
       userId: req.user.id,
       username: req.user.username || "Anonymous",
-      text: req.body.text.trim(),
+      text: cleanText,
     };
 
     post.comments.push(comment);
@@ -157,7 +209,11 @@ export const deletePost = async (req, res, next) => {
 
     // Check if user is the author or the community admin
     const community = await Community.findById(post.communityId);
-    if (post.userId.toString() !== req.user.id && community.adminId.toString() !== req.user.id) {
+    if (!community) return next(errorHandler(404, "Community not found"));
+
+    const isAuthor = post.userId.toString() === req.user.id;
+    const isCommunityAdmin = community.adminId?.toString() === req.user.id;
+    if (!isAuthor && !isCommunityAdmin) {
        return next(errorHandler(403, "Not authorized to delete this post"));
     }
 

@@ -35,7 +35,7 @@ export default function ExpertDashboard() {
         setTickets(data);
       }
     } catch {
-      console.error("Failed to load tickets");
+      setTickets([]);
     } finally {
       setLoading(false);
     }

@@ -46,8 +46,8 @@ export default function CustomRequests() {
         const data = await res.json();
         setRequests(data);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -97,8 +97,8 @@ export default function CustomRequests() {
       } else {
         alert("Failed to post request.");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      alert("Network error while posting request.");
     }
   };
 
@@ -131,8 +131,8 @@ export default function CustomRequests() {
       } else {
         alert(data.message || "Failed to submit proposal");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      alert("Network error while submitting proposal.");
     }
   };
 
@@ -148,8 +148,8 @@ export default function CustomRequests() {
         fetchRequests();
         alert("Proposal accepted! Check your email for seller contact details.");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      alert("Network error while accepting proposal.");
     }
   };
 

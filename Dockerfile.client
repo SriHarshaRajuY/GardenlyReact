@@ -9,6 +9,14 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+ARG VITE_BACKEND_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_RAZORPAY_KEY_ID
+
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+ENV VITE_RAZORPAY_KEY_ID=$VITE_RAZORPAY_KEY_ID
+
 # Copy client package files and install all deps (including devDeps for build)
 COPY client/package.json client/package-lock.json ./
 RUN npm ci

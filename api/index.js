@@ -34,6 +34,15 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
 
+const validateRequiredEnv = () => {
+  const required = ["MONGO_URI", "JWT_SECRET"];
+  const missing = required.filter((key) => !process.env[key]?.trim());
+
+  if (missing.length) {
+    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+  }
+};
+
 const csrfCookieOptions = {
   httpOnly: false,
   secure: isProduction,
@@ -67,7 +76,11 @@ const io = new Server(httpServer, {
   },
 });
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(logger);
 app.use(cookieParser());
 app.use(express.json());
@@ -173,10 +186,15 @@ io.on("connection", (socket) => {
 app.use(errorLogger);
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
+  const message =
+    isProduction && statusCode >= 500
+      ? "Internal Server Error"
+      : err.message || "Internal Server Error";
+
   res.status(statusCode).json({
     success: false,
     status: statusCode,
-    message: err.message || "Internal Server Error",
+    message,
   });
 });
 
@@ -184,6 +202,7 @@ const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
+    validateRequiredEnv();
     await mongoose.connect(process.env.MONGO_URI, { dbName: "gardenly" });
     console.log("🟢 MongoDB connected");
     await connectRedis();

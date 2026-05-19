@@ -29,6 +29,9 @@ const Blog = lazy(() => import("./pages/Blog"));
 const Community = lazy(() => import("./pages/Community"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
 const CustomRequests = lazy(() => import("./pages/CustomRequests"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 /* Lazy Loaded Admin pages */
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
@@ -65,6 +68,9 @@ function PublicLayout() {
             <Route path="/community" element={<Community />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/custom-requests" element={<CustomRequests />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </main>

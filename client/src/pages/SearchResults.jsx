@@ -23,15 +23,6 @@ export default function SearchResults() {
       setError("");
       try {
         const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || '').trim()}/api/products/search?q=${encodeURIComponent(query)}`);
-        
-        // --- REDIS CACHE DEMONSTRATION LOGGING ---
-        const cacheStatus = res.headers.get('X-Redis-Cache');
-        if (cacheStatus === 'HIT') {
-          console.log(`%c🚀 REDIS CACHE: HIT (Served instantly without hitting MongoDB!)`, 'color: #10b981; font-weight: bold; font-size: 14px; padding: 4px; border: 2px solid #10b981; border-radius: 4px;');
-        } else if (cacheStatus === 'MISS') {
-          console.log(`%c🔴 REDIS CACHE: MISS (Fetched from MongoDB and now cached for next time)`, 'color: #ef4444; font-weight: bold; font-size: 14px; padding: 4px; border: 2px solid #ef4444; border-radius: 4px;');
-        }
-        // ----------------------------------------
 
         const data = await res.json();
         if (!res.ok || !data.success) {

@@ -222,7 +222,9 @@ export const getAllTickets = async (req, res, next) => {
 /* ================= RESOLVE TICKET ================= */
 export const resolveTicket = async (req, res, next) => {
   try {
-    const { resolution } = req.body;
+    const resolution = req.body.resolution?.trim();
+    if (!resolution) return next(errorHandler(400, "Resolution note is required"));
+
     const ticket = await Ticket.findByIdAndUpdate(
       req.params.id,
       { status: "Resolved", resolution },

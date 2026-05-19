@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Search } from "lucide-react";
 
 const STATUS_COLORS = {
   confirmed: "bg-emerald-100 text-emerald-700",
   pending_otp: "bg-amber-100 text-amber-700",
+  pending_payment: "bg-amber-100 text-amber-700",
+  shipped: "bg-blue-100 text-blue-700",
+  delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
 };
 
@@ -70,7 +73,10 @@ export default function AdminOrders() {
         >
           <option value="All">All Status</option>
           <option value="confirmed">Confirmed</option>
-          <option value="pending_otp">Pending</option>
+          <option value="pending_otp">Pending OTP</option>
+          <option value="pending_payment">Pending Payment</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
           <option value="cancelled">Cancelled</option>
         </select>
       </div>
@@ -101,8 +107,8 @@ export default function AdminOrders() {
                 {filtered.length === 0 ? (
                   <tr><td colSpan={7} className="px-5 py-12 text-center text-gray-400">No orders found</td></tr>
                 ) : filtered.map((o) => (
-                  <>
-                    <tr key={o._id} className="border-t border-gray-50 hover:bg-gray-50 transition">
+                  <Fragment key={o._id}>
+                    <tr className="border-t border-gray-50 hover:bg-gray-50 transition">
                       <td className="px-5 py-3 font-mono text-xs text-gray-500">{o._id.slice(-8).toUpperCase()}</td>
                       <td className="px-5 py-3 font-medium">{o.userId?.username || "—"}</td>
                       <td className="px-5 py-3 text-gray-500">{o.items?.length || 0} item(s)</td>
@@ -145,7 +151,7 @@ export default function AdminOrders() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

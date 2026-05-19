@@ -39,7 +39,7 @@ Create a backend `.env` file from `.env.example`.
 cp .env.example .env
 ```
 
-Required backend variables:
+Core backend variables:
 
 ```text
 MONGO_URI
@@ -47,6 +47,11 @@ PORT
 NODE_ENV
 CLIENT_ORIGIN
 JWT_SECRET
+```
+
+Feature integration variables:
+
+```text
 GOOGLE_CLIENT_ID
 EMAIL_HOST
 EMAIL_PORT
@@ -62,6 +67,8 @@ SOLR_URL
 RAZORPAY_KEY_ID
 RAZORPAY_KEY_SECRET
 ```
+
+`MONGO_URI` and `JWT_SECRET` are validated at backend startup. The remaining integration values are required for their related features: Google sign-in, OTP email, Cloudinary uploads, Redis caching, Solr search, and Razorpay payments.
 
 Create a frontend env file from `client/.env.example`.
 
@@ -162,5 +169,18 @@ npm run client:build
 - Set `NODE_ENV=production` on the backend.
 - Set `CLIENT_ORIGIN` to the deployed frontend origin.
 - Set `VITE_BACKEND_URL` to the deployed backend origin before building the frontend.
+- If the frontend and backend are served through the included Nginx container, leave `VITE_BACKEND_URL` empty so browser API and Socket.IO calls use the same origin.
+- The Docker Compose stack sets container-local `REDIS_URL`, `SOLR_URL`, and `CLIENT_ORIGIN` defaults for the backend service.
+- For a separate frontend image build, pass public Vite build args when needed:
+
+```bash
+docker build -f Dockerfile.client \
+  --build-arg VITE_BACKEND_URL=https://your-api.example.com \
+  --build-arg VITE_GOOGLE_CLIENT_ID=your_google_client_id \
+  --build-arg VITE_RAZORPAY_KEY_ID=your_razorpay_key_id \
+  -t gardenly-client .
+```
+
 - Use Razorpay test keys unless you intentionally want live payment behavior.
 - Confirm Redis, Solr, Cloudinary, email, MongoDB, and Razorpay credentials are available in the deployment environment.
+- Ensure `/api`, `/api-docs`, `/images`, `/uploads`, and `/socket.io` are routed to the backend when deploying behind a custom reverse proxy.

@@ -61,7 +61,11 @@ jobs:
       run: docker build -t gardenly-api -f Dockerfile.backend .
       
     - name: Build Frontend Docker Image
-      run: docker build -t gardenly-client -f Dockerfile.client .
+      run: |
+        docker build -t gardenly-client -f Dockerfile.client \
+          --build-arg VITE_BACKEND_URL=http://localhost:3000 \
+          --build-arg VITE_GOOGLE_CLIENT_ID=ci-dummy-client-id \
+          --build-arg VITE_RAZORPAY_KEY_ID=ci-dummy-key-id .
 
   # --- CONTINUOUS DEPLOYMENT (CD) ---
   # This job runs only if the tests and builds above pass successfully on the main branch
@@ -94,3 +98,7 @@ jobs:
         file: Dockerfile.client
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/gardenly-client:latest
+        build-args: |
+          VITE_BACKEND_URL=https://gardenly-api.onrender.com
+          VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID }}
