@@ -108,6 +108,14 @@ app.use((req, res, next) => {
 
   const csrfCookie = req.cookies?.csrf_token;
   const csrfHeader = req.get("x-csrf-token");
+  
+  // Allow if Origin matches our trusted frontend (CORS protects us here)
+  const origin = req.get("origin") || req.get("referer");
+  const allowedOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+  if (origin && origin.startsWith(allowedOrigin)) {
+    return next();
+  }
+
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
     return res.status(403).json({
       success: false,
