@@ -39,7 +39,6 @@ Gardenly connects buyers, sellers, experts, and administrators through a secure 
 - [Authentication & Security](#authentication--security)
 - [Performance Optimizations](#performance-optimizations)
 - [Scalability Features](#scalability-features)
-- [Screenshots](#screenshots)
 - [Deployment](#deployment)
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Testing](#testing)
