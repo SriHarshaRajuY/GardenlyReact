@@ -47,8 +47,7 @@
     "react-router-dom": "^7.9.6",
     "redis": "^5.12.1",
     "rotating-file-stream": "^3.2.8",
-    "socket.io": "^4.8.3",
-    "solr-client": "^0.10.0-rc10"
+    "socket.io": "^4.8.3"
   },
   "repository": {
     "type": "git",

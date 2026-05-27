@@ -24,7 +24,7 @@ API documentation is also available from the running backend at `/api-docs`.
 | :--- | :--- | :--- |
 | GET | `/products` | Get paginated recent products. |
 | GET | `/products/category/:category` | Get products by category. |
-| GET | `/products/search?q=...` | Search products using Solr relevance scoring. |
+| GET | `/products/search?q=...` | Search products using MongoDB weighted text search. |
 | POST | `/products` | Add a product as a seller. |
 | PUT | `/products/:id` | Update a seller-owned product. |
 | DELETE | `/products/:id` | Delete a seller-owned product. |

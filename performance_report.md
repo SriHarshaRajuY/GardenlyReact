@@ -49,20 +49,20 @@ A performance test was conducted on the `/api/products` endpoint (fetching the m
 
 ---
 
-## 3. Enterprise Search Platform (Apache Solr)
+## 3. Product Search Optimization
 
-The application has been integrated with the **Apache Solr** platform exactly as required. This move from standard database search to a dedicated search engine provides enterprise-level performance and relevance.
+The application currently uses MongoDB text indexes for product search. Product names are weighted highest, followed by category and description, so relevant matches appear before broader matches.
 
 ### Technical Implementation
-- **Platform:** Apache Solr (Hosted via **WebSolr**).
-- **Communication:** Integrated using the `node-fetch` and `solr-client` standards.
-- **Indexing:** Products are automatically synchronized from MongoDB into the Solr core.
-- **Visual Dashboard:** The search indices and cluster health are monitored visually via the **WebSolr Dashboard**.
+- **Search engine:** MongoDB text search through a weighted product text index.
+- **Indexed fields:** Product name, category, and description.
+- **API route:** `/api/products/search?q=...`.
+- **Caching:** Search responses are cached through the Redis middleware with a shorter TTL than general product listings.
 
 ### Impact on User Experience
-- **Enterprise Speed:** Search results are lightning-fast as they are served by the specialized Apache Solr index.
-- **Relevance Ranking:** Results are ranked by Solr's advanced relevance algorithms.
-- **Scalability:** Offloading search to a dedicated platform (Solr) ensures the application remains responsive during high traffic.
+- **Relevant catalog search:** Product names receive higher ranking than category or description text.
+- **Lower query cost:** Indexed search avoids broad collection scans for common catalog queries.
+- **Cache support:** Repeated search requests can be served from Redis when the cache is warm.
 
 ---
 
@@ -71,9 +71,9 @@ The application has been integrated with the **Apache Solr** platform exactly as
 The following official platforms are used to manage and monitor the optimized stack visually:
 
 1.  **Redis Dashboard:** [console.upstash.com](https://console.upstash.com) - Real-time metrics for caching.
-2.  **Solr Dashboard:** [websolr.com](https://www.websolr.com/) - Visual management of the Apache Solr search core.
+2.  **MongoDB Atlas Dashboard:** Used to inspect collection indexes, query performance, and database health.
 
 ---
 
 ## Conclusion
-The application now utilizes **Redis (Upstash)** and **Apache Solr (WebSolr)**, delivering a high-performance, enterprise-ready B2B and B2C experience. The platform now offers enterprise-grade speed and search accuracy, meeting all end-review requirements.
+The application now utilizes Redis caching, MongoDB indexing, and weighted catalog search to improve read-heavy product workflows while keeping the architecture simple enough to maintain and extend.

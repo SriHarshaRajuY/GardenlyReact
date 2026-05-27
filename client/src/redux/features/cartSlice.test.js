@@ -8,51 +8,67 @@ describe('Cart Redux Slice', () => {
     totalPrice: 0,
   };
 
-  it('should return the initial state', () => {
+  it('returns the initial state', () => {
     expect(cartReducer(undefined, { type: 'unknown' })).toEqual(initialState);
   });
 
-  it('should handle addToCart', () => {
+  it('adds an item and updates quantity and total price', () => {
     const newItem = { id: '1', name: 'Aloe', price: 15 };
     const state = cartReducer(initialState, addToCart(newItem));
-    
-    expect(state.items).toHaveLength(1);
-    expect(state.items[0]).toEqual(newItem);
+
+    expect(state.items).toEqual([newItem]);
     expect(state.totalQuantity).toBe(1);
     expect(state.totalPrice).toBe(15);
   });
 
-  it('should handle removeFromCart', () => {
+  it('adds multiple entries and sums their prices', () => {
+    const state = [{ id: '1', name: 'Aloe', price: 15 }, { id: '2', name: 'Fern', price: 20 }]
+      .reduce((current, item) => cartReducer(current, addToCart(item)), initialState);
+
+    expect(state.items).toHaveLength(2);
+    expect(state.totalQuantity).toBe(2);
+    expect(state.totalPrice).toBe(35);
+  });
+
+  it('keeps duplicate products as separate line items in the current slice behavior', () => {
+    const item = { id: '1', name: 'Aloe', price: 15 };
+    const once = cartReducer(initialState, addToCart(item));
+    const twice = cartReducer(once, addToCart(item));
+
+    expect(twice.items).toEqual([item, item]);
+    expect(twice.totalQuantity).toBe(2);
+    expect(twice.totalPrice).toBe(30);
+  });
+
+  it('removes all entries matching an item id and recalculates totals', () => {
     const stateWithItems = {
       items: [
-        { id: '1', name: 'Aloe', price: 15, quantity: 1 },
-        { id: '2', name: 'Fern', price: 20, quantity: 1 }
+        { id: '1', name: 'Aloe', price: 15 },
+        { id: '2', name: 'Fern', price: 20 },
+        { id: '1', name: 'Aloe', price: 15 },
       ],
-      totalQuantity: 2,
-      totalPrice: 35,
+      totalQuantity: 3,
+      totalPrice: 50,
     };
 
     const nextState = cartReducer(stateWithItems, removeFromCart('1'));
-    
-    expect(nextState.items).toHaveLength(1);
-    expect(nextState.items[0].id).toBe('2');
+
+    expect(nextState.items).toEqual([{ id: '2', name: 'Fern', price: 20 }]);
     expect(nextState.totalQuantity).toBe(1);
     expect(nextState.totalPrice).toBe(20);
   });
 
-  it('should clear the cart entirely', () => {
-    expect(true).toBe(true);
-  });
+  it('leaves totals consistent when removing an id that is not in the cart', () => {
+    const stateWithItems = {
+      items: [{ id: '1', name: 'Aloe', price: 15 }],
+      totalQuantity: 1,
+      totalPrice: 15,
+    };
 
-  it('should increase quantity if same item added twice', () => {
-    expect(true).toBe(true);
-  });
+    const nextState = cartReducer(stateWithItems, removeFromCart('missing'));
 
-  it('should decrease quantity if item removed but quantity > 1', () => {
-    expect(true).toBe(true);
-  });
-
-  it('should calculate total price correctly with multiple quantities', () => {
-    expect(true).toBe(true);
+    expect(nextState.items).toEqual(stateWithItems.items);
+    expect(nextState.totalQuantity).toBe(1);
+    expect(nextState.totalPrice).toBe(15);
   });
 });

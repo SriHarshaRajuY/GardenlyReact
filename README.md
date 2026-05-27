@@ -2,11 +2,11 @@
 
 <div align="center">
 
-![Gardenly banner placeholder](docs/assets/gardenly-banner.png)
-
 **A production-minded MERN marketplace for plants, gardening products, expert support, custom buyer requests, and community-led commerce.**
 
 Gardenly connects buyers, sellers, experts, and administrators through a secure full-stack platform with role-based workflows, real-time community updates, Redis-backed caching, Dockerized deployment, and a documented REST API.
+
+**Live Deployment:** [gardenly-react.vercel.app](https://gardenly-react.vercel.app)
 
 </div>
 
@@ -52,7 +52,6 @@ Gardenly connects buyers, sellers, experts, and administrators through a secure 
 - [Authentication & Security](#authentication--security)
 - [Performance Optimizations](#performance-optimizations)
 - [Scalability Features](#scalability-features)
-- [Screenshots](#screenshots)
 - [Deployment](#deployment)
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Testing](#testing)
@@ -138,8 +137,6 @@ flowchart LR
   API --> Swagger["Swagger / OpenAPI Docs"]
   Realtime --> API
 ```
-
-> Architecture diagram placeholder: `docs/diagrams/system-architecture.png`
 
 ### Frontend Architecture
 
@@ -698,34 +695,9 @@ Measured cache impact from the performance report:
 
 ---
 
-## Screenshots
-
-> Replace the placeholder paths below with real screenshots from your deployed application.
-
-| Landing Page | Dashboard |
-| :---: | :---: |
-| ![Landing page placeholder](docs/screenshots/landing-page.png) | ![Dashboard placeholder](docs/screenshots/dashboard.png) |
-
-| Admin Panel | Analytics |
-| :---: | :---: |
-| ![Admin panel placeholder](docs/screenshots/admin-panel.png) | ![Analytics placeholder](docs/screenshots/analytics.png) |
-
-| Mobile UI |
-| :---: |
-| ![Mobile UI placeholder](docs/screenshots/mobile-ui.png) |
-
-Additional visual placeholders:
-
-- `docs/screenshots/product-catalog.png`
-- `docs/screenshots/cart-checkout.png`
-- `docs/screenshots/seller-dashboard.png`
-- `docs/screenshots/expert-support.png`
-- `docs/diagrams/database-design.png`
-- `docs/diagrams/deployment-topology.png`
-
----
-
 ## Deployment
+
+Live frontend: [https://gardenly-react.vercel.app](https://gardenly-react.vercel.app)
 
 ### Vercel Frontend
 

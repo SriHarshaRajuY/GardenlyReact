@@ -26,7 +26,7 @@ const productSchema = new mongoose.Schema({
 
 // Indexes for optimization
 productSchema.index({ category: 1, createdAt: -1 });
-// Weighted text index for superior search experience (Solr-like)
+// Weighted text index for catalog search relevance.
 productSchema.index(
   { 
     name: "text", 
