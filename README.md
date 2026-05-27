@@ -13,17 +13,6 @@ Gardenly connects buyers, sellers, experts, and administrators through a secure 
 ---
 
 ## Badges
-
-<p align="center">
-  <a href="https://github.com/SriHarshaRajuY/GardenlyReact/actions/workflows/ci.yml">
-    <img alt="Build" src="https://github.com/SriHarshaRajuY/GardenlyReact/actions/workflows/ci.yml/badge.svg" />
-  </a>
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-2ea44f?style=for-the-badge" />
-  <img alt="License" src="https://img.shields.io/badge/license-ISC-blue?style=for-the-badge" />
-  <img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" />
-  <img alt="Open Source" src="https://img.shields.io/badge/open%20source-yes-success?style=for-the-badge" />
-</p>
-
 <p align="center">
   <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-ESM-F7DF1E?style=for-the-badge&logo=javascript&logoColor=000" />
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=000" />
@@ -695,6 +684,11 @@ Measured cache impact from the performance report:
 
 ---
 
+<<<<<<< HEAD
+=======
+---
+
+>>>>>>> 2ce52a41477d5eb958e3b88b70f3233979539989
 ## Deployment
 
 Live frontend: [https://gardenly-react.vercel.app](https://gardenly-react.vercel.app)
